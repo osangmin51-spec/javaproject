@@ -1,0 +1,33 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "compile",
+      "type": "shell",
+      "command": "javac",
+      "args": [
+        "-encoding",
+        "UTF-8",
+        "-d",
+        "out",
+        "MockStockApp.java"
+      ],
+      "group": "build",
+      "problemMatcher": "$javac"
+    },
+    {
+      "label": "run server",
+      "type": "shell",
+      "command": "java",
+      "args": [
+        "-cp",
+        "out",
+        "MockStockApp",
+        "8080"
+      ],
+      "dependsOn": "compile",
+      "isBackground": true,
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+name: Java CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Compile
+        run: javac -encoding UTF-8 -d out MockStockApp.java
+
+      - name: Count Java types
+        shell: bash
+        run: |
+          count=$(grep -E '^(public class|class|interface) ' MockStockApp.java | wc -l)
+          echo "Java type count: $count"
+          test "$count" -eq 100

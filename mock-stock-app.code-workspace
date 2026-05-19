@@ -1,0 +1,14 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "java.project.sourcePaths": [
+      "."
+    ],
+    "java.project.outputPath": "out",
+    "files.encoding": "utf8"
+  }
+}

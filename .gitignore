@@ -1,0 +1,5 @@
+out/
+*.class
+server.out.log
+server.err.log
+.DS_Store

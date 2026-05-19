@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Run MockStockApp",
+      "request": "launch",
+      "mainClass": "MockStockApp",
+      "args": "8080",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "compile"
+    }
+  ]
+}
