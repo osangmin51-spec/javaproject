@@ -74,7 +74,7 @@ class AppContext {
             new HoldingValidator(database)
     ));
     final OrderExecutor marketOrderExecutor = new MarketOrderExecutor(database, marketDataService, feePolicy, ledger, eventBus, auditLogger);
-    final OrderExecutor limitOrderExecutor = new LimitOrderExecutor(database, marketDataService, feePolicy, ledger, eventBus, auditLogger);
+    final OrderExecutor limitOrderExecutor = new LimitOrderExecutor(database, marketDataService, feePolicy, ledger, eventBus, auditLogger, orderValidator);
     final PendingOrderProcessor pendingOrderProcessor = new PendingOrderProcessor(database, limitOrderExecutor);
     final TradeService tradeService = new DefaultTradeService(orderValidator, marketOrderExecutor, limitOrderExecutor, ids, database);
     final WatchlistService watchlistService = new DefaultWatchlistService(database);
@@ -431,8 +431,11 @@ class HtmlRenderer {
                       refresh();
                     }
                     async function tickMarket() {
-                      await api('/api/sim/tick', {method:'POST'});
-                      refresh();
+                      const result = await api('/api/sim/tick', {method:'POST'});
+                      document.getElementById('message').textContent = result.autoFilled > 0
+                        ? `시장 변동 후 대기 지정가 주문 ${result.autoFilled}건이 자동 체결되었습니다.`
+                        : '시장 가격을 갱신했습니다. 자동 체결된 지정가 주문은 없습니다.';
+                      await refresh();
                     }
                     async function importSp500() {
                       try {
@@ -1170,10 +1173,12 @@ class MarketOrderExecutor implements OrderExecutor {
 class LimitOrderExecutor implements OrderExecutor {
     private final MarketOrderExecutor delegate;
     private final MarketDataService marketDataService;
+    private final Validator<Order> fillValidator;
 
-    LimitOrderExecutor(InMemoryDatabase database, MarketDataService marketDataService, FeePolicy feePolicy, TransactionLedger ledger, EventBus eventBus, AuditLogger auditLogger) {
+    LimitOrderExecutor(InMemoryDatabase database, MarketDataService marketDataService, FeePolicy feePolicy, TransactionLedger ledger, EventBus eventBus, AuditLogger auditLogger, Validator<Order> fillValidator) {
         this.delegate = new MarketOrderExecutor(database, marketDataService, feePolicy, ledger, eventBus, auditLogger);
         this.marketDataService = marketDataService;
+        this.fillValidator = fillValidator;
     }
 
     @Override
@@ -1183,6 +1188,7 @@ class LimitOrderExecutor implements OrderExecutor {
                 ? market.compareTo(order.limitPrice()) <= 0
                 : market.compareTo(order.limitPrice()) >= 0;
         if (canFill) {
+            fillValidator.validate(order);
             delegate.fill(order, market);
         } else {
             order.pend("지정가에 도달하지 않아 주문이 대기 중입니다");
