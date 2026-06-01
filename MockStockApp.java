@@ -14,11 +14,14 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -57,6 +60,7 @@ class AppContext {
     final AuditLogger auditLogger = new ConsoleAuditLogger(clock);
     final FeePolicy feePolicy = new FlatFeePolicy();
     final Sp500ImportService sp500ImportService = new Sp500ImportService(database);
+    final FileStateStore stateStore = new FileStateStore(database);
     final MarketDataService marketDataService = new SimulatedMarketDataService(database, new RandomWalkPriceEngine(), eventBus);
     final UserRepository userRepository = new InMemoryUserRepository();
     final SessionStore sessionStore = new InMemorySessionStore();
@@ -71,10 +75,11 @@ class AppContext {
     ));
     final OrderExecutor marketOrderExecutor = new MarketOrderExecutor(database, marketDataService, feePolicy, ledger, eventBus, auditLogger);
     final OrderExecutor limitOrderExecutor = new LimitOrderExecutor(database, marketDataService, feePolicy, ledger, eventBus, auditLogger);
+    final PendingOrderProcessor pendingOrderProcessor = new PendingOrderProcessor(database, limitOrderExecutor);
     final TradeService tradeService = new DefaultTradeService(orderValidator, marketOrderExecutor, limitOrderExecutor, ids, database);
     final WatchlistService watchlistService = new DefaultWatchlistService(database);
-    final NewsService newsService = new StaticNewsService();
     final AccountService accountService = new DefaultAccountService(database, marketDataService);
+    final AnalyticsService analyticsService = new AnalyticsService(database, marketDataService, stateStore);
     final LeaderboardService leaderboardService = new DefaultLeaderboardService(database, marketDataService);
     final ApiController apiController = new ApiController(this);
     final PageController pageController = new PageController(new HtmlRenderer());
@@ -84,6 +89,9 @@ class AppContext {
 
     AppContext() {
         seed();
+        stateStore.load();
+        ids.observe(database.orders.findAll());
+        stateStore.save();
     }
 
     private void seed() {
@@ -129,7 +137,7 @@ class ServerFactory {
         router.add(HttpMethod.GET, "/health", app.healthController);
         router.add(HttpMethod.GET, "/api/quotes", app.apiController);
         router.add(HttpMethod.GET, "/api/account", app.apiController);
-        router.add(HttpMethod.GET, "/api/news", app.apiController);
+        router.add(HttpMethod.GET, "/api/analytics", app.apiController);
         router.add(HttpMethod.GET, "/api/leaderboard", app.apiController);
         router.add(HttpMethod.POST, "/api/orders", app.apiController);
         router.add(HttpMethod.POST, "/api/watchlist/add", app.apiController);
@@ -341,6 +349,14 @@ class HtmlRenderer {
                           <div class="chips" id="watchlist"></div>
                         </div>
                       </section>
+                      <section>
+                        <h2>수익률 분석</h2>
+                        <div class="grid" id="analysisMetrics"></div>
+                        <table>
+                          <thead><tr><th>종목</th><th>평가금액</th><th>손익</th><th>손익률</th></tr></thead>
+                          <tbody id="analysisHoldings"></tbody>
+                        </table>
+                      </section>
                     </div>
                   </main>
                   <script>
@@ -359,11 +375,12 @@ class HtmlRenderer {
                       return data;
                     }
                     async function refresh() {
-                      const [quotes, account] = await Promise.all([
-                        api('/api/quotes'), api('/api/account')
+                      const [quotes, account, analytics] = await Promise.all([
+                        api('/api/quotes'), api('/api/account'), api('/api/analytics')
                       ]);
                       renderQuotes(quotes.items);
                       renderAccount(account);
+                      renderAnalytics(analytics);
                     }
                     function renderAccount(a) {
                       document.getElementById('metrics').innerHTML = [
@@ -398,6 +415,12 @@ class HtmlRenderer {
                     function setQuotePage(page) {
                       quotePage = page;
                       renderQuotePage();
+                    }
+                    function renderAnalytics(a) {
+                      document.getElementById('analysisMetrics').innerHTML = [
+                        ['총자산', money(a.equity)], ['총수익률', pct(a.returnPct)], ['체결주문', a.filledOrders], ['대기주문', a.pendingOrders]
+                      ].map(x => `<div class="metric"><div class="label">${x[0]}</div><div class="value">${x[1]}</div></div>`).join('');
+                      document.getElementById('analysisHoldings').innerHTML = a.holdings.map(h => `<tr><td>${h.symbol}</td><td>${money(h.marketValue)}</td><td class="${h.gainLoss>=0?'up':'down'}">${money(h.gainLoss)}</td><td class="${h.gainLossPct>=0?'up':'down'}">${pct(h.gainLossPct)}</td></tr>`).join('') || '<tr><td colspan="4">분석할 보유 종목이 없습니다.</td></tr>';
                     }
                     async function addWatch(symbol) {
                       await api('/api/watchlist/add', {method:'POST', body: JSON.stringify({symbol}), headers:{'Content-Type':'application/json'}});
@@ -560,6 +583,14 @@ class IdGenerator {
     String nextOrderId() {
         return "ORD-" + orderIds.incrementAndGet();
     }
+
+    void observe(Collection<Order> orders) {
+        for (Order order : orders) {
+            String id = order.id().replace("ORD-", "");
+            long value = NumberFormatUtil.parseLong(id, 0);
+            orderIds.updateAndGet(current -> Math.max(current, value));
+        }
+    }
 }
 
 interface Clock {
@@ -580,10 +611,10 @@ class SystemClock implements Clock {
 }
 
 class InMemoryDatabase {
-    final Repository<Stock, String> stocks = new InMemoryRepository<>(Stock::symbol);
-    final Repository<Quote, String> quotes = new InMemoryRepository<>(Quote::symbol);
-    final Repository<Account, String> accounts = new InMemoryRepository<>(Account::id);
-    final Repository<Order, String> orders = new InMemoryRepository<>(Order::id);
+    final InMemoryRepository<Stock, String> stocks = new InMemoryRepository<>(Stock::symbol);
+    final InMemoryRepository<Quote, String> quotes = new InMemoryRepository<>(Quote::symbol);
+    final InMemoryRepository<Account, String> accounts = new InMemoryRepository<>(Account::id);
+    final InMemoryRepository<Order, String> orders = new InMemoryRepository<>(Order::id);
 
     Account demoAccount() {
         return accounts.findById("demo").orElseThrow(() -> new AppException("데모 계좌를 찾을 수 없습니다"));
@@ -898,6 +929,15 @@ class Order implements JsonSerializable {
         return new Order(id, symbol, side, type, quantity, limitPrice);
     }
 
+    static Order restore(String id, String symbol, String side, String type, int quantity, Money limitPrice, String status, Money fillPrice, Money fee, String message) {
+        Order order = new Order(id, symbol, side, type, quantity, limitPrice);
+        order.status = status;
+        order.fillPrice = fillPrice;
+        order.fee = fee == null ? Money.zero() : fee;
+        order.message = message == null || message.isBlank() ? order.message : message;
+        return order;
+    }
+
     String id() {
         return id;
     }
@@ -950,6 +990,11 @@ class Order implements JsonSerializable {
         this.message = message;
     }
 
+    void reject(String message) {
+        this.status = OrderStatus.REJECTED;
+        this.message = message;
+    }
+
     private String sideText() {
         return OrderSide.BUY.equals(side) ? "매수" : "매도";
     }
@@ -962,6 +1007,7 @@ class Order implements JsonSerializable {
                 "side", side,
                 "type", type,
                 "quantity", quantity,
+                "limitPrice", limitPrice,
                 "status", status,
                 "fillPrice", fillPrice,
                 "fee", fee,
@@ -1145,6 +1191,36 @@ class LimitOrderExecutor implements OrderExecutor {
     }
 }
 
+class PendingOrderProcessor {
+    private final InMemoryDatabase database;
+    private final OrderExecutor limitExecutor;
+
+    PendingOrderProcessor(InMemoryDatabase database, OrderExecutor limitExecutor) {
+        this.database = database;
+        this.limitExecutor = limitExecutor;
+    }
+
+    int process() {
+        int filled = 0;
+        for (Order order : database.orders.findAll()) {
+            if (!OrderStatus.PENDING.equals(order.status())) {
+                continue;
+            }
+            try {
+                Order updated = limitExecutor.execute(order);
+                database.orders.save(updated);
+                if (OrderStatus.FILLED.equals(updated.status())) {
+                    filled++;
+                }
+            } catch (ValidationException ex) {
+                order.reject(ex.getMessage());
+                database.orders.save(order);
+            }
+        }
+        return filled;
+    }
+}
+
 interface FeePolicy {
     Money fee(Order order, Money fillPrice);
 }
@@ -1219,32 +1295,6 @@ class DefaultWatchlistService implements WatchlistService {
     @Override
     public void remove(String symbol) {
         database.demoAccount().watchlist.remove(symbol);
-    }
-}
-
-class NewsItem implements JsonSerializable {
-    private final String title;
-    private final String source;
-
-    NewsItem(String title, String source) {
-        this.title = title;
-        this.source = source;
-    }
-
-    @Override
-    public String toJson() {
-        return JsonUtil.obj("title", title, "source", source);
-    }
-}
-
-interface NewsService {
-    List<NewsItem> latest();
-}
-
-class StaticNewsService implements NewsService {
-    @Override
-    public List<NewsItem> latest() {
-        return List.of();
     }
 }
 
@@ -1355,20 +1405,23 @@ class ApiController implements Controller {
         switch (request.path) {
             case "/api/quotes" -> response.json(JsonUtil.obj("ok", true, "items", JsonUtil.array(quoteJson())));
             case "/api/account" -> response.json(app.accountService.accountJson());
-            case "/api/news" -> response.json(JsonUtil.obj("ok", true, "items", JsonUtil.array(app.newsService.latest().stream().map(NewsItem::toJson).toList())));
+            case "/api/analytics" -> response.json(app.analyticsService.analyticsJson());
             case "/api/leaderboard" -> response.json(JsonUtil.obj("ok", true, "items", JsonUtil.array(app.leaderboardService.entries().stream().map(LeaderboardEntry::toJson).toList())));
             case "/api/orders" -> placeOrder(request, response);
             case "/api/watchlist/add" -> changeWatchlist(request, response, true);
             case "/api/watchlist/remove" -> changeWatchlist(request, response, false);
             case "/api/sim/tick" -> {
                 app.marketDataService.tick();
-                response.json(JsonUtil.obj("ok", true));
+                int filled = app.pendingOrderProcessor.process();
+                app.stateStore.save();
+                response.json(JsonUtil.obj("ok", true, "autoFilled", filled));
             }
             case "/api/import/sp500" -> {
                 int count = app.sp500ImportService.importNow();
                 if (count == 0) {
                     response.statusJson(502, JsonUtil.obj("ok", false, "error", "S&P 500 데이터를 가져오지 못했습니다. 네트워크 연결을 확인해주세요."));
                 } else {
+                    app.stateStore.save();
                     response.json(JsonUtil.obj("ok", true, "count", count));
                 }
             }
@@ -1394,6 +1447,7 @@ class ApiController implements Controller {
 
     private void placeOrder(RequestContext request, ResponseWriter response) throws IOException {
         Order order = app.tradeService.place(request.jsonBody());
+        app.stateStore.save();
         response.json(JsonUtil.obj("ok", true, "message", order.message(), "order", order));
     }
 
@@ -1404,6 +1458,7 @@ class ApiController implements Controller {
         } else {
             app.watchlistService.remove(symbol);
         }
+        app.stateStore.save();
         response.json(JsonUtil.obj("ok", true));
     }
 }
@@ -1578,6 +1633,14 @@ class NumberFormatUtil {
     static int parseInt(String text, int fallback) {
         try {
             return Integer.parseInt(Objects.toString(text, "").trim());
+        } catch (Exception ex) {
+            return fallback;
+        }
+    }
+
+    static long parseLong(String text, long fallback) {
+        try {
+            return Long.parseLong(Objects.toString(text, "").trim());
         } catch (Exception ex) {
             return fallback;
         }
@@ -1869,6 +1932,58 @@ class PerformanceCalculator {
     }
 }
 
+class AnalyticsService {
+    private final InMemoryDatabase database;
+    private final MarketDataService marketDataService;
+    private final FileStateStore stateStore;
+
+    AnalyticsService(InMemoryDatabase database, MarketDataService marketDataService, FileStateStore stateStore) {
+        this.database = database;
+        this.marketDataService = marketDataService;
+        this.stateStore = stateStore;
+    }
+
+    String analyticsJson() {
+        Account account = database.demoAccount();
+        AccountSnapshot snapshot = new PerformanceCalculator(marketDataService).snapshot(account);
+        List<String> holdings = new ArrayList<>();
+        for (Holding holding : account.portfolio.all()) {
+            Quote quote = marketDataService.quote(holding.symbol());
+            Money value = quote.price().times(holding.quantity());
+            Money basis = holding.averageCost().times(holding.quantity());
+            BigDecimal ratio = basis.compareTo(Money.zero()) == 0
+                    ? BigDecimal.ZERO
+                    : value.minus(basis).asDecimal().divide(basis.asDecimal(), 8, RoundingMode.HALF_UP);
+            holdings.add(JsonUtil.obj(
+                    "symbol", holding.symbol(),
+                    "quantity", holding.quantity(),
+                    "marketValue", value,
+                    "gainLoss", value.minus(basis),
+                    "gainLossPct", Percent.fromRatio(ratio)));
+        }
+        long filled = database.orders.findAll().stream().filter(order -> OrderStatus.FILLED.equals(order.status())).count();
+        long pending = database.orders.findAll().stream().filter(order -> OrderStatus.PENDING.equals(order.status())).count();
+        Money fees = Money.zero();
+        for (Order order : database.orders.findAll()) {
+            fees = fees.plus(order.fee());
+        }
+        List<String> history = stateStore.equityHistory().stream()
+                .map(point -> {
+                    String[] parts = point.split("\t", -1);
+                    return JsonUtil.obj("time", parts.length > 0 ? parts[0] : "", "equity", parts.length > 1 ? Money.of(NumberFormatUtil.parseDecimal(parts[1], BigDecimal.ZERO)) : Money.zero());
+                })
+                .toList();
+        return JsonUtil.obj(
+                "equity", snapshot.equity(),
+                "returnPct", snapshot.returnPct(),
+                "filledOrders", filled,
+                "pendingOrders", pending,
+                "fees", fees,
+                "holdings", JsonUtil.array(holdings),
+                "equityHistory", JsonUtil.array(history));
+    }
+}
+
 class AllocationCalculator {
     Map<String, Percent> allocation(Account account, MarketDataService marketDataService) {
         Money total = Money.zero();
@@ -1922,6 +2037,167 @@ class Sorter {
 class QueryParamParser {
     static Map<String, String> parse(String query) {
         return FormParser.parse(query == null ? "" : query);
+    }
+}
+
+class FileStateStore {
+    private final InMemoryDatabase database;
+    private final Path path = Path.of("data", "app-state.tsv");
+    private final List<String> equityHistory = new CopyOnWriteArrayList<>();
+
+    FileStateStore(InMemoryDatabase database) {
+        this.database = database;
+    }
+
+    void save() {
+        try {
+            Files.createDirectories(path.getParent());
+            List<String> lines = new ArrayList<>();
+            Account account = database.demoAccount();
+            lines.add("CASH\t" + account.cash().toJsonNumber());
+            for (Holding holding : account.portfolio.all()) {
+                lines.add(String.join("\t", "HOLD", holding.symbol(), String.valueOf(holding.quantity()), holding.averageCost().toJsonNumber()));
+            }
+            for (String symbol : account.watchlist.symbols()) {
+                lines.add("WATCH\t" + symbol);
+            }
+            for (Order order : database.orders.findAll()) {
+                lines.add(String.join("\t",
+                        "ORDER",
+                        order.id(),
+                        order.symbol(),
+                        order.side(),
+                        order.type(),
+                        String.valueOf(order.quantity()),
+                        moneyText(order.limitPrice()),
+                        order.status(),
+                        moneyText(order.fillPrice()),
+                        moneyText(order.fee()),
+                        encode(order.message())));
+            }
+            recordEquity();
+            int start = Math.max(0, equityHistory.size() - 50);
+            for (String point : equityHistory.subList(start, equityHistory.size())) {
+                lines.add("EQUITY\t" + point);
+            }
+            Files.write(path, lines, StandardCharsets.UTF_8);
+        } catch (Exception ex) {
+            System.err.println("state save failed: " + ex.getMessage());
+        }
+    }
+
+    void load() {
+        if (!Files.exists(path)) {
+            return;
+        }
+        try {
+            Money cash = Money.of(100000.00);
+            Portfolio portfolio = new Portfolio();
+            Watchlist watchlist = new Watchlist();
+            List<Order> orders = new ArrayList<>();
+            for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
+                String[] parts = line.split("\t", -1);
+                if (parts.length == 0) {
+                    continue;
+                }
+                switch (parts[0]) {
+                    case "CASH" -> cash = Money.of(NumberFormatUtil.parseDecimal(value(parts, 1), BigDecimal.valueOf(100000)));
+                    case "HOLD" -> {
+                        String symbol = value(parts, 1);
+                        int quantity = NumberFormatUtil.parseInt(value(parts, 2), 0);
+                        Money averageCost = Money.of(NumberFormatUtil.parseDecimal(value(parts, 3), BigDecimal.ZERO));
+                        if (!symbol.isBlank() && quantity > 0) {
+                            ensureMarketRow(symbol, averageCost);
+                            portfolio.buy(symbol, quantity, averageCost);
+                        }
+                    }
+                    case "WATCH" -> {
+                        String symbol = value(parts, 1);
+                        if (!symbol.isBlank()) {
+                            ensureMarketRow(symbol, Money.of(100));
+                            watchlist.add(symbol);
+                        }
+                    }
+                    case "ORDER" -> orders.add(Order.restore(
+                            value(parts, 1),
+                            value(parts, 2),
+                            value(parts, 3),
+                            value(parts, 4),
+                            NumberFormatUtil.parseInt(value(parts, 5), 0),
+                            parseMoney(value(parts, 6)),
+                            value(parts, 7).isBlank() ? OrderStatus.NEW : value(parts, 7),
+                            parseMoney(value(parts, 8)),
+                            parseMoney(value(parts, 9)),
+                            decode(value(parts, 10))));
+                    case "EQUITY" -> {
+                        String time = value(parts, 1);
+                        String equity = value(parts, 2);
+                        if (!time.isBlank() && !equity.isBlank()) {
+                            equityHistory.add(time + "\t" + equity);
+                        }
+                    }
+                    default -> {
+                    }
+                }
+            }
+            database.accounts.save(new Account("demo", cash, portfolio, watchlist));
+            database.orders.clear();
+            for (Order order : orders) {
+                if (!order.id().isBlank()) {
+                    ensureMarketRow(order.symbol(), order.limitPrice() == null ? Money.of(100) : order.limitPrice());
+                    database.orders.save(order);
+                }
+            }
+        } catch (Exception ex) {
+            System.err.println("state load failed: " + ex.getMessage());
+        }
+    }
+
+    List<String> equityHistory() {
+        return List.copyOf(equityHistory);
+    }
+
+    private void recordEquity() {
+        Money total = database.demoAccount().cash();
+        for (Holding holding : database.demoAccount().portfolio.all()) {
+            Money price = database.quotes.findById(holding.symbol())
+                    .map(Quote::price)
+                    .orElse(holding.averageCost());
+            total = total.plus(price.times(holding.quantity()));
+        }
+        equityHistory.add(Instant.now().toString() + "\t" + total.toJsonNumber());
+    }
+
+    private void ensureMarketRow(String symbol, Money price) {
+        if (database.stocks.findById(symbol).isEmpty()) {
+            database.stocks.save(new Stock(symbol, symbol, "Saved"));
+        }
+        if (database.quotes.findById(symbol).isEmpty()) {
+            database.quotes.save(new Quote(symbol, price, price));
+        }
+    }
+
+    private Money parseMoney(String text) {
+        return text == null || text.isBlank() ? null : Money.of(NumberFormatUtil.parseDecimal(text, BigDecimal.ZERO));
+    }
+
+    private String moneyText(Money money) {
+        return money == null ? "" : money.toJsonNumber();
+    }
+
+    private String value(String[] values, int index) {
+        return index < values.length ? values[index] : "";
+    }
+
+    private String encode(String text) {
+        return Base64.getEncoder().encodeToString(Objects.toString(text, "").getBytes(StandardCharsets.UTF_8));
+    }
+
+    private String decode(String text) {
+        if (text == null || text.isBlank()) {
+            return "";
+        }
+        return new String(Base64.getDecoder().decode(text), StandardCharsets.UTF_8);
     }
 }
 
@@ -2068,5 +2344,9 @@ class InMemoryRepository<T, ID> implements Repository<T, ID> {
     @Override
     public List<T> findAll() {
         return new ArrayList<>(values.values());
+    }
+
+    void clear() {
+        values.clear();
     }
 }

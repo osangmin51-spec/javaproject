@@ -1,8 +1,20 @@
 # 모의주식 투자 웹사이트
 
-Java 표준 라이브러리만으로 만든 모의주식투자 웹사이트입니다. 별도 프레임워크 없이 JDK 내장 `HttpServer`를 사용해 웹 페이지와 API를 제공하며, S&P 500 구성종목을 가져와 모의 시세 기반으로 주문, 관심종목, 포트폴리오를 연습할 수 있습니다.
+Java 표준 라이브러리만 사용해 만든 모의주식투자 웹사이트입니다. JDK 내장 `HttpServer`로 웹 화면과 REST 스타일 API를 제공하며, S&P 500 구성종목을 가져와 모의 시세 기반의 주문, 관심종목, 포트폴리오 분석을 연습할 수 있습니다.
 
-> 이 프로젝트는 학습용 모의투자 서비스입니다. S&P 500 종목 목록은 공개 웹 데이터를 가져오지만, 가격과 등락률은 실제 실시간 시세가 아니라 시뮬레이션 값입니다. 실제 투자 판단에는 사용하면 안 됩니다.
+> 학습용 모의투자 프로젝트입니다. S&P 500 종목 목록은 공개 웹 데이터를 사용하지만, 가격과 등락률은 실제 실시간 시세가 아니라 시뮬레이션 값입니다. 실제 투자 판단에는 사용하면 안 됩니다.
+
+## 이번 개선 내용
+
+기존 버전은 서버를 껐다 켜면 주문 내역, 보유 종목, 관심종목이 모두 초기화되었습니다. 이번 개선에서는 아래 기능을 추가했습니다.
+
+- 파일 기반 저장소 추가: `data/app-state.tsv`
+- 서버 재시작 후에도 예수금, 보유 종목, 주문 내역, 관심종목 유지
+- 대기 중인 지정가 주문 자동 체결
+- `/api/sim/tick` 실행 시 시세 변동 후 대기 주문을 다시 검사
+- 수익률 분석 API와 화면 추가
+- 종목별 손익, 손익률, 체결/대기 주문 수, 자산 변화 기록 제공
+- 실행 데이터가 GitHub에 올라가지 않도록 `data/`를 `.gitignore`에 추가
 
 ## 주요 기능
 
@@ -10,9 +22,12 @@ Java 표준 라이브러리만으로 만든 모의주식투자 웹사이트입�
 - 등락률 상위 100개 종목 표시
 - 10개씩 총 10페이지 페이지네이션
 - 시장가/지정가 모의 매수·매도 주문
+- 조건 미달 지정가 주문 대기 처리
+- 시세 변동 시 대기 지정가 주문 자동 체결
 - 예수금, 보유 종목, 평가금액, 손익 표시
 - 사용자가 직접 추가/삭제하는 관심종목
-- 가짜 뉴스/가짜 순위표 제거
+- 포트폴리오 수익률 분석
+- 파일 저장으로 거래 상태 유지
 - VS Code 실행 설정 포함
 - GitHub Actions로 컴파일 및 Java 타입 수 검증
 
@@ -22,6 +37,7 @@ Java 표준 라이브러리만으로 만든 모의주식투자 웹사이트입�
 - JDK 내장 `com.sun.net.httpserver.HttpServer`
 - Java `HttpClient`
 - HTML, CSS, Vanilla JavaScript
+- 파일 기반 저장소, TSV
 - PowerShell 실행 스크립트
 - GitHub Actions CI
 
@@ -31,7 +47,7 @@ Java 표준 라이브러리만으로 만든 모의주식투자 웹사이트입�
 
 1. `mock-stock-app.code-workspace` 파일을 VS Code로 엽니다.
 2. `Ctrl + Shift + B`로 `compile` 작업을 실행합니다.
-3. 터미널에서 아래 명령을 실행합니다.
+3. 터미널에서 실행합니다.
 
 ```powershell
 .\scripts\run.ps1
@@ -50,7 +66,7 @@ javac -encoding UTF-8 -d out MockStockApp.java
 java -cp out MockStockApp 8080
 ```
 
-포트를 바꾸고 싶으면 마지막 숫자만 바꾸면 됩니다.
+포트를 바꾸려면 마지막 숫자를 바꾸면 됩니다.
 
 ```powershell
 java -cp out MockStockApp 9090
@@ -75,6 +91,10 @@ java -cp out MockStockApp 9090
 
 S&P 500 구성종목 중 모의 등락률이 높은 순서로 상위 100개를 보여줍니다. 한 페이지에 10개씩 표시되며, 1페이지는 1~10위, 2페이지는 11~20위입니다.
 
+### 주문 내역
+
+시장가 주문은 바로 체결됩니다. 지정가 주문은 조건을 만족하면 체결되고, 조건을 만족하지 않으면 `대기` 상태로 남습니다. 이후 `/api/sim/tick`으로 가격이 변할 때 자동 체결 조건을 다시 검사합니다.
+
 ### 보유 종목
 
 현재 보유한 종목의 수량, 평균단가, 평가금액, 손익을 보여줍니다.
@@ -82,6 +102,10 @@ S&P 500 구성종목 중 모의 등락률이 높은 순서로 상위 100개를 �
 ### 관심종목
 
 처음에는 비어 있으며, 시장 시세 표의 `관심` 버튼으로 사용자가 직접 추가합니다.
+
+### 수익률 분석
+
+현재 총자산, 총수익률, 체결 주문 수, 대기 주문 수를 요약합니다. 보유 종목별 평가금액, 손익, 손익률도 함께 보여줍니다.
 
 ## API 목록
 
@@ -91,13 +115,16 @@ S&P 500 구성종목 중 모의 등락률이 높은 순서로 상위 100개를 �
 | `GET` | `/health` | 서버 상태 확인 |
 | `GET` | `/api/quotes` | 종목 시세 목록 |
 | `GET` | `/api/account` | 계좌, 보유 종목, 관심종목, 주문 내역 |
+| `GET` | `/api/analytics` | 포트폴리오 분석 데이터 |
 | `POST` | `/api/orders` | 주문 생성 |
 | `POST` | `/api/watchlist/add` | 관심종목 추가 |
 | `POST` | `/api/watchlist/remove` | 관심종목 삭제 |
-| `POST` | `/api/sim/tick` | 모의 시장 가격 변동 |
+| `POST` | `/api/sim/tick` | 모의 시장 가격 변동 및 대기 주문 자동 체결 검사 |
 | `POST` | `/api/import/sp500` | S&P 500 구성종목 다시 불러오기 |
 
 ### 주문 요청 예시
+
+시장가 매수:
 
 ```json
 {
@@ -108,7 +135,7 @@ S&P 500 구성종목 중 모의 등락률이 높은 순서로 상위 100개를 �
 }
 ```
 
-지정가 주문 예시:
+지정가 매수:
 
 ```json
 {
@@ -120,9 +147,23 @@ S&P 500 구성종목 중 모의 등락률이 높은 순서로 상위 100개를 �
 }
 ```
 
+### 분석 응답 예시
+
+```json
+{
+  "equity": 99996.30,
+  "returnPct": -0.00,
+  "filledOrders": 2,
+  "pendingOrders": 1,
+  "fees": 2.00,
+  "holdings": [],
+  "equityHistory": []
+}
+```
+
 ## 주요 코드 설명
 
-이 프로젝트는 과제 조건에 맞춰 `MockStockApp.java` 하나에 클래스와 인터페이스 100개를 담았습니다. 역할별 핵심 코드는 아래와 같습니다.
+이 프로젝트는 과제 조건을 맞추기 위해 `MockStockApp.java` 하나에 클래스와 인터페이스 100개를 담았습니다. 다만 내부 역할은 controller, service, domain, repository에 가깝게 나누어 유지보수 흐름을 분명히 했습니다.
 
 ### 서버 시작
 
@@ -141,63 +182,44 @@ public class MockStockApp {
 
 ### 애플리케이션 조립
 
-`AppContext`는 서비스, 저장소, 검증기, 컨트롤러를 한곳에서 생성합니다. S&P 500 import를 먼저 시도하고, 실패하면 데모 종목으로 fallback합니다.
+`AppContext`는 서비스, 저장소, 검증기, 컨트롤러를 한곳에서 생성합니다. S&P 500 import를 먼저 시도하고, 저장된 사용자 상태가 있으면 `FileStateStore`로 다시 불러옵니다.
 
-주요 역할:
+주요 구성:
 
-- `InMemoryDatabase`: 계좌, 종목, 시세, 주문 저장소
+- `InMemoryDatabase`: 실행 중 사용하는 계좌, 종목, 시세, 주문 저장소
+- `FileStateStore`: 계좌 상태를 `data/app-state.tsv`에 저장하고 복원
 - `Sp500ImportService`: S&P 500 구성종목 import
 - `TradeService`: 주문 접수
+- `PendingOrderProcessor`: 대기 지정가 주문 자동 체결 검사
 - `MarketDataService`: 시세 조회와 가격 변동
+- `AnalyticsService`: 포트폴리오 분석 데이터 생성
 - `WatchlistService`: 관심종목 추가/삭제
 - `ApiController`: API 요청 처리
 - `PageController`: HTML 화면 응답
 
-### 라우팅
+### 파일 저장
 
-`ServerFactory`는 URL과 컨트롤러를 연결합니다. `Router`는 요청 메서드와 경로를 기준으로 알맞은 컨트롤러를 찾습니다.
+`FileStateStore`는 아래 데이터를 저장합니다.
 
-```java
-router.add(HttpMethod.GET, "/", app.pageController);
-router.add(HttpMethod.GET, "/api/quotes", app.apiController);
-router.add(HttpMethod.POST, "/api/orders", app.apiController);
-router.add(HttpMethod.POST, "/api/watchlist/add", app.apiController);
-```
+- 예수금
+- 보유 종목
+- 관심종목
+- 주문 내역
+- 자산 변화 기록
 
-### 화면 렌더링
+저장 파일은 `data/app-state.tsv`이며, 실행 중 주문/관심종목/시세 변동이 발생할 때 갱신됩니다. `data/` 폴더는 사용자 실행 데이터이므로 GitHub에는 올리지 않습니다.
 
-`HtmlRenderer`는 HTML, CSS, JavaScript를 반환합니다. 화면에서는 `/api/quotes`, `/api/account`를 호출해 데이터를 그리고, 등락률 상위 100개를 정렬한 뒤 10개씩 페이지로 나눕니다.
+### 지정가 주문 자동 체결
 
-핵심 로직:
+지정가 주문은 처음 주문할 때 조건을 만족하지 않으면 `PENDING` 상태로 저장됩니다. 이후 `/api/sim/tick` 요청이 들어오면 가격이 변하고, `PendingOrderProcessor`가 대기 주문을 다시 검사합니다.
 
-- `renderQuotes(items)`: 등락률 기준 정렬
-- `renderQuotePage()`: 현재 페이지의 10개 종목 표시
-- `setQuotePage(page)`: 페이지 이동
-- `addWatch(symbol)`: 관심종목 추가
-- `removeWatch(symbol)`: 관심종목 삭제
+자동 체결 흐름:
 
-### S&P 500 데이터 import
-
-`Sp500ApiClient`는 공개 S&P 500 구성종목 표를 가져와 종목코드, 회사명, 섹터를 파싱합니다. `Sp500ImportService`는 이 데이터를 DB에 저장하고, 각 종목에 모의 시세를 생성합니다.
-
-관련 클래스:
-
-- `Sp500ApiClient`
-- `Sp500ImportService`
-- `Stock`
-- `Quote`
-
-### 모의 시세
-
-`SimulatedMarketDataService`는 현재 시세 목록을 반환하고, `/api/sim/tick` 요청이 들어오면 `RandomWalkPriceEngine`으로 가격을 조금씩 변동시킵니다.
-
-관련 클래스:
-
-- `MarketDataService`
-- `SimulatedMarketDataService`
-- `PriceEngine`
-- `RandomWalkPriceEngine`
-- `PriceChangedEvent`
+1. `/api/sim/tick` 호출
+2. `MarketDataService.tick()`으로 모의 가격 변동
+3. `PendingOrderProcessor.process()` 실행
+4. 지정가 조건을 만족한 주문 체결
+5. 변경된 계좌와 주문 내역 파일 저장
 
 ### 주문 처리
 
@@ -215,28 +237,46 @@ router.add(HttpMethod.POST, "/api/watchlist/add", app.apiController);
 - `MarketOrderExecutor`: 시장가 주문 즉시 체결
 - `LimitOrderExecutor`: 지정가 조건 충족 시 체결, 아니면 대기
 
-### 포트폴리오와 계좌
+### 수익률 분석
 
-`Account`, `Portfolio`, `Holding`, `Money`가 계좌와 보유 종목을 표현합니다. 매수하면 예수금이 차감되고 보유 수량과 평균단가가 갱신됩니다. 매도하면 보유 수량이 줄고 예수금이 증가합니다.
+`AnalyticsService`는 계좌와 현재 시세를 기준으로 분석 데이터를 만듭니다.
+
+제공 데이터:
+
+- 현재 총자산
+- 총수익률
+- 체결 주문 수
+- 대기 주문 수
+- 누적 수수료
+- 종목별 평가금액
+- 종목별 손익
+- 종목별 손익률
+- 자산 변화 기록
+
+### S&P 500 데이터 import
+
+`Sp500ApiClient`는 공개 S&P 500 구성종목 표를 가져와 종목코드, 회사명, 섹터를 파싱합니다. `Sp500ImportService`는 이 데이터를 DB에 저장하고, 각 종목에 모의 시세를 생성합니다.
 
 관련 클래스:
 
-- `Account`
-- `Portfolio`
-- `Holding`
-- `Money`
-- `AccountSnapshot`
-- `PerformanceCalculator`
+- `Sp500ApiClient`
+- `Sp500ImportService`
+- `Stock`
+- `Quote`
 
-### 관심종목
+### 구조 개선 방향
 
-`Watchlist`는 사용자가 직접 추가한 종목만 저장합니다. 기본 관심종목은 넣지 않았습니다.
+현재는 과제 조건과 GitHub Actions 검증 때문에 단일 파일과 100개 타입 수를 유지합니다. 유지보수 관점에서는 다음 단계에서 교수님께 확인 후 아래처럼 패키지 분리를 하는 것이 좋습니다.
 
-관련 클래스:
-
-- `Watchlist`
-- `WatchlistService`
-- `DefaultWatchlistService`
+```text
+src/main/java/
+├── controller/
+├── service/
+├── domain/
+├── repository/
+├── persistence/
+└── web/
+```
 
 ## 프로젝트 구조
 
@@ -270,7 +310,8 @@ router.add(HttpMethod.POST, "/api/watchlist/add", app.apiController);
 
 ## 제한사항
 
-- 데이터는 서버 메모리에 저장되므로 서버를 재시작하면 주문과 관심종목이 초기화됩니다.
+- 실제 DB 대신 파일 기반 저장을 사용합니다.
 - 실시간 주가 API가 아니라 모의 시세를 사용합니다.
-- 실제 로그인/회원가입/DB 저장은 구현하지 않았습니다.
+- 실제 로그인/회원가입은 구현하지 않았습니다.
+- 자산 변화 그래프는 API 데이터와 화면 요약 중심이며, 전문 차트 라이브러리는 사용하지 않았습니다.
 - 학습용 프로젝트이므로 실제 투자 서비스로 사용하면 안 됩니다.

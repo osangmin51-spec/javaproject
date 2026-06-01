@@ -1,4 +1,5 @@
 out/
+data/
 *.class
 server.out.log
 server.err.log
