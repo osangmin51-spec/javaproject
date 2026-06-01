@@ -8,9 +8,9 @@ if (-not (Test-Path out)) {
     New-Item -ItemType Directory -Force out | Out-Null
 }
 
-javac -encoding UTF-8 -d out MockStockApp.java
+javac -encoding UTF-8 -d out MiniProjectApp.java
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-java -cp out MockStockApp $Port
+java -cp out MiniProjectApp $Port

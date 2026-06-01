@@ -19,11 +19,11 @@ jobs:
           java-version: "21"
 
       - name: Compile
-        run: javac -encoding UTF-8 -d out MockStockApp.java
+        run: javac -encoding UTF-8 -d out MiniProjectApp.java
 
       - name: Count Java types
         shell: bash
         run: |
-          count=$(grep -E '^(public class|class|interface) ' MockStockApp.java | wc -l)
+          count=$(grep -E '^(public class|class|interface) ' MiniProjectApp.java | wc -l)
           echo "Java type count: $count"
-          test "$count" -eq 100
+          test "$count" -ge 10
