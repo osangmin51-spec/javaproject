@@ -65,6 +65,13 @@ class AppContext {
     final UserRepository userRepository = new InMemoryUserRepository();
     final SessionStore sessionStore = new InMemorySessionStore();
     final AuthenticationService authenticationService = new DemoAuthenticationService(userRepository, sessionStore);
+    final List<Map<String, String>> miniBoardPosts = new CopyOnWriteArrayList<>();
+    final Map<String, List<Map<String, String>>> miniBoardComments = new ConcurrentHashMap<>();
+    final Map<String, Integer> miniItemInventory = new ConcurrentHashMap<>();
+    final AtomicLong miniPostIds = new AtomicLong(100);
+    final AtomicLong miniCommentIds = new AtomicLong(500);
+    final Random miniRandom = new Random();
+    int miniVirtualDay = 1;
     final TransactionLedger ledger = new TransactionLedger();
     final RiskService riskService = new DefaultRiskService(database);
     final OrderValidator orderValidator = new OrderValidator(List.of(
@@ -89,6 +96,7 @@ class AppContext {
 
     AppContext() {
         seed();
+        seedMiniProject();
         stateStore.load();
         ids.observe(database.orders.findAll());
         stateStore.save();
@@ -128,6 +136,26 @@ class AppContext {
         database.accounts.save(account);
         userRepository.save(new User("demo", "Demo User"));
     }
+
+    private void seedMiniProject() {
+        miniItemInventory.put("luck", 1);
+        miniItemInventory.put("predict", 1);
+        addMiniPost("demo", "첫 번째 투자 메모", "오늘은 등락률 상위 종목을 중심으로 관찰합니다.");
+        addMiniPost("demo", "가격예측 아이템 테스트", "아이템 상점에서 가격예측권을 사용하면 무작위 종목의 변동 힌트를 보여줍니다.");
+    }
+
+    Map<String, String> addMiniPost(String author, String title, String content) {
+        Map<String, String> post = new LinkedHashMap<>();
+        post.put("id", String.valueOf(miniPostIds.incrementAndGet()));
+        post.put("author", author == null || author.isBlank() ? "demo" : author);
+        post.put("title", title == null || title.isBlank() ? "제목 없음" : title);
+        post.put("content", content == null ? "" : content);
+        post.put("views", "0");
+        post.put("createdAt", DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now()));
+        miniBoardPosts.add(0, post);
+        miniBoardComments.put(post.get("id"), new CopyOnWriteArrayList<>());
+        return post;
+    }
 }
 
 class ServerFactory {
@@ -140,10 +168,18 @@ class ServerFactory {
         router.add(HttpMethod.GET, "/api/account", app.apiController);
         router.add(HttpMethod.GET, "/api/analytics", app.apiController);
         router.add(HttpMethod.GET, "/api/leaderboard", app.apiController);
+        router.add(HttpMethod.GET, "/api/mini/status", app.apiController);
+        router.add(HttpMethod.GET, "/api/mini/items", app.apiController);
+        router.add(HttpMethod.GET, "/api/mini/board", app.apiController);
         router.add(HttpMethod.POST, "/api/orders", app.apiController);
         router.add(HttpMethod.POST, "/api/watchlist/add", app.apiController);
         router.add(HttpMethod.POST, "/api/watchlist/remove", app.apiController);
         router.add(HttpMethod.POST, "/api/sim/tick", app.apiController);
+        router.add(HttpMethod.POST, "/api/mini/day/next", app.apiController);
+        router.add(HttpMethod.POST, "/api/mini/items/buy", app.apiController);
+        router.add(HttpMethod.POST, "/api/mini/items/use", app.apiController);
+        router.add(HttpMethod.POST, "/api/mini/board/write", app.apiController);
+        router.add(HttpMethod.POST, "/api/mini/board/comment", app.apiController);
         router.add(HttpMethod.POST, "/api/import/sp500", app.apiController);
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         server.createContext("/", router);
@@ -325,6 +361,16 @@ class HtmlRenderer {
                     .ticket-summary .metric { min-height:72px; }
                     .holding-list tbody tr { cursor:pointer; }
                     .empty { color:var(--muted); padding:16px; }
+                    .mini-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:16px; border-bottom:1px solid var(--line); }
+                    .mini-log { padding:0 16px 16px; color:var(--muted); line-height:1.5; }
+                    .item-grid { display:grid; gap:10px; padding:16px; }
+                    .item-row { border:1px solid var(--line); border-radius:8px; padding:12px; display:grid; gap:8px; background:#fbfcfe; }
+                    .item-buttons { display:flex; gap:8px; flex-wrap:wrap; }
+                    .board-form { grid-template-columns:1fr; }
+                    .board-list { display:grid; gap:10px; padding:16px; }
+                    .board-post { border:1px solid var(--line); border-radius:8px; padding:12px; background:#fbfcfe; }
+                    .comment-form { display:grid; grid-template-columns:1fr auto; gap:8px; padding:8px 0 0; }
+                    .comments { margin-top:8px; color:var(--muted); font-size:13px; display:grid; gap:4px; }
                     @media (max-width: 1180px) { main { grid-template-columns:1fr 1fr; } .stock-workbench { grid-column:1 / -1; grid-row:1; } }
                     @media (max-width: 920px) { main { grid-template-columns:1fr; padding:14px; } form, .trade-form { grid-template-columns:repeat(2, minmax(0,1fr)); } .grid, .stock-detail, .detail-grid, .pnl-board, .detail-hero { grid-template-columns:repeat(2,1fr); } .span-2 { grid-column:span 2; } header { align-items:flex-start; flex-direction:column; } .toolbar { justify-content:flex-start; } .live-status { text-align:left; } .search-row { grid-template-columns:1fr; } .hero-price, .hero-change { text-align:left; } }
                     @media (max-width: 640px) { .detail-hero, .detail-grid, .pnl-board, .ticket-summary { grid-template-columns:1fr; } form, .trade-form { grid-template-columns:1fr; } }
@@ -423,6 +469,28 @@ class HtmlRenderer {
                           <div class="chips" id="watchlist"></div>
                         </div>
                       </section>
+                      <section>
+                        <h2>미니프로젝트 모드</h2>
+                        <div class="pnl-board" id="miniStatus"></div>
+                        <div class="mini-actions">
+                          <button type="button" onclick="nextMiniDay()">다음날 진행</button>
+                          <button type="button" class="secondary" onclick="loadMiniProject()">새로고침</button>
+                        </div>
+                        <div class="mini-log" id="miniLog">회원, 아이템, 게시판 기능을 웹 버전으로 옮겼습니다.</div>
+                      </section>
+                      <section>
+                        <h2>아이템 상점</h2>
+                        <div class="item-grid" id="itemStore"></div>
+                      </section>
+                      <section>
+                        <h2>자유 게시판</h2>
+                        <form id="boardForm" class="board-form">
+                          <label>제목 <input name="title" placeholder="투자 메모 제목"></label>
+                          <label>내용 <input name="content" placeholder="오늘의 전략이나 느낀 점"></label>
+                          <button type="submit">게시글 작성</button>
+                        </form>
+                        <div class="board-list" id="boardPosts"></div>
+                      </section>
                     </aside>
                   </main>
                   <script>
@@ -472,6 +540,7 @@ class HtmlRenderer {
                       renderWatchlist();
                       renderSearchResults();
                       drawPriceChart();
+                      loadMiniProject();
                     }
 
                     function updatePriceTrails(items) {
@@ -718,6 +787,79 @@ class HtmlRenderer {
                       document.getElementById('watchlist').innerHTML = items.map(s => `<span class="chip" onclick="selectStock('${s}')">${html(s)}<button aria-label="${s} 삭제" onclick="event.stopPropagation(); removeWatch('${s}')">x</button></span>`).join('') || '<span class="label">관심종목이 비어 있습니다.</span>';
                     }
 
+                    async function loadMiniProject() {
+                      try {
+                        const [status, items, board] = await Promise.all([
+                          api('/api/mini/status'), api('/api/mini/items'), api('/api/mini/board')
+                        ]);
+                        renderMiniStatus(status);
+                        renderItemStore(items.items || []);
+                        renderBoard(board.posts || []);
+                      } catch (err) {
+                        document.getElementById('miniLog').textContent = err.message;
+                      }
+                    }
+
+                    function renderMiniStatus(status) {
+                      document.getElementById('miniStatus').innerHTML = [
+                        ['진행일', `${status.day}일`],
+                        ['아이템', `${status.totalItems}개`],
+                        ['게시글', `${status.posts}개`],
+                        ['댓글', `${status.comments}개`]
+                      ].map(([label, value]) => `<div class="metric"><div class="label">${label}</div><div class="value">${value}</div></div>`).join('');
+                    }
+
+                    function renderItemStore(items) {
+                      document.getElementById('itemStore').innerHTML = items.map(item => `<div class="item-row">
+                        <div><strong>${html(item.name)}</strong> <span class="label">보유 ${item.owned}개 · ${money(item.price)}</span></div>
+                        <div class="label">${html(item.description)}</div>
+                        <div class="item-buttons">
+                          <button type="button" onclick="buyMiniItem('${item.id}')">구매</button>
+                          <button type="button" class="secondary" onclick="useMiniItem('${item.id}')">사용</button>
+                        </div>
+                      </div>`).join('');
+                    }
+
+                    function renderBoard(posts) {
+                      document.getElementById('boardPosts').innerHTML = posts.map(post => `<div class="board-post">
+                        <div><strong>${html(post.title)}</strong></div>
+                        <div class="label">${html(post.author)} · ${post.createdAt} · 조회 ${post.views}</div>
+                        <div style="margin-top:8px;">${html(post.content)}</div>
+                        <div class="comments">${(post.comments || []).map(c => `<div>${html(c.author)}: ${html(c.content)}</div>`).join('')}</div>
+                        <div class="comment-form">
+                          <input id="comment-${post.id}" placeholder="댓글 입력">
+                          <button type="button" onclick="writeMiniComment('${post.id}')">댓글</button>
+                        </div>
+                      </div>`).join('') || '<div class="label">게시글이 없습니다.</div>';
+                    }
+
+                    async function nextMiniDay() {
+                      const result = await api('/api/mini/day/next', {method:'POST'});
+                      document.getElementById('miniLog').textContent = result.message;
+                      await refresh();
+                    }
+
+                    async function buyMiniItem(id) {
+                      const result = await api('/api/mini/items/buy', {method:'POST', body: JSON.stringify({id}), headers:{'Content-Type':'application/json'}});
+                      document.getElementById('miniLog').textContent = result.message;
+                      await refresh();
+                    }
+
+                    async function useMiniItem(id) {
+                      const result = await api('/api/mini/items/use', {method:'POST', body: JSON.stringify({id, symbol:selectedStock?.symbol || ''}), headers:{'Content-Type':'application/json'}});
+                      document.getElementById('miniLog').textContent = result.message;
+                      await loadMiniProject();
+                    }
+
+                    async function writeMiniComment(postId) {
+                      const input = document.getElementById(`comment-${postId}`);
+                      const content = input.value.trim();
+                      if (!content) return;
+                      await api('/api/mini/board/comment', {method:'POST', body: JSON.stringify({postId, content}), headers:{'Content-Type':'application/json'}});
+                      input.value = '';
+                      await loadMiniProject();
+                    }
+
                     function drawPriceChart() {
                       const canvas = document.getElementById('priceChart');
                       const ctx = canvas.getContext('2d');
@@ -878,6 +1020,16 @@ class HtmlRenderer {
                       } catch (err) {
                         document.getElementById('message').textContent = err.message;
                       }
+                    });
+
+                    document.getElementById('boardForm').addEventListener('submit', async e => {
+                      e.preventDefault();
+                      const form = new FormData(e.target);
+                      const payload = Object.fromEntries(form.entries());
+                      const result = await api('/api/mini/board/write', {method:'POST', body: JSON.stringify(payload), headers:{'Content-Type':'application/json'}});
+                      document.getElementById('miniLog').textContent = result.message;
+                      e.target.reset();
+                      await loadMiniProject();
                     });
 
                     ['orderType', 'orderQuantity', 'orderLimitPrice'].forEach(id => {
@@ -1844,9 +1996,17 @@ class ApiController implements Controller {
             case "/api/account" -> response.json(app.accountService.accountJson());
             case "/api/analytics" -> response.json(app.analyticsService.analyticsJson());
             case "/api/leaderboard" -> response.json(JsonUtil.obj("ok", true, "items", JsonUtil.array(app.leaderboardService.entries().stream().map(LeaderboardEntry::toJson).toList())));
+            case "/api/mini/status" -> response.json(miniStatusJson());
+            case "/api/mini/items" -> response.json(miniItemsJson());
+            case "/api/mini/board" -> response.json(miniBoardJson());
             case "/api/orders" -> placeOrder(request, response);
             case "/api/watchlist/add" -> changeWatchlist(request, response, true);
             case "/api/watchlist/remove" -> changeWatchlist(request, response, false);
+            case "/api/mini/day/next" -> nextMiniDay(response);
+            case "/api/mini/items/buy" -> buyMiniItem(request, response);
+            case "/api/mini/items/use" -> useMiniItem(request, response);
+            case "/api/mini/board/write" -> writeMiniPost(request, response);
+            case "/api/mini/board/comment" -> writeMiniComment(request, response);
             case "/api/sim/tick" -> {
                 app.marketDataService.tick();
                 int filled = app.pendingOrderProcessor.process();
@@ -1897,6 +2057,116 @@ class ApiController implements Controller {
         }
         app.stateStore.save();
         response.json(JsonUtil.obj("ok", true));
+    }
+
+    private String miniStatusJson() {
+        int totalItems = app.miniItemInventory.values().stream().mapToInt(Integer::intValue).sum();
+        int comments = app.miniBoardComments.values().stream().mapToInt(List::size).sum();
+        return JsonUtil.obj("ok", true, "day", app.miniVirtualDay, "totalItems", totalItems, "posts", app.miniBoardPosts.size(), "comments", comments);
+    }
+
+    private String miniItemsJson() {
+        List<String> items = List.of(
+                miniItemJson("luck", "오늘의 운세", "투자 운세를 무작위로 확인합니다.", Money.of(5), app.miniItemInventory.getOrDefault("luck", 0)),
+                miniItemJson("predict", "가격예측권", "선택 종목 또는 무작위 종목의 다음 변동 힌트를 보여줍니다.", Money.of(25), app.miniItemInventory.getOrDefault("predict", 0))
+        );
+        return JsonUtil.obj("ok", true, "items", JsonUtil.array(items));
+    }
+
+    private String miniItemJson(String id, String name, String description, Money price, int owned) {
+        return JsonUtil.obj("id", id, "name", name, "description", description, "price", price, "owned", owned);
+    }
+
+    private String miniBoardJson() {
+        List<String> posts = app.miniBoardPosts.stream().map(post -> {
+            List<String> comments = app.miniBoardComments.getOrDefault(post.get("id"), List.of()).stream()
+                    .map(comment -> JsonUtil.obj("id", comment.get("id"), "author", comment.get("author"), "content", comment.get("content"), "createdAt", comment.get("createdAt")))
+                    .toList();
+            return JsonUtil.obj(
+                    "id", post.get("id"),
+                    "author", post.get("author"),
+                    "title", post.get("title"),
+                    "content", post.get("content"),
+                    "views", post.get("views"),
+                    "createdAt", post.get("createdAt"),
+                    "comments", JsonUtil.array(comments));
+        }).toList();
+        return JsonUtil.obj("ok", true, "posts", JsonUtil.array(posts));
+    }
+
+    private void nextMiniDay(ResponseWriter response) throws IOException {
+        app.miniVirtualDay++;
+        app.marketDataService.tick();
+        int filled = app.pendingOrderProcessor.process();
+        app.stateStore.save();
+        response.json(JsonUtil.obj("ok", true, "day", app.miniVirtualDay, "autoFilled", filled, "message", app.miniVirtualDay + "일차로 이동했습니다. 시세가 변동되었습니다."));
+    }
+
+    private void buyMiniItem(RequestContext request, ResponseWriter response) throws IOException {
+        String id = request.jsonBody().getOrDefault("id", "");
+        if (!"luck".equals(id) && !"predict".equals(id)) {
+            response.statusJson(400, JsonUtil.obj("ok", false, "error", "알 수 없는 아이템입니다."));
+            return;
+        }
+        Money price = "predict".equals(id) ? Money.of(25) : Money.of(5);
+        Account account = app.database.demoAccount();
+        if (account.cash().compareTo(price) < 0) {
+            response.statusJson(400, JsonUtil.obj("ok", false, "error", "아이템 구매 현금이 부족합니다."));
+            return;
+        }
+        account.debit(price);
+        app.miniItemInventory.merge(id, 1, Integer::sum);
+        app.stateStore.save();
+        response.json(JsonUtil.obj("ok", true, "message", miniItemName(id) + "을 구매했습니다."));
+    }
+
+    private void useMiniItem(RequestContext request, ResponseWriter response) throws IOException {
+        Map<String, String> body = request.jsonBody();
+        String id = body.getOrDefault("id", "");
+        if (!"luck".equals(id) && !"predict".equals(id)) {
+            response.statusJson(400, JsonUtil.obj("ok", false, "error", "알 수 없는 아이템입니다."));
+            return;
+        }
+        int owned = app.miniItemInventory.getOrDefault(id, 0);
+        if (owned <= 0) {
+            response.statusJson(400, JsonUtil.obj("ok", false, "error", "보유한 아이템이 없습니다."));
+            return;
+        }
+        app.miniItemInventory.put(id, owned - 1);
+        String message;
+        if ("predict".equals(id)) {
+            String symbol = body.getOrDefault("symbol", "");
+            Quote quote = symbol.isBlank() ? app.marketDataService.quotes().get(app.miniRandom.nextInt(app.marketDataService.quotes().size())) : app.marketDataService.quote(symbol);
+            double hint = -6 + app.miniRandom.nextDouble() * 12;
+            message = "소문에 따르면 " + quote.symbol() + "의 다음 변동 힌트는 " + String.format(Locale.US, "%.2f", hint) + "% 입니다.";
+        } else {
+            String[] luck = {"매우 나쁨", "나쁨", "보통", "좋음", "매우 좋음"};
+            message = "오늘의 운세는 " + luck[app.miniRandom.nextInt(luck.length)] + "입니다.";
+        }
+        response.json(JsonUtil.obj("ok", true, "message", message));
+    }
+
+    private String miniItemName(String id) {
+        return "predict".equals(id) ? "가격예측권" : "오늘의 운세";
+    }
+
+    private void writeMiniPost(RequestContext request, ResponseWriter response) throws IOException {
+        Map<String, String> body = request.jsonBody();
+        app.addMiniPost("demo", body.getOrDefault("title", ""), body.getOrDefault("content", ""));
+        response.json(JsonUtil.obj("ok", true, "message", "게시글을 작성했습니다."));
+    }
+
+    private void writeMiniComment(RequestContext request, ResponseWriter response) throws IOException {
+        Map<String, String> body = request.jsonBody();
+        String postId = body.getOrDefault("postId", "");
+        String content = body.getOrDefault("content", "");
+        Map<String, String> comment = new LinkedHashMap<>();
+        comment.put("id", String.valueOf(app.miniCommentIds.incrementAndGet()));
+        comment.put("author", "demo");
+        comment.put("content", content);
+        comment.put("createdAt", DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now()));
+        app.miniBoardComments.computeIfAbsent(postId, key -> new CopyOnWriteArrayList<>()).add(comment);
+        response.json(JsonUtil.obj("ok", true, "message", "댓글을 작성했습니다."));
     }
 
     private void externalQuote(RequestContext request, ResponseWriter response) throws IOException {
