@@ -48,7 +48,7 @@ class MiniHandler implements HttpHandler {
         String path = exchange.getRequestURI().getPath();
         try {
             if ("GET".equals(exchange.getRequestMethod()) && "/".equals(path)) {
-                send(exchange, 200, "text/html; charset=utf-8", MiniPage.render());
+                send(exchange, 200, "text/html; charset=utf-8", MiniDashboardPage.render());
                 return;
             }
             if ("GET".equals(exchange.getRequestMethod()) && "/api/state".equals(path)) {
@@ -581,6 +581,305 @@ class MiniPage {
                     async function buyItem(code) { try { alert((await api('/api/item/buy', {code})).message); await refresh(); } catch(err) { alert(err.message); } }
                     async function useItem(code) { try { alert((await api('/api/item/use', {code})).message); await refresh(); } catch(err) { alert(err.message); } }
                     async function comment(postId) { const input = document.getElementById('comment-' + postId); if (!input.value.trim()) return; await api('/api/comment/write', {postId, content:input.value}); input.value=''; await refresh(); }
+                    refresh();
+                  </script>
+                </body>
+                </html>
+                """;
+    }
+}
+
+class MiniDashboardPage {
+    static String render() {
+        return """
+                <!doctype html>
+                <html lang="ko">
+                <head>
+                  <meta charset="utf-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1">
+                  <title>KH 미니프로젝트 투자 대시보드</title>
+                  <style>
+                    :root { --ink:#182230; --muted:#667085; --line:#d7deea; --panel:#fff; --soft:#f6f8fb; --blue:#1f5fbf; --green:#0b7f55; --red:#bd3d3a; --amber:#a15c00; }
+                    * { box-sizing:border-box; }
+                    body { margin:0; font-family:Segoe UI, Arial, sans-serif; color:var(--ink); background:#eef2f7; }
+                    header { background:#111d2f; color:#fff; padding:18px 24px; display:flex; justify-content:space-between; align-items:center; gap:16px; position:sticky; top:0; z-index:2; }
+                    h1 { margin:0; font-size:22px; letter-spacing:0; }
+                    h2 { margin:0; padding:14px 16px; border-bottom:1px solid var(--line); font-size:16px; background:#fbfcfe; }
+                    h3 { margin:0; font-size:15px; }
+                    button { border:0; border-radius:6px; padding:10px 13px; background:var(--blue); color:white; font-weight:800; cursor:pointer; }
+                    button.secondary { background:#405164; }
+                    button.buy { background:var(--green); }
+                    button.sell { background:var(--red); }
+                    button.ghost { background:#e7edf6; color:#1f2937; }
+                    input, select { width:100%; border:1px solid var(--line); border-radius:6px; padding:10px; font-size:14px; background:white; }
+                    label { display:grid; gap:6px; color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
+                    table { width:100%; border-collapse:collapse; font-size:14px; }
+                    th, td { padding:11px 12px; border-bottom:1px solid #edf1f7; text-align:left; vertical-align:middle; }
+                    th { color:var(--muted); font-size:12px; }
+                    main { max-width:1440px; margin:0 auto; padding:20px; display:grid; gap:16px; }
+                    section, .panel { background:var(--panel); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+                    .topbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+                    .pill { border:1px solid rgba(255,255,255,.22); border-radius:999px; padding:7px 10px; color:#dbe4ef; font-size:13px; }
+                    .hero { display:grid; grid-template-columns:1.2fr .8fr; gap:16px; align-items:stretch; }
+                    .auth { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+                    .auth form { display:grid; gap:10px; padding:16px; }
+                    .summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+                    .metric { background:#fff; border:1px solid var(--line); border-radius:8px; padding:14px; min-height:86px; }
+                    .labelText { color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
+                    .value { margin-top:8px; font-size:24px; font-weight:850; }
+                    .layout { display:grid; grid-template-columns:minmax(0,1.1fr) 370px; gap:16px; align-items:start; }
+                    .workspace { display:grid; gap:16px; }
+                    .tradeBox { display:grid; grid-template-columns:1fr 110px; gap:10px; padding:16px; align-items:end; }
+                    .quantityRow { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+                    .actions { display:flex; gap:8px; flex-wrap:wrap; }
+                    .message { color:var(--muted); padding:0 16px 14px; min-height:22px; }
+                    .stockName { font-weight:850; }
+                    .up { color:var(--green); } .down { color:var(--red); }
+                    .tabs { display:flex; gap:8px; padding:12px 12px 0; flex-wrap:wrap; }
+                    .tab { background:#e7edf6; color:#1f2937; }
+                    .tab.active { background:var(--blue); color:#fff; }
+                    .tabPanel { display:none; }
+                    .tabPanel.active { display:block; }
+                    .cards { display:grid; gap:10px; padding:16px; }
+                    .card { border:1px solid var(--line); border-radius:8px; padding:12px; background:#fbfcfe; display:grid; gap:8px; }
+                    .itemHead, .postHead { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+                    .postForm { display:grid; grid-template-columns:1fr; gap:10px; padding:16px; border-bottom:1px solid var(--line); }
+                    .commentForm { display:grid; grid-template-columns:1fr auto; gap:8px; }
+                    .comments { color:var(--muted); font-size:13px; display:grid; gap:4px; }
+                    .sideStack { display:grid; gap:16px; }
+                    .empty { color:var(--muted); padding:16px; }
+                    @media (max-width: 1100px) { .hero, .layout { grid-template-columns:1fr; } .summary { grid-template-columns:repeat(2,1fr); } }
+                    @media (max-width: 720px) { header { align-items:flex-start; flex-direction:column; } .auth, .summary, .tradeBox, .quantityRow { grid-template-columns:1fr; } main { padding:12px; } }
+                  </style>
+                </head>
+                <body>
+                  <header>
+                    <div>
+                      <h1>KH 미니프로젝트 모의주식</h1>
+                      <div class="labelText">원본 콘솔 프로젝트를 실사용형 웹 대시보드로 재구성</div>
+                    </div>
+                    <div class="topbar">
+                      <span class="pill" id="loginPill">로그인 필요</span>
+                      <button onclick="refresh()">새로고침</button>
+                      <button class="secondary" onclick="logout()">로그아웃</button>
+                    </div>
+                  </header>
+
+                  <main>
+                    <div class="hero" id="authArea">
+                      <section>
+                        <h2>바로 시작</h2>
+                        <div class="auth">
+                          <form id="loginForm">
+                            <label>아이디<input name="id" value="test1"></label>
+                            <label>비밀번호<input name="pwd" type="password" value="1234"></label>
+                            <button>로그인</button>
+                          </form>
+                          <form id="registerForm">
+                            <label>이름<input name="name" placeholder="홍길동"></label>
+                            <label>아이디<input name="id" placeholder="새 아이디"></label>
+                            <label>비밀번호<input name="pwd" type="password"></label>
+                            <button class="secondary">회원가입</button>
+                          </form>
+                        </div>
+                        <div class="message" id="loginMessage"></div>
+                      </section>
+                      <section>
+                        <h2>사용 흐름</h2>
+                        <div class="cards">
+                          <div class="card"><strong>1. 로그인</strong><span class="labelText">기본 계정 test1 / 1234</span></div>
+                          <div class="card"><strong>2. 주식 매매</strong><span class="labelText">종목을 고르고 구매/판매</span></div>
+                          <div class="card"><strong>3. 다음날 진행</strong><span class="labelText">가격 변동과 아이템 힌트 확인</span></div>
+                        </div>
+                      </section>
+                    </div>
+
+                    <div class="summary" id="summary"></div>
+
+                    <div class="layout">
+                      <div class="workspace">
+                        <section>
+                          <h2>주식 매매</h2>
+                          <form id="tradeForm" class="tradeBox">
+                            <label>종목 선택<select name="stockName" id="stockSelect"></select></label>
+                            <label>수량<input name="quantity" type="number" min="1" value="1"></label>
+                            <div class="actions">
+                              <button class="buy" name="side" value="buy">구매</button>
+                              <button class="sell" name="side" value="sell">판매</button>
+                              <button type="button" class="ghost" onclick="nextDay()">다음날</button>
+                            </div>
+                          </form>
+                          <div class="message" id="tradeMessage"></div>
+                          <table>
+                            <thead><tr><th>종목</th><th>가격</th><th>시장수량</th><th>변동폭</th><th>다음 변동</th></tr></thead>
+                            <tbody id="stocks"></tbody>
+                          </table>
+                        </section>
+
+                        <section>
+                          <div class="tabs">
+                            <button class="tab active" onclick="showTab('portfolio')">보유 주식</button>
+                            <button class="tab" onclick="showTab('logs')">거래 기록</button>
+                            <button class="tab" onclick="showTab('board')">자유 게시판</button>
+                          </div>
+                          <div class="tabPanel active" id="panel-portfolio">
+                            <table><thead><tr><th>종목</th><th>수량</th><th>총 매입가</th><th>평단가</th><th>현재 평가</th></tr></thead><tbody id="shares"></tbody></table>
+                          </div>
+                          <div class="tabPanel" id="panel-logs">
+                            <table><thead><tr><th>시간</th><th>구분</th><th>종목</th><th>수량</th><th>금액</th></tr></thead><tbody id="logs"></tbody></table>
+                          </div>
+                          <div class="tabPanel" id="panel-board">
+                            <form id="postForm" class="postForm">
+                              <label>제목<input name="title" placeholder="투자 메모 제목"></label>
+                              <label>내용<input name="content" placeholder="오늘의 전략이나 느낀 점"></label>
+                              <button>게시글 작성</button>
+                            </form>
+                            <div class="cards" id="posts"></div>
+                          </div>
+                        </section>
+                      </div>
+
+                      <aside class="sideStack">
+                        <section>
+                          <h2>날짜 진행</h2>
+                          <div class="cards">
+                            <div class="card">
+                              <strong>다음날로 넘어가기</strong>
+                              <span class="labelText">원본 StockController.randomStockPrice 흐름</span>
+                              <button onclick="nextDay()">시세 변동 실행</button>
+                            </div>
+                          </div>
+                          <div class="message" id="dayMessage"></div>
+                        </section>
+                        <section>
+                          <h2>아이템 상점</h2>
+                          <div class="cards" id="items"></div>
+                        </section>
+                      </aside>
+                    </div>
+                  </main>
+
+                  <script>
+                    let state = {};
+                    const won = n => Number(n || 0).toLocaleString('ko-KR') + '원';
+                    const html = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+                    async function api(path, body) {
+                      const options = body ? {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)} : {};
+                      const res = await fetch(path, options);
+                      const data = await res.json();
+                      if (!res.ok || data.ok === false) throw new Error(data.error || '요청 실패');
+                      return data;
+                    }
+                    async function refresh() {
+                      state = await api('/api/state');
+                      render();
+                    }
+                    function stockByName(name) {
+                      return (state.stocks || []).find(stock => stock.name === name);
+                    }
+                    function portfolioValue() {
+                      return (state.shares || []).reduce((sum, share) => {
+                        const stock = stockByName(share.stockName);
+                        return sum + (stock ? Number(stock.price) * Number(share.quantity) : 0);
+                      }, 0);
+                    }
+                    function render() {
+                      const logged = !!state.loggedIn;
+                      const member = state.member || {};
+                      document.getElementById('authArea').style.display = logged ? 'none' : 'grid';
+                      document.getElementById('loginPill').textContent = logged ? `${member.id} · ${member.day}일차` : '로그인 필요';
+                      const asset = Number(member.balance || 0) + portfolioValue();
+                      document.getElementById('summary').innerHTML = [
+                        ['보유 현금', logged ? won(member.balance) : '-'],
+                        ['주식 평가액', logged ? won(portfolioValue()) : '-'],
+                        ['총 자산', logged ? won(asset) : '-'],
+                        ['진행 날짜', logged ? `${member.day}일차` : '-']
+                      ].map(([label, value]) => `<div class="metric"><div class="labelText">${label}</div><div class="value">${value}</div></div>`).join('');
+                      renderStocks();
+                      renderShares();
+                      renderLogs();
+                      renderItems();
+                      renderPosts();
+                    }
+                    function renderStocks() {
+                      document.getElementById('stocks').innerHTML = (state.stocks || []).map(stock => `<tr>
+                        <td><span class="stockName">${html(stock.name)}</span></td>
+                        <td>${won(stock.price)}</td>
+                        <td>${stock.quantity}</td>
+                        <td class="${stock.priceFluct>=0?'up':'down'}">${won(stock.priceFluct)}</td>
+                        <td>${stock.nextFluct}</td>
+                      </tr>`).join('');
+                      document.getElementById('stockSelect').innerHTML = (state.stocks || []).map(stock => `<option value="${html(stock.name)}">${html(stock.name)} · ${won(stock.price)}</option>`).join('');
+                    }
+                    function renderShares() {
+                      document.getElementById('shares').innerHTML = (state.shares || []).map(share => {
+                        const stock = stockByName(share.stockName);
+                        const value = stock ? Number(stock.price) * Number(share.quantity) : 0;
+                        return `<tr><td>${html(share.stockName)}</td><td>${share.quantity}</td><td>${won(share.purchasePrice)}</td><td>${won(share.averagePrice)}</td><td>${won(value)}</td></tr>`;
+                      }).join('') || '<tr><td colspan="5" class="empty">보유 주식이 없습니다.</td></tr>';
+                    }
+                    function renderLogs() {
+                      document.getElementById('logs').innerHTML = (state.logs || []).map(log => `<tr><td>${log.time}</td><td>${log.type}</td><td>${html(log.stockName)}</td><td>${log.quantity}</td><td>${won(log.price)}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">거래 기록이 없습니다.</td></tr>';
+                    }
+                    function renderItems() {
+                      document.getElementById('items').innerHTML = (state.items || []).map(item => `<div class="card">
+                        <div class="itemHead"><strong>${html(item.name)}</strong><span class="labelText">보유 ${item.owned}개</span></div>
+                        <div>${html(item.description)}</div>
+                        <div class="labelText">가격 ${won(item.price)}</div>
+                        <div class="actions"><button onclick="buyItem('${item.code}')">구매</button><button class="secondary" onclick="useItem('${item.code}')">사용</button></div>
+                      </div>`).join('');
+                    }
+                    function renderPosts() {
+                      document.getElementById('posts').innerHTML = (state.posts || []).map(post => `<div class="card">
+                        <div class="postHead"><strong>${html(post.title)}</strong><span class="labelText">${html(post.author)} · ${post.createdAt}</span></div>
+                        <div>${html(post.content)}</div>
+                        <div class="comments">${(post.comments || []).map(comment => `<div>${html(comment.author)}: ${html(comment.content)}</div>`).join('')}</div>
+                        <div class="commentForm"><input id="comment-${post.id}" placeholder="댓글 입력"><button onclick="comment(${post.id})">댓글</button></div>
+                      </div>`).join('') || '<div class="empty">게시글이 없습니다.</div>';
+                    }
+                    function showTab(name) {
+                      const labels = {portfolio:'보유 주식', logs:'거래 기록', board:'자유 게시판'};
+                      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                      document.querySelectorAll('.tabPanel').forEach(panel => panel.classList.remove('active'));
+                      document.querySelectorAll('.tab').forEach(tab => { if (tab.textContent === labels[name]) tab.classList.add('active'); });
+                      document.getElementById('panel-' + name).classList.add('active');
+                    }
+                    async function submitForm(form, path) {
+                      return api(path, Object.fromEntries(new FormData(form).entries()));
+                    }
+                    document.getElementById('loginForm').addEventListener('submit', async e => {
+                      e.preventDefault();
+                      try { const result = await submitForm(e.target, '/api/login'); document.getElementById('loginMessage').textContent = result.message; await refresh(); }
+                      catch (err) { document.getElementById('loginMessage').textContent = err.message; }
+                    });
+                    document.getElementById('registerForm').addEventListener('submit', async e => {
+                      e.preventDefault();
+                      try { const result = await submitForm(e.target, '/api/register'); document.getElementById('loginMessage').textContent = result.message; e.target.reset(); await refresh(); }
+                      catch (err) { document.getElementById('loginMessage').textContent = err.message; }
+                    });
+                    document.getElementById('tradeForm').addEventListener('submit', async e => {
+                      e.preventDefault();
+                      const payload = Object.fromEntries(new FormData(e.target).entries());
+                      try { const result = await api(e.submitter.value === 'buy' ? '/api/stock/buy' : '/api/stock/sell', payload); document.getElementById('tradeMessage').textContent = result.message; await refresh(); }
+                      catch (err) { document.getElementById('tradeMessage').textContent = err.message; }
+                    });
+                    document.getElementById('postForm').addEventListener('submit', async e => {
+                      e.preventDefault();
+                      try { await submitForm(e.target, '/api/board/write'); e.target.reset(); await refresh(); showTab('board'); }
+                      catch (err) { alert(err.message); }
+                    });
+                    async function logout() { await api('/api/logout', {}); await refresh(); }
+                    async function nextDay() { try { const result = await api('/api/day/next', {}); document.getElementById('dayMessage').textContent = result.message; await refresh(); } catch (err) { document.getElementById('dayMessage').textContent = err.message; } }
+                    async function buyItem(code) { try { alert((await api('/api/item/buy', {code})).message); await refresh(); } catch (err) { alert(err.message); } }
+                    async function useItem(code) { try { alert((await api('/api/item/use', {code})).message); await refresh(); } catch (err) { alert(err.message); } }
+                    async function comment(postId) {
+                      const input = document.getElementById('comment-' + postId);
+                      if (!input.value.trim()) return;
+                      await api('/api/comment/write', {postId, content:input.value});
+                      input.value = '';
+                      await refresh();
+                      showTab('board');
+                    }
                     refresh();
                   </script>
                 </body>
