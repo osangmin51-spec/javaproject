@@ -271,6 +271,7 @@ class HtmlRenderer {
                     input, select { width:100%; border:1px solid var(--line); border-radius:6px; padding:10px; font-size:14px; background:white; color:var(--ink); }
                     button { border:0; border-radius:6px; padding:11px 14px; background:var(--blue); color:white; font-weight:750; cursor:pointer; }
                     button.secondary { background:#425466; }
+                    button.live-on { background:#0d8b57; }
                     button:hover { filter:brightness(.96); }
                     .span-2 { grid-column:span 2; }
                     .stack { display:grid; gap:18px; }
@@ -279,12 +280,23 @@ class HtmlRenderer {
                     .chip { display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:999px; padding:8px 10px; background:#fbfcfe; }
                     .chip button { border-radius:999px; padding:3px 7px; background:#9aa4b2; }
                     .message { min-height:22px; padding:0 16px 16px; color:var(--muted); }
+                    .toolbar { display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; align-items:center; }
+                    .live-status { color:#cbd5e1; font-size:13px; min-width:150px; text-align:right; }
+                    .search-row { display:grid; grid-template-columns:1fr auto; gap:10px; padding:16px; border-bottom:1px solid var(--line); align-items:end; }
+                    .search-results { display:flex; flex-wrap:wrap; gap:8px; padding:0 16px 14px; }
+                    .search-results button { background:#e7edf6; color:#17202a; padding:8px 10px; }
+                    .stock-detail { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; padding:16px; border-bottom:1px solid var(--line); }
+                    .stock-detail .metric { min-height:90px; }
+                    .estimate { display:grid; gap:6px; align-self:stretch; }
+                    .estimate .value { font-size:18px; }
                     .pager { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; border-top:1px solid var(--line); flex-wrap:wrap; }
                     .page-buttons { display:flex; gap:6px; flex-wrap:wrap; }
                     .page-buttons button { min-width:36px; padding:8px 10px; background:#e7edf6; color:#17202a; }
                     .page-buttons button.active { background:var(--blue); color:white; }
                     .rank { font-weight:760; color:#425466; }
-                    @media (max-width: 920px) { main { grid-template-columns:1fr; padding:14px; } form { grid-template-columns:repeat(2, minmax(0,1fr)); } .grid { grid-template-columns:repeat(2,1fr); } .span-2 { grid-column:span 2; } }
+                    .selectable-row { cursor:pointer; }
+                    .selected-row td { background:#eef5ff !important; }
+                    @media (max-width: 920px) { main { grid-template-columns:1fr; padding:14px; } form { grid-template-columns:repeat(2, minmax(0,1fr)); } .grid, .stock-detail { grid-template-columns:repeat(2,1fr); } .span-2 { grid-column:span 2; } header { align-items:flex-start; flex-direction:column; } .toolbar { justify-content:flex-start; } .live-status { text-align:left; } .search-row { grid-template-columns:1fr; } }
                   </style>
                 </head>
                 <body>
@@ -293,9 +305,11 @@ class HtmlRenderer {
                       <h1>모의주식 투자 랩</h1>
                       <p>실시간처럼 움직이는 가상 시세로 매수, 매도, 포트폴리오, 관심종목을 연습해보세요.</p>
                     </div>
-                    <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+                    <div class="toolbar">
+                      <div class="live-status" id="liveStatus">실시간 꺼짐</div>
+                      <button class="secondary" id="liveButton" onclick="toggleLive()">실시간 시작</button>
                       <button class="secondary" onclick="importSp500()">S&P 500 불러오기</button>
-                      <button class="secondary" onclick="tickMarket()">시장 변동 시뮬레이션</button>
+                      <button class="secondary" onclick="tickMarket()">시장 변동 1회</button>
                     </div>
                   </header>
                   <main>
@@ -305,14 +319,24 @@ class HtmlRenderer {
                         <div class="grid" id="metrics"></div>
                       </section>
                       <section>
-                        <h2>주문하기</h2>
+                        <h2>종목 선택 및 주문</h2>
+                        <div class="search-row">
+                          <label>종목 검색 <input id="stockSearch" placeholder="AAPL 또는 Apple" oninput="searchStocks()"></label>
+                          <button type="button" onclick="searchStocks()">검색</button>
+                        </div>
+                        <div class="search-results" id="searchResults"></div>
+                        <div class="stock-detail" id="selectedStockDetail"></div>
                         <form id="orderForm">
-                          <label>종목코드 <input name="symbol" value="AAPL" required></label>
-                          <label>매매구분 <select name="side"><option value="BUY">매수</option><option value="SELL">매도</option></select></label>
-                          <label>주문유형 <select name="type"><option value="MARKET">시장가</option><option value="LIMIT">지정가</option></select></label>
-                          <label>수량 <input name="quantity" type="number" min="1" value="5" required></label>
-                          <label>지정가 <input name="limitPrice" type="number" step="0.01" placeholder="선택 입력"></label>
-                          <button class="span-2" type="submit">주문 제출</button>
+                          <input type="hidden" name="symbol" id="selectedSymbolInput">
+                          <label>매매구분 <select name="side" id="orderSide"><option value="BUY">매수</option><option value="SELL">매도</option></select></label>
+                          <label>주문유형 <select name="type" id="orderType"><option value="MARKET">시장가</option><option value="LIMIT">지정가</option></select></label>
+                          <label>수량 <input name="quantity" id="orderQuantity" type="number" min="1" value="5" required></label>
+                          <label>지정가 <input name="limitPrice" id="orderLimitPrice" type="number" step="0.01" placeholder="지정가 주문 때 입력"></label>
+                          <div class="metric estimate">
+                            <div class="label">예상 주문금액</div>
+                            <div class="value" id="orderEstimate">$0.00</div>
+                          </div>
+                          <button type="submit">주문 제출</button>
                         </form>
                         <div class="message" id="message"></div>
                       </section>
@@ -367,7 +391,13 @@ class HtmlRenderer {
                     const quotePageSize = 10;
                     const quotePageTotal = 10;
                     let quotePage = 1;
+                    let allQuotes = [];
                     let topQuotes = [];
+                    let selectedStock = null;
+                    let lastAccount = null;
+                    let liveTimer = null;
+                    let liveBusy = false;
+                    let lastTickAt = null;
                     async function api(path, options = {}) {
                       const res = await fetch(path, options);
                       const data = await res.json();
@@ -378,8 +408,12 @@ class HtmlRenderer {
                       const [quotes, account, analytics] = await Promise.all([
                         api('/api/quotes'), api('/api/account'), api('/api/analytics')
                       ]);
+                      allQuotes = quotes.items || [];
+                      lastAccount = account;
                       renderQuotes(quotes.items);
                       renderAccount(account);
+                      renderSelectedStock();
+                      renderSearchResults();
                       renderAnalytics(analytics);
                     }
                     function renderAccount(a) {
@@ -395,6 +429,12 @@ class HtmlRenderer {
                         .slice()
                         .sort((a, b) => Number(b.changePct) - Number(a.changePct))
                         .slice(0, quotePageSize * quotePageTotal);
+                      if (selectedStock) {
+                        selectedStock = allQuotes.find(q => q.symbol === selectedStock.symbol) || selectedStock;
+                      }
+                      if (!selectedStock && topQuotes.length > 0) {
+                        selectedStock = topQuotes[0];
+                      }
                       if (quotePage > quotePageTotal) quotePage = quotePageTotal;
                       renderQuotePage();
                     }
@@ -404,7 +444,8 @@ class HtmlRenderer {
                       document.getElementById('quotes').innerHTML = pageItems.map((q, i) => {
                         const rank = start + i + 1;
                         const prefix = Number(q.changePct) >= 0 ? '+' : '';
-                        return `<tr><td class="rank">${rank}</td><td>${q.symbol}</td><td>${q.name}</td><td>${q.sector}</td><td>${money(q.price)}</td><td class="${q.changePct>=0?'up':'down'}">${prefix}${pct(q.changePct)} (${money(q.change)})</td><td><button onclick="addWatch('${q.symbol}')">관심</button></td></tr>`;
+                        const selected = selectedStock && selectedStock.symbol === q.symbol ? 'selected-row' : '';
+                        return `<tr class="selectable-row ${selected}" onclick="selectStock('${q.symbol}')"><td class="rank">${rank}</td><td>${q.symbol}</td><td>${q.name}</td><td>${q.sector}</td><td>${money(q.price)}</td><td class="${q.changePct>=0?'up':'down'}">${prefix}${pct(q.changePct)} (${money(q.change)})</td><td><button onclick="event.stopPropagation(); selectStock('${q.symbol}')">선택</button> <button onclick="event.stopPropagation(); addWatch('${q.symbol}')">관심</button></td></tr>`;
                       }).join('');
                       document.getElementById('quotePageSummary').textContent = `${start + 1}-${start + pageItems.length}위 / 상위 100`;
                       document.getElementById('quotePages').innerHTML = Array.from({length: quotePageTotal}, (_, i) => {
@@ -415,6 +456,67 @@ class HtmlRenderer {
                     function setQuotePage(page) {
                       quotePage = page;
                       renderQuotePage();
+                    }
+                    function selectStock(symbol) {
+                      selectedStock = allQuotes.find(q => q.symbol === symbol) || topQuotes.find(q => q.symbol === symbol);
+                      if (!selectedStock) return;
+                      document.getElementById('selectedSymbolInput').value = selectedStock.symbol;
+                      document.getElementById('stockSearch').value = `${selectedStock.symbol} ${selectedStock.name}`;
+                      renderQuotePage();
+                      renderSelectedStock();
+                      renderSearchResults();
+                    }
+                    function renderSelectedStock() {
+                      const panel = document.getElementById('selectedStockDetail');
+                      if (!selectedStock) {
+                        panel.innerHTML = '<div class="metric span-2"><div class="label">선택된 종목</div><div class="value">상위 100 목록에서 종목을 클릭하세요</div></div>';
+                        document.getElementById('selectedSymbolInput').value = '';
+                        renderOrderEstimate();
+                        return;
+                      }
+                      document.getElementById('selectedSymbolInput').value = selectedStock.symbol;
+                      const holding = (lastAccount?.holdings || []).find(h => h.symbol === selectedStock.symbol);
+                      const prefix = Number(selectedStock.changePct) >= 0 ? '+' : '';
+                      const updated = lastTickAt ? lastTickAt.toLocaleTimeString('ko-KR') : '초기 시세';
+                      panel.innerHTML = [
+                        ['선택 종목', `${selectedStock.symbol}<br><span class="label">${selectedStock.name}</span>`],
+                        ['현재가', money(selectedStock.price)],
+                        ['등락률', `<span class="${selectedStock.changePct>=0?'up':'down'}">${prefix}${pct(selectedStock.changePct)}</span>`],
+                        ['보유수량', holding ? holding.quantity : 0],
+                        ['섹터', selectedStock.sector],
+                        ['변동금액', `<span class="${selectedStock.change>=0?'up':'down'}">${money(selectedStock.change)}</span>`],
+                        ['평균단가', holding ? money(holding.averageCost) : '-'],
+                        ['갱신시각', updated]
+                      ].map(x => `<div class="metric"><div class="label">${x[0]}</div><div class="value">${x[1]}</div></div>`).join('');
+                      document.getElementById('orderLimitPrice').placeholder = `현재가 ${Number(selectedStock.price).toFixed(2)}`;
+                      renderOrderEstimate();
+                    }
+                    function searchStocks() {
+                      renderSearchResults();
+                    }
+                    function renderSearchResults() {
+                      const container = document.getElementById('searchResults');
+                      const query = document.getElementById('stockSearch').value.trim().toLowerCase();
+                      if (!query) {
+                        container.innerHTML = '<span class="label">종목명이나 코드를 입력하거나 아래 상위 100 목록에서 행을 클릭하세요.</span>';
+                        return;
+                      }
+                      const matches = allQuotes
+                        .filter(q => q.symbol.toLowerCase().includes(query) || q.name.toLowerCase().includes(query))
+                        .slice(0, 8);
+                      container.innerHTML = matches.map(q => `<button type="button" onclick="selectStock('${q.symbol}')">${q.symbol} · ${q.name}</button>`).join('') || '<span class="label">검색 결과가 없습니다.</span>';
+                    }
+                    function renderOrderEstimate() {
+                      const target = document.getElementById('orderEstimate');
+                      if (!target || !selectedStock) {
+                        if (target) target.textContent = '$0.00';
+                        return;
+                      }
+                      const quantity = Number(document.getElementById('orderQuantity').value || 0);
+                      const type = document.getElementById('orderType').value;
+                      const limit = Number(document.getElementById('orderLimitPrice').value || 0);
+                      const price = type === 'LIMIT' && limit > 0 ? limit : Number(selectedStock.price);
+                      target.textContent = money(quantity * price);
                     }
                     function renderAnalytics(a) {
                       document.getElementById('analysisMetrics').innerHTML = [
@@ -431,11 +533,54 @@ class HtmlRenderer {
                       refresh();
                     }
                     async function tickMarket() {
-                      const result = await api('/api/sim/tick', {method:'POST'});
-                      document.getElementById('message').textContent = result.autoFilled > 0
-                        ? `시장 변동 후 대기 지정가 주문 ${result.autoFilled}건이 자동 체결되었습니다.`
-                        : '시장 가격을 갱신했습니다. 자동 체결된 지정가 주문은 없습니다.';
-                      await refresh();
+                      await runMarketTick(true);
+                    }
+                    async function runMarketTick(showMessage) {
+                      if (liveBusy) return;
+                      liveBusy = true;
+                      try {
+                        const result = await api('/api/sim/tick', {method:'POST'});
+                        lastTickAt = new Date();
+                        updateLiveStatus();
+                        if (showMessage || result.autoFilled > 0) {
+                          document.getElementById('message').textContent = result.autoFilled > 0
+                            ? `시장 변동 후 대기 지정가 주문 ${result.autoFilled}건이 자동 체결되었습니다.`
+                            : '시장 가격을 갱신했습니다. 자동 체결된 지정가 주문은 없습니다.';
+                        }
+                        await refresh();
+                      } catch (err) {
+                        document.getElementById('message').textContent = err.message;
+                        stopLive();
+                      } finally {
+                        liveBusy = false;
+                      }
+                    }
+                    function toggleLive() {
+                      if (liveTimer) {
+                        stopLive();
+                        return;
+                      }
+                      runMarketTick(false);
+                      liveTimer = setInterval(() => runMarketTick(false), 3000);
+                      updateLiveStatus();
+                    }
+                    function stopLive() {
+                      if (liveTimer) clearInterval(liveTimer);
+                      liveTimer = null;
+                      updateLiveStatus();
+                    }
+                    function updateLiveStatus() {
+                      const button = document.getElementById('liveButton');
+                      const status = document.getElementById('liveStatus');
+                      if (liveTimer) {
+                        button.textContent = '실시간 중지';
+                        button.classList.add('live-on');
+                        status.textContent = lastTickAt ? `실시간 켜짐 · ${lastTickAt.toLocaleTimeString('ko-KR')}` : '실시간 켜짐';
+                      } else {
+                        button.textContent = '실시간 시작';
+                        button.classList.remove('live-on');
+                        status.textContent = lastTickAt ? `마지막 갱신 ${lastTickAt.toLocaleTimeString('ko-KR')}` : '실시간 꺼짐';
+                      }
                     }
                     async function importSp500() {
                       try {
@@ -448,8 +593,13 @@ class HtmlRenderer {
                     }
                     document.getElementById('orderForm').addEventListener('submit', async e => {
                       e.preventDefault();
+                      if (!selectedStock) {
+                        document.getElementById('message').textContent = '먼저 주문할 종목을 선택해주세요.';
+                        return;
+                      }
                       const form = new FormData(e.target);
                       const payload = Object.fromEntries(form.entries());
+                      payload.symbol = selectedStock.symbol;
                       try {
                         const result = await api('/api/orders', {method:'POST', body: JSON.stringify(payload), headers:{'Content-Type':'application/json'}});
                         document.getElementById('message').textContent = result.message;
@@ -457,6 +607,10 @@ class HtmlRenderer {
                       } catch (err) {
                         document.getElementById('message').textContent = err.message;
                       }
+                    });
+                    ['orderSide', 'orderType', 'orderQuantity', 'orderLimitPrice'].forEach(id => {
+                      document.getElementById(id).addEventListener('input', renderOrderEstimate);
+                      document.getElementById(id).addEventListener('change', renderOrderEstimate);
                     });
                     refresh();
                   </script>
