@@ -136,6 +136,7 @@ class ServerFactory {
         router.add(HttpMethod.GET, "/", app.pageController);
         router.add(HttpMethod.GET, "/health", app.healthController);
         router.add(HttpMethod.GET, "/api/quotes", app.apiController);
+        router.add(HttpMethod.GET, "/api/external/quote", app.apiController);
         router.add(HttpMethod.GET, "/api/account", app.apiController);
         router.add(HttpMethod.GET, "/api/analytics", app.apiController);
         router.add(HttpMethod.GET, "/api/leaderboard", app.apiController);
@@ -442,6 +443,8 @@ class HtmlRenderer {
                     let liveTimer = null;
                     let liveBusy = false;
                     let lastTickAt = null;
+                    let externalQuoteState = {source:'simulated', external:false, updatedAt:''};
+                    const lastExternalFetch = {};
                     const priceTrail = {};
 
                     async function api(path, options = {}) {
@@ -473,11 +476,18 @@ class HtmlRenderer {
 
                     function updatePriceTrails(items) {
                       items.slice(0, 180).forEach(q => {
-                        const trail = priceTrail[q.symbol] || [];
-                        trail.push(Number(q.price));
-                        if (trail.length > 42) trail.shift();
-                        priceTrail[q.symbol] = trail;
+                        pushPriceTrail(q.symbol, Number(q.price));
                       });
+                    }
+
+                    function pushPriceTrail(symbol, price) {
+                      const trail = priceTrail[symbol] || [];
+                      const last = trail[trail.length - 1];
+                      if (last !== price) {
+                        trail.push(price);
+                        if (trail.length > 60) trail.shift();
+                      }
+                      priceTrail[symbol] = trail;
                     }
 
                     function getHolding(symbol = selectedStock?.symbol) {
@@ -549,6 +559,7 @@ class HtmlRenderer {
                       renderTradeTicket();
                       renderSearchResults();
                       drawPriceChart();
+                      refreshExternalQuote(true);
                     }
 
                     function renderSelectedStock() {
@@ -559,6 +570,7 @@ class HtmlRenderer {
                       }
                       const prefix = Number(selectedStock.changePct) >= 0 ? '+' : '';
                       const updated = lastTickAt ? lastTickAt.toLocaleTimeString('ko-KR') : '초기 시세';
+                      const sourceText = externalQuoteState.external ? `외부 데이터 · ${externalQuoteState.source}` : '모의 시세';
                       panel.innerHTML = `
                         <div>
                           <div class="hero-symbol">${html(selectedStock.symbol)}</div>
@@ -572,7 +584,7 @@ class HtmlRenderer {
                         <div>
                           <div class="hero-price">${money(selectedStock.price)}</div>
                           <div class="hero-change ${selectedStock.changePct>=0?'up':'down'}">${prefix}${pct(selectedStock.changePct)} · ${money(selectedStock.change)}</div>
-                          <div class="label" style="margin-top:14px; text-align:right;">마지막 갱신 ${updated}</div>
+                          <div class="label" style="margin-top:14px; text-align:right;">${sourceText}<br>마지막 갱신 ${externalQuoteState.updatedAt || updated}</div>
                         </div>`;
                     }
 
@@ -656,6 +668,35 @@ class HtmlRenderer {
                       after.textContent = `${Math.max(nextQuantity, 0)}주`;
                     }
 
+                    async function refreshExternalQuote(force) {
+                      if (!selectedStock) return;
+                      const now = Date.now();
+                      const symbol = selectedStock.symbol;
+                      if (!force && lastExternalFetch[symbol] && now - lastExternalFetch[symbol] < 15000) {
+                        return;
+                      }
+                      lastExternalFetch[symbol] = now;
+                      try {
+                        const quote = await api(`/api/external/quote?symbol=${encodeURIComponent(symbol)}`);
+                        externalQuoteState = {source:quote.source, external:quote.external, updatedAt:quote.updatedAt};
+                        selectedStock = {...selectedStock, price:quote.price, change:quote.change, changePct:quote.changePct};
+                        allQuotes = allQuotes.map(q => q.symbol === symbol ? {...q, price:quote.price, change:quote.change, changePct:quote.changePct} : q);
+                        pushPriceTrail(symbol, Number(quote.price));
+                        const [account, analytics] = await Promise.all([api('/api/account'), api('/api/analytics')]);
+                        lastAccount = account;
+                        lastAnalytics = analytics;
+                        renderQuotePage();
+                        renderLivePnl();
+                        renderSelectedStock();
+                        renderPositionPanel();
+                        renderTradeTicket();
+                        renderHoldings();
+                        drawPriceChart();
+                      } catch (err) {
+                        externalQuoteState = {source:'simulated', external:false, updatedAt:''};
+                      }
+                    }
+
                     function renderHoldings() {
                       const rows = (lastAccount?.holdings || []).map(h => {
                         const analytic = getAnalyticHolding(h.symbol);
@@ -683,7 +724,8 @@ class HtmlRenderer {
                       ctx.clearRect(0, 0, canvas.width, canvas.height);
                       if (!selectedStock) return;
                       const data = priceTrail[selectedStock.symbol] || [];
-                      document.getElementById('chartSummary').textContent = `${data.length}개 시세 포인트`;
+                      const source = externalQuoteState.external ? externalQuoteState.source : 'simulated';
+                      document.getElementById('chartSummary').textContent = `${data.length}개 포인트 · ${source}`;
                       if (data.length < 2) {
                         ctx.fillStyle = '#6b7280';
                         ctx.fillText('실시간 시세를 수집하는 중입니다.', 24, 36);
@@ -691,25 +733,53 @@ class HtmlRenderer {
                       }
                       const min = Math.min(...data);
                       const max = Math.max(...data);
-                      const pad = 24;
-                      const width = canvas.width - pad * 2;
-                      const height = canvas.height - pad * 2;
+                      const pad = 34;
+                      const top = 20;
+                      const right = 22;
+                      const width = canvas.width - pad - right;
+                      const height = canvas.height - top - pad;
+                      const color = data[data.length - 1] >= data[0] ? '#0d8b57' : '#c2413d';
+                      ctx.fillStyle = '#fbfcfe';
+                      ctx.fillRect(0, 0, canvas.width, canvas.height);
                       ctx.strokeStyle = '#d8dee8';
+                      ctx.lineWidth = 1;
+                      for (let i = 0; i <= 4; i++) {
+                        const y = top + (height / 4) * i;
+                        ctx.beginPath();
+                        ctx.moveTo(pad, y);
+                        ctx.lineTo(canvas.width - right, y);
+                        ctx.stroke();
+                      }
+                      const points = data.map((price, index) => {
+                        const x = pad + (index / (data.length - 1)) * width;
+                        const y = top + (1 - ((price - min) / Math.max(max - min, 0.01))) * height;
+                        return {x, y, price};
+                      });
+                      ctx.fillStyle = color + '22';
                       ctx.beginPath();
-                      ctx.moveTo(pad, canvas.height - pad);
-                      ctx.lineTo(canvas.width - pad, canvas.height - pad);
-                      ctx.stroke();
-                      ctx.strokeStyle = data[data.length - 1] >= data[0] ? '#0d8b57' : '#c2413d';
+                      points.forEach((point, index) => index === 0 ? ctx.moveTo(point.x, point.y) : ctx.lineTo(point.x, point.y));
+                      ctx.lineTo(points[points.length - 1].x, top + height);
+                      ctx.lineTo(points[0].x, top + height);
+                      ctx.closePath();
+                      ctx.fill();
+                      ctx.strokeStyle = color;
                       ctx.lineWidth = 3;
                       ctx.beginPath();
-                      data.forEach((price, index) => {
-                        const x = pad + (index / (data.length - 1)) * width;
-                        const y = pad + (1 - ((price - min) / Math.max(max - min, 0.01))) * height;
-                        if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-                      });
+                      points.forEach((point, index) => index === 0 ? ctx.moveTo(point.x, point.y) : ctx.lineTo(point.x, point.y));
+                      ctx.stroke();
+                      const last = points[points.length - 1];
+                      ctx.fillStyle = '#ffffff';
+                      ctx.beginPath();
+                      ctx.arc(last.x, last.y, 6, 0, Math.PI * 2);
+                      ctx.fill();
                       ctx.stroke();
                       ctx.fillStyle = '#17202a';
-                      ctx.fillText(`${money(data[data.length - 1])}`, pad, 18);
+                      ctx.font = '12px Segoe UI, Arial';
+                      ctx.fillText(`${money(max)}`, 6, top + 4);
+                      ctx.fillText(`${money(min)}`, 6, top + height);
+                      ctx.font = 'bold 13px Segoe UI, Arial';
+                      ctx.fillStyle = color;
+                      ctx.fillText(`${money(data[data.length - 1])}`, Math.max(pad, last.x - 92), Math.max(16, last.y - 12));
                     }
 
                     async function addWatch(symbol) {
@@ -739,6 +809,7 @@ class HtmlRenderer {
                             : '시장 가격을 갱신했습니다. 자동 체결된 지정가 주문은 없습니다.';
                         }
                         await refresh();
+                        await refreshExternalQuote(false);
                       } catch (err) {
                         document.getElementById('message').textContent = err.message;
                         stopLive();
@@ -814,7 +885,7 @@ class HtmlRenderer {
                       document.getElementById(id).addEventListener('change', renderOrderEstimate);
                     });
 
-                    refresh().then(startLive);
+                    refresh().then(() => refreshExternalQuote(true)).then(startLive);
                   </script>
                 </body>
                 </html>
@@ -1762,10 +1833,14 @@ class ApiController implements Controller {
         this.app = app;
     }
 
+    private record ExternalQuoteResult(Quote quote, String source, boolean external, String message) {
+    }
+
     @Override
     public void handle(RequestContext request, ResponseWriter response) throws IOException {
         switch (request.path) {
             case "/api/quotes" -> response.json(JsonUtil.obj("ok", true, "items", JsonUtil.array(quoteJson())));
+            case "/api/external/quote" -> externalQuote(request, response);
             case "/api/account" -> response.json(app.accountService.accountJson());
             case "/api/analytics" -> response.json(app.analyticsService.analyticsJson());
             case "/api/leaderboard" -> response.json(JsonUtil.obj("ok", true, "items", JsonUtil.array(app.leaderboardService.entries().stream().map(LeaderboardEntry::toJson).toList())));
@@ -1822,6 +1897,96 @@ class ApiController implements Controller {
         }
         app.stateStore.save();
         response.json(JsonUtil.obj("ok", true));
+    }
+
+    private void externalQuote(RequestContext request, ResponseWriter response) throws IOException {
+        String symbol = request.query.getOrDefault("symbol", "").toUpperCase(Locale.ROOT).trim();
+        if (!symbol.matches("[A-Z0-9.\\-]{1,12}")) {
+            response.statusJson(400, JsonUtil.obj("ok", false, "error", "종목코드를 확인해주세요."));
+            return;
+        }
+        Quote fallback = app.marketDataService.quote(symbol);
+        ExternalQuoteResult result = fetchStockPricesDev(symbol)
+                .or(() -> fetchStooq(symbol, fallback))
+                .orElse(new ExternalQuoteResult(fallback, "simulated", false, "외부 데이터 연결 실패"));
+        app.database.quotes.save(result.quote());
+        response.json(JsonUtil.obj(
+                "ok", true,
+                "symbol", result.quote().symbol(),
+                "price", result.quote().price(),
+                "change", result.quote().change(),
+                "changePct", result.quote().changePct(),
+                "source", result.source(),
+                "external", result.external(),
+                "message", result.message(),
+                "updatedAt", DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now())
+        ));
+    }
+
+    private Optional<ExternalQuoteResult> fetchStockPricesDev(String symbol) {
+        try {
+            String body = fetchText("https://stockprices.dev/api/stocks/" + symbol);
+            BigDecimal price = decimalField(body, "Price").orElse(null);
+            if (price == null || price.compareTo(BigDecimal.ZERO) <= 0) {
+                return Optional.empty();
+            }
+            BigDecimal change = decimalField(body, "ChangeAmount").orElse(BigDecimal.ZERO);
+            BigDecimal previous = price.subtract(change);
+            if (previous.compareTo(BigDecimal.ZERO) <= 0) {
+                previous = price;
+            }
+            Quote quote = new Quote(symbol, Money.of(price), Money.of(previous));
+            return Optional.of(new ExternalQuoteResult(quote, "stockprices.dev", true, "외부 현재가 반영"));
+        } catch (Exception ex) {
+            return Optional.empty();
+        }
+    }
+
+    private Optional<ExternalQuoteResult> fetchStooq(String symbol, Quote fallback) {
+        try {
+            String stooqSymbol = symbol.toLowerCase(Locale.ROOT) + ".us";
+            String url = "https://stooq.com/q/l/?s=" + stooqSymbol + "&f=sd2t2ohlcv&h&e=csv";
+            String body = fetchText(url).trim();
+            String[] lines = body.split("\\R");
+            if (lines.length < 2) {
+                return Optional.empty();
+            }
+            List<String> parts = List.of(lines[1].split(",", -1));
+            if (parts.size() < 7 || "N/D".equalsIgnoreCase(parts.get(6))) {
+                return Optional.empty();
+            }
+            BigDecimal price = NumberFormatUtil.parseDecimal(parts.get(6), BigDecimal.ZERO);
+            if (price.compareTo(BigDecimal.ZERO) <= 0) {
+                return Optional.empty();
+            }
+            BigDecimal open = NumberFormatUtil.parseDecimal(parts.get(3), fallback.previousClose().asDecimal());
+            Money base = open.compareTo(BigDecimal.ZERO) > 0 ? Money.of(open) : fallback.previousClose();
+            Quote quote = new Quote(symbol, Money.of(price), base);
+            return Optional.of(new ExternalQuoteResult(quote, "Stooq CSV", true, "외부 CSV 현재가 반영"));
+        } catch (Exception ex) {
+            return Optional.empty();
+        }
+    }
+
+    private String fetchText(String url) throws IOException, InterruptedException {
+        HttpRequest httpRequest = HttpRequest.newBuilder(URI.create(url))
+                .timeout(Duration.ofSeconds(4))
+                .header("User-Agent", "MockStockApp/1.0")
+                .GET()
+                .build();
+        HttpResponse<String> response = HttpClient.newHttpClient().send(httpRequest, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw new IOException("external quote returned HTTP " + response.statusCode());
+        }
+        return response.body();
+    }
+
+    private Optional<BigDecimal> decimalField(String json, String field) {
+        Matcher matcher = Pattern.compile("\"" + Pattern.quote(field) + "\"\\s*:\\s*\"?([-0-9.]+)\"?").matcher(json);
+        if (!matcher.find()) {
+            return Optional.empty();
+        }
+        return Optional.of(NumberFormatUtil.parseDecimal(matcher.group(1), BigDecimal.ZERO));
     }
 }
 
