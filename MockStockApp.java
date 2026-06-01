@@ -254,7 +254,7 @@ class HtmlRenderer {
                     header { background:#102033; color:white; padding:22px 28px; display:flex; align-items:center; justify-content:space-between; gap:20px; }
                     header h1 { margin:0; font-size:26px; font-weight:750; letter-spacing:0; }
                     header p { margin:6px 0 0; color:#cbd5e1; }
-                    main { max-width:1280px; margin:0 auto; padding:24px; display:grid; grid-template-columns:1.2fr .8fr; gap:18px; }
+                    main { max-width:1480px; margin:0 auto; padding:24px; display:grid; grid-template-columns:330px minmax(0,1fr) 360px; gap:18px; align-items:start; }
                     section { background:var(--panel); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
                     section h2 { margin:0; padding:16px 18px; font-size:17px; border-bottom:1px solid var(--line); background:#fbfcfe; }
                     table { width:100%; border-collapse:collapse; font-size:14px; }
@@ -296,7 +296,37 @@ class HtmlRenderer {
                     .rank { font-weight:760; color:#425466; }
                     .selectable-row { cursor:pointer; }
                     .selected-row td { background:#eef5ff !important; }
-                    @media (max-width: 920px) { main { grid-template-columns:1fr; padding:14px; } form { grid-template-columns:repeat(2, minmax(0,1fr)); } .grid, .stock-detail { grid-template-columns:repeat(2,1fr); } .span-2 { grid-column:span 2; } header { align-items:flex-start; flex-direction:column; } .toolbar { justify-content:flex-start; } .live-status { text-align:left; } .search-row { grid-template-columns:1fr; } }
+                    .trade-workspace section { min-width:0; }
+                    .pnl-board { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:16px; }
+                    .pnl-board .metric { min-height:88px; }
+                    .market-list { max-height:650px; overflow:auto; }
+                    .market-row td { white-space:normal; vertical-align:middle; }
+                    .market-symbol { font-size:15px; font-weight:800; }
+                    .market-name { margin-top:3px; color:var(--muted); font-size:12px; line-height:1.3; }
+                    .stock-workbench { display:grid; gap:0; }
+                    .detail-hero { padding:22px; display:grid; grid-template-columns:minmax(0,1.2fr) minmax(220px,.8fr); gap:18px; border-bottom:1px solid var(--line); background:linear-gradient(180deg,#ffffff,#f7f9fd); }
+                    .hero-symbol { font-size:34px; font-weight:820; letter-spacing:0; }
+                    .hero-name { color:var(--muted); margin-top:6px; line-height:1.4; }
+                    .hero-price { font-size:38px; font-weight:820; text-align:right; }
+                    .hero-change { margin-top:6px; text-align:right; font-weight:760; }
+                    .detail-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; padding:16px; border-bottom:1px solid var(--line); }
+                    .chart-panel { padding:16px; border-bottom:1px solid var(--line); }
+                    .chart-head { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:10px; }
+                    .chart-head h3, .section-title { margin:0; font-size:15px; }
+                    canvas { width:100%; height:190px; border:1px solid var(--line); border-radius:8px; background:#fbfcfe; }
+                    .trade-form { grid-template-columns:1fr 1fr; }
+                    .trade-form .full { grid-column:1 / -1; }
+                    .side-tabs { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:16px 16px 0; }
+                    .side-tabs button { background:#e7edf6; color:#17202a; }
+                    .side-tabs button.active.buy { background:var(--green); color:white; }
+                    .side-tabs button.active.sell { background:var(--red); color:white; }
+                    .ticket-summary { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 16px 16px; }
+                    .ticket-summary .metric { min-height:72px; }
+                    .holding-list tbody tr { cursor:pointer; }
+                    .empty { color:var(--muted); padding:16px; }
+                    @media (max-width: 1180px) { main { grid-template-columns:1fr 1fr; } .stock-workbench { grid-column:1 / -1; grid-row:1; } }
+                    @media (max-width: 920px) { main { grid-template-columns:1fr; padding:14px; } form, .trade-form { grid-template-columns:repeat(2, minmax(0,1fr)); } .grid, .stock-detail, .detail-grid, .pnl-board, .detail-hero { grid-template-columns:repeat(2,1fr); } .span-2 { grid-column:span 2; } header { align-items:flex-start; flex-direction:column; } .toolbar { justify-content:flex-start; } .live-status { text-align:left; } .search-row { grid-template-columns:1fr; } .hero-price, .hero-change { text-align:left; } }
+                    @media (max-width: 640px) { .detail-hero, .detail-grid, .pnl-board, .ticket-summary { grid-template-columns:1fr; } form, .trade-form { grid-template-columns:1fr; } }
                   </style>
                 </head>
                 <body>
@@ -312,58 +342,77 @@ class HtmlRenderer {
                       <button class="secondary" onclick="tickMarket()">시장 변동 1회</button>
                     </div>
                   </header>
-                  <main>
-                    <div class="stack">
+                  <main class="trade-workspace">
+                    <aside class="stack">
                       <section>
-                        <h2>계좌 현황</h2>
-                        <div class="grid" id="metrics"></div>
+                        <h2>실시간 수익 현황</h2>
+                        <div class="pnl-board" id="livePnl"></div>
                       </section>
                       <section>
-                        <h2>종목 선택 및 주문</h2>
+                        <h2>종목 탐색</h2>
                         <div class="search-row">
                           <label>종목 검색 <input id="stockSearch" placeholder="AAPL 또는 Apple" oninput="searchStocks()"></label>
                           <button type="button" onclick="searchStocks()">검색</button>
                         </div>
                         <div class="search-results" id="searchResults"></div>
-                        <div class="stock-detail" id="selectedStockDetail"></div>
-                        <form id="orderForm">
-                          <input type="hidden" name="symbol" id="selectedSymbolInput">
-                          <label>매매구분 <select name="side" id="orderSide"><option value="BUY">매수</option><option value="SELL">매도</option></select></label>
-                          <label>주문유형 <select name="type" id="orderType"><option value="MARKET">시장가</option><option value="LIMIT">지정가</option></select></label>
-                          <label>수량 <input name="quantity" id="orderQuantity" type="number" min="1" value="5" required></label>
-                          <label>지정가 <input name="limitPrice" id="orderLimitPrice" type="number" step="0.01" placeholder="지정가 주문 때 입력"></label>
-                          <div class="metric estimate">
-                            <div class="label">예상 주문금액</div>
-                            <div class="value" id="orderEstimate">$0.00</div>
-                          </div>
-                          <button type="submit">주문 제출</button>
-                        </form>
-                        <div class="message" id="message"></div>
-                      </section>
-                      <section>
-                        <h2>S&P 500 등락률 상위 100</h2>
-                        <table>
-                          <thead><tr><th>순위</th><th>종목</th><th>이름</th><th>섹터</th><th>현재가</th><th>등락률</th><th></th></tr></thead>
-                          <tbody id="quotes"></tbody>
-                        </table>
+                        <div class="market-list">
+                          <table>
+                            <thead><tr><th>순위</th><th>종목</th><th>현재가</th><th>등락률</th></tr></thead>
+                            <tbody id="quotes"></tbody>
+                          </table>
+                        </div>
                         <div class="pager">
                           <div class="label" id="quotePageSummary"></div>
                           <div class="page-buttons" id="quotePages"></div>
                         </div>
                       </section>
-                      <section>
-                        <h2>주문 내역</h2>
+                    </aside>
+
+                    <section class="stock-workbench">
+                      <div class="detail-hero" id="selectedStockDetail"></div>
+                      <div class="detail-grid" id="positionPanel"></div>
+                      <div class="chart-panel">
+                        <div class="chart-head">
+                          <h3>선택 종목 실시간 추세</h3>
+                          <div class="label" id="chartSummary">시세를 수집하는 중</div>
+                        </div>
+                        <canvas id="priceChart" width="760" height="220"></canvas>
+                      </div>
+                      <div class="body">
+                        <h3 class="section-title">최근 주문</h3>
                         <table>
-                          <thead><tr><th>주문번호</th><th>구분</th><th>종목</th><th>수량</th><th>상태</th><th>체결가</th><th>시간</th></tr></thead>
+                          <thead><tr><th>구분</th><th>종목</th><th>수량</th><th>상태</th><th>체결가</th><th>시간</th></tr></thead>
                           <tbody id="orders"></tbody>
                         </table>
-                      </section>
-                    </div>
-                    <div class="stack">
+                      </div>
+                    </section>
+
+                    <aside class="stack">
                       <section>
-                        <h2>보유 종목</h2>
-                        <table>
-                          <thead><tr><th>종목</th><th>수량</th><th>평단가</th><th>평가금액</th><th>손익</th></tr></thead>
+                        <h2>매수 / 매도</h2>
+                        <div class="side-tabs">
+                          <button type="button" id="buyTab" class="active buy" onclick="setSide('BUY')">매수</button>
+                          <button type="button" id="sellTab" class="sell" onclick="setSide('SELL')">매도</button>
+                        </div>
+                        <form id="orderForm" class="trade-form">
+                          <input type="hidden" name="symbol" id="selectedSymbolInput">
+                          <input type="hidden" name="side" id="orderSide" value="BUY">
+                          <label class="full">선택 종목 <input id="selectedTradeSymbol" value="종목을 선택하세요" readonly></label>
+                          <label>주문유형 <select name="type" id="orderType"><option value="MARKET">시장가</option><option value="LIMIT">지정가</option></select></label>
+                          <label>수량 <input name="quantity" id="orderQuantity" type="number" min="1" value="1" required></label>
+                          <label class="full">지정가 <input name="limitPrice" id="orderLimitPrice" type="number" step="0.01" placeholder="지정가 주문 때 입력"></label>
+                          <button class="full" type="submit" id="submitOrderButton">매수 주문</button>
+                        </form>
+                        <div class="ticket-summary">
+                          <div class="metric"><div class="label">예상 주문금액</div><div class="value" id="orderEstimate">$0.00</div></div>
+                          <div class="metric"><div class="label">거래 후 예상</div><div class="value" id="afterTrade">-</div></div>
+                        </div>
+                        <div class="message" id="message"></div>
+                      </section>
+                      <section>
+                        <h2>내 보유 종목</h2>
+                        <table class="holding-list">
+                          <thead><tr><th>종목</th><th>수량</th><th>평가</th><th>손익</th></tr></thead>
                           <tbody id="holdings"></tbody>
                         </table>
                       </section>
@@ -373,19 +422,12 @@ class HtmlRenderer {
                           <div class="chips" id="watchlist"></div>
                         </div>
                       </section>
-                      <section>
-                        <h2>수익률 분석</h2>
-                        <div class="grid" id="analysisMetrics"></div>
-                        <table>
-                          <thead><tr><th>종목</th><th>평가금액</th><th>손익</th><th>손익률</th></tr></thead>
-                          <tbody id="analysisHoldings"></tbody>
-                        </table>
-                      </section>
-                    </div>
+                    </aside>
                   </main>
                   <script>
-                    const money = n => Number(n).toLocaleString('ko-KR', {style:'currency', currency:'USD'});
-                    const pct = n => `${Number(n).toFixed(2)}%`;
+                    const money = n => Number(n || 0).toLocaleString('ko-KR', {style:'currency', currency:'USD'});
+                    const pct = n => `${Number(n || 0).toFixed(2)}%`;
+                    const html = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
                     const sideText = v => ({BUY:'매수', SELL:'매도'}[v] || v);
                     const statusText = v => ({NEW:'접수', PENDING:'대기', FILLED:'체결', REJECTED:'거절'}[v] || v);
                     const quotePageSize = 10;
@@ -394,50 +436,82 @@ class HtmlRenderer {
                     let allQuotes = [];
                     let topQuotes = [];
                     let selectedStock = null;
+                    let selectedSide = 'BUY';
                     let lastAccount = null;
+                    let lastAnalytics = null;
                     let liveTimer = null;
                     let liveBusy = false;
                     let lastTickAt = null;
+                    const priceTrail = {};
+
                     async function api(path, options = {}) {
                       const res = await fetch(path, options);
                       const data = await res.json();
                       if (!res.ok || data.ok === false) throw new Error(data.error || '요청에 실패했습니다');
                       return data;
                     }
+
                     async function refresh() {
                       const [quotes, account, analytics] = await Promise.all([
                         api('/api/quotes'), api('/api/account'), api('/api/analytics')
                       ]);
                       allQuotes = quotes.items || [];
                       lastAccount = account;
-                      renderQuotes(quotes.items);
-                      renderAccount(account);
+                      lastAnalytics = analytics;
+                      updatePriceTrails(allQuotes);
+                      renderQuotes(allQuotes);
+                      renderLivePnl();
                       renderSelectedStock();
+                      renderPositionPanel();
+                      renderTradeTicket();
+                      renderHoldings();
+                      renderOrders();
+                      renderWatchlist();
                       renderSearchResults();
-                      renderAnalytics(analytics);
+                      drawPriceChart();
                     }
-                    function renderAccount(a) {
-                      document.getElementById('metrics').innerHTML = [
-                        ['예수금', money(a.cash)], ['보유평가', money(a.holdingsValue)], ['총자산', money(a.equity)], ['수익률', pct(a.returnPct)]
-                      ].map(x => `<div class="metric"><div class="label">${x[0]}</div><div class="value">${x[1]}</div></div>`).join('');
-                      document.getElementById('holdings').innerHTML = a.holdings.map(h => `<tr><td>${h.symbol}</td><td>${h.quantity}</td><td>${money(h.averageCost)}</td><td>${money(h.marketValue)}</td><td class="${h.gainLoss>=0?'up':'down'}">${money(h.gainLoss)}</td></tr>`).join('') || '<tr><td colspan="5">아직 보유 종목이 없습니다.</td></tr>';
-                      document.getElementById('orders').innerHTML = a.orders.map(o => `<tr><td>${o.id}</td><td>${sideText(o.side)}</td><td>${o.symbol}</td><td>${o.quantity}</td><td>${statusText(o.status)}</td><td>${o.fillPrice ? money(o.fillPrice) : '-'}</td><td>${o.createdAt}</td></tr>`).join('') || '<tr><td colspan="7">아직 주문 내역이 없습니다.</td></tr>';
-                      document.getElementById('watchlist').innerHTML = a.watchlist.map(s => `<span class="chip">${s}<button aria-label="${s} 삭제" onclick="removeWatch('${s}')">x</button></span>`).join('');
+
+                    function updatePriceTrails(items) {
+                      items.slice(0, 180).forEach(q => {
+                        const trail = priceTrail[q.symbol] || [];
+                        trail.push(Number(q.price));
+                        if (trail.length > 42) trail.shift();
+                        priceTrail[q.symbol] = trail;
+                      });
                     }
+
+                    function getHolding(symbol = selectedStock?.symbol) {
+                      return (lastAccount?.holdings || []).find(h => h.symbol === symbol);
+                    }
+
+                    function getAnalyticHolding(symbol = selectedStock?.symbol) {
+                      return (lastAnalytics?.holdings || []).find(h => h.symbol === symbol);
+                    }
+
+                    function renderLivePnl() {
+                      const holding = getAnalyticHolding();
+                      const selectedGain = holding ? `${money(holding.gainLoss)} / ${pct(holding.gainLossPct)}` : '보유 없음';
+                      document.getElementById('livePnl').innerHTML = [
+                        ['총자산', money(lastAccount?.equity)],
+                        ['총수익률', pct(lastAccount?.returnPct)],
+                        ['예수금', money(lastAccount?.cash)],
+                        ['보유 평가', money(lastAccount?.holdingsValue)],
+                        ['선택 종목 손익', selectedGain],
+                        ['대기 주문', lastAnalytics?.pendingOrders || 0]
+                      ].map(([label, value]) => `<div class="metric"><div class="label">${label}</div><div class="value">${value}</div></div>`).join('');
+                    }
+
                     function renderQuotes(items) {
                       topQuotes = items
                         .slice()
                         .sort((a, b) => Number(b.changePct) - Number(a.changePct))
                         .slice(0, quotePageSize * quotePageTotal);
-                      if (selectedStock) {
-                        selectedStock = allQuotes.find(q => q.symbol === selectedStock.symbol) || selectedStock;
-                      }
-                      if (!selectedStock && topQuotes.length > 0) {
-                        selectedStock = topQuotes[0];
-                      }
+                      if (selectedStock) selectedStock = allQuotes.find(q => q.symbol === selectedStock.symbol) || selectedStock;
+                      if (!selectedStock && topQuotes.length > 0) selectedStock = topQuotes[0];
                       if (quotePage > quotePageTotal) quotePage = quotePageTotal;
                       renderQuotePage();
                     }
+
                     function renderQuotePage() {
                       const start = (quotePage - 1) * quotePageSize;
                       const pageItems = topQuotes.slice(start, start + quotePageSize);
@@ -445,7 +519,12 @@ class HtmlRenderer {
                         const rank = start + i + 1;
                         const prefix = Number(q.changePct) >= 0 ? '+' : '';
                         const selected = selectedStock && selectedStock.symbol === q.symbol ? 'selected-row' : '';
-                        return `<tr class="selectable-row ${selected}" onclick="selectStock('${q.symbol}')"><td class="rank">${rank}</td><td>${q.symbol}</td><td>${q.name}</td><td>${q.sector}</td><td>${money(q.price)}</td><td class="${q.changePct>=0?'up':'down'}">${prefix}${pct(q.changePct)} (${money(q.change)})</td><td><button onclick="event.stopPropagation(); selectStock('${q.symbol}')">선택</button> <button onclick="event.stopPropagation(); addWatch('${q.symbol}')">관심</button></td></tr>`;
+                        return `<tr class="market-row selectable-row ${selected}" onclick="selectStock('${q.symbol}')">
+                          <td class="rank">${rank}</td>
+                          <td><div class="market-symbol">${html(q.symbol)}</div><div class="market-name">${html(q.name)}</div></td>
+                          <td>${money(q.price)}</td>
+                          <td class="${q.changePct>=0?'up':'down'}">${prefix}${pct(q.changePct)}</td>
+                        </tr>`;
                       }).join('');
                       document.getElementById('quotePageSummary').textContent = `${start + 1}-${start + pageItems.length}위 / 상위 100`;
                       document.getElementById('quotePages').innerHTML = Array.from({length: quotePageTotal}, (_, i) => {
@@ -453,88 +532,200 @@ class HtmlRenderer {
                         return `<button class="${page === quotePage ? 'active' : ''}" onclick="setQuotePage(${page})">${page}</button>`;
                       }).join('');
                     }
+
                     function setQuotePage(page) {
                       quotePage = page;
                       renderQuotePage();
                     }
+
                     function selectStock(symbol) {
                       selectedStock = allQuotes.find(q => q.symbol === symbol) || topQuotes.find(q => q.symbol === symbol);
                       if (!selectedStock) return;
-                      document.getElementById('selectedSymbolInput').value = selectedStock.symbol;
                       document.getElementById('stockSearch').value = `${selectedStock.symbol} ${selectedStock.name}`;
                       renderQuotePage();
+                      renderLivePnl();
                       renderSelectedStock();
+                      renderPositionPanel();
+                      renderTradeTicket();
                       renderSearchResults();
+                      drawPriceChart();
                     }
+
                     function renderSelectedStock() {
                       const panel = document.getElementById('selectedStockDetail');
                       if (!selectedStock) {
-                        panel.innerHTML = '<div class="metric span-2"><div class="label">선택된 종목</div><div class="value">상위 100 목록에서 종목을 클릭하세요</div></div>';
-                        document.getElementById('selectedSymbolInput').value = '';
-                        renderOrderEstimate();
+                        panel.innerHTML = '<div><div class="hero-symbol">종목을 선택하세요</div><div class="hero-name">왼쪽 목록에서 종목을 누르면 상세 정보와 주문 티켓이 연결됩니다.</div></div>';
                         return;
                       }
-                      document.getElementById('selectedSymbolInput').value = selectedStock.symbol;
-                      const holding = (lastAccount?.holdings || []).find(h => h.symbol === selectedStock.symbol);
                       const prefix = Number(selectedStock.changePct) >= 0 ? '+' : '';
                       const updated = lastTickAt ? lastTickAt.toLocaleTimeString('ko-KR') : '초기 시세';
-                      panel.innerHTML = [
-                        ['선택 종목', `${selectedStock.symbol}<br><span class="label">${selectedStock.name}</span>`],
-                        ['현재가', money(selectedStock.price)],
-                        ['등락률', `<span class="${selectedStock.changePct>=0?'up':'down'}">${prefix}${pct(selectedStock.changePct)}</span>`],
-                        ['보유수량', holding ? holding.quantity : 0],
-                        ['섹터', selectedStock.sector],
-                        ['변동금액', `<span class="${selectedStock.change>=0?'up':'down'}">${money(selectedStock.change)}</span>`],
-                        ['평균단가', holding ? money(holding.averageCost) : '-'],
-                        ['갱신시각', updated]
-                      ].map(x => `<div class="metric"><div class="label">${x[0]}</div><div class="value">${x[1]}</div></div>`).join('');
-                      document.getElementById('orderLimitPrice').placeholder = `현재가 ${Number(selectedStock.price).toFixed(2)}`;
-                      renderOrderEstimate();
+                      panel.innerHTML = `
+                        <div>
+                          <div class="hero-symbol">${html(selectedStock.symbol)}</div>
+                          <div class="hero-name">${html(selectedStock.name)} · ${html(selectedStock.sector)}</div>
+                          <div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap;">
+                            <button type="button" onclick="addWatch('${selectedStock.symbol}')">관심 추가</button>
+                            <button type="button" class="secondary" onclick="setSide('BUY')">바로 매수</button>
+                            <button type="button" class="secondary" onclick="setSide('SELL')">바로 매도</button>
+                          </div>
+                        </div>
+                        <div>
+                          <div class="hero-price">${money(selectedStock.price)}</div>
+                          <div class="hero-change ${selectedStock.changePct>=0?'up':'down'}">${prefix}${pct(selectedStock.changePct)} · ${money(selectedStock.change)}</div>
+                          <div class="label" style="margin-top:14px; text-align:right;">마지막 갱신 ${updated}</div>
+                        </div>`;
                     }
+
+                    function renderPositionPanel() {
+                      const holding = getHolding();
+                      const analytic = getAnalyticHolding();
+                      const quantity = holding ? holding.quantity : 0;
+                      const marketValue = holding ? holding.marketValue : 0;
+                      const avg = holding ? holding.averageCost : 0;
+                      const gain = analytic ? `${money(analytic.gainLoss)} / ${pct(analytic.gainLossPct)}` : '보유 없음';
+                      document.getElementById('positionPanel').innerHTML = [
+                        ['보유수량', quantity],
+                        ['평균단가', holding ? money(avg) : '-'],
+                        ['평가금액', holding ? money(marketValue) : '-'],
+                        ['실시간 손익', gain],
+                        ['오늘 변동', selectedStock ? money(selectedStock.change) : '-'],
+                        ['등락률', selectedStock ? pct(selectedStock.changePct) : '-'],
+                        ['매수 가능 현금', money(lastAccount?.cash)],
+                        ['체결 주문', lastAnalytics?.filledOrders || 0]
+                      ].map(([label, value]) => `<div class="metric"><div class="label">${label}</div><div class="value">${value}</div></div>`).join('');
+                    }
+
                     function searchStocks() {
                       renderSearchResults();
                     }
+
                     function renderSearchResults() {
                       const container = document.getElementById('searchResults');
                       const query = document.getElementById('stockSearch').value.trim().toLowerCase();
                       if (!query) {
-                        container.innerHTML = '<span class="label">종목명이나 코드를 입력하거나 아래 상위 100 목록에서 행을 클릭하세요.</span>';
+                        container.innerHTML = '<span class="label">종목명이나 코드를 입력하거나 아래 목록에서 종목을 클릭하세요.</span>';
                         return;
                       }
                       const matches = allQuotes
                         .filter(q => q.symbol.toLowerCase().includes(query) || q.name.toLowerCase().includes(query))
                         .slice(0, 8);
-                      container.innerHTML = matches.map(q => `<button type="button" onclick="selectStock('${q.symbol}')">${q.symbol} · ${q.name}</button>`).join('') || '<span class="label">검색 결과가 없습니다.</span>';
+                      container.innerHTML = matches.map(q => `<button type="button" onclick="selectStock('${q.symbol}')">${html(q.symbol)} · ${html(q.name)}</button>`).join('') || '<span class="label">검색 결과가 없습니다.</span>';
                     }
+
+                    function setSide(side) {
+                      selectedSide = side;
+                      document.getElementById('orderSide').value = side;
+                      document.getElementById('buyTab').classList.toggle('active', side === 'BUY');
+                      document.getElementById('sellTab').classList.toggle('active', side === 'SELL');
+                      document.getElementById('submitOrderButton').textContent = side === 'BUY' ? '매수 주문' : '매도 주문';
+                      renderTradeTicket();
+                    }
+
+                    function renderTradeTicket() {
+                      const symbolInput = document.getElementById('selectedSymbolInput');
+                      const tradeSymbol = document.getElementById('selectedTradeSymbol');
+                      if (!selectedStock) {
+                        symbolInput.value = '';
+                        tradeSymbol.value = '종목을 선택하세요';
+                        renderOrderEstimate();
+                        return;
+                      }
+                      symbolInput.value = selectedStock.symbol;
+                      tradeSymbol.value = `${selectedStock.symbol} · ${selectedStock.name}`;
+                      document.getElementById('orderLimitPrice').placeholder = `현재가 ${Number(selectedStock.price).toFixed(2)}`;
+                      renderOrderEstimate();
+                    }
+
                     function renderOrderEstimate() {
-                      const target = document.getElementById('orderEstimate');
-                      if (!target || !selectedStock) {
-                        if (target) target.textContent = '$0.00';
+                      const estimate = document.getElementById('orderEstimate');
+                      const after = document.getElementById('afterTrade');
+                      if (!selectedStock) {
+                        estimate.textContent = '$0.00';
+                        after.textContent = '-';
                         return;
                       }
                       const quantity = Number(document.getElementById('orderQuantity').value || 0);
                       const type = document.getElementById('orderType').value;
                       const limit = Number(document.getElementById('orderLimitPrice').value || 0);
                       const price = type === 'LIMIT' && limit > 0 ? limit : Number(selectedStock.price);
-                      target.textContent = money(quantity * price);
+                      const amount = quantity * price;
+                      const holding = getHolding();
+                      const currentQuantity = holding ? Number(holding.quantity) : 0;
+                      const nextQuantity = selectedSide === 'BUY' ? currentQuantity + quantity : currentQuantity - quantity;
+                      estimate.textContent = money(amount);
+                      after.textContent = `${Math.max(nextQuantity, 0)}주`;
                     }
-                    function renderAnalytics(a) {
-                      document.getElementById('analysisMetrics').innerHTML = [
-                        ['총자산', money(a.equity)], ['총수익률', pct(a.returnPct)], ['체결주문', a.filledOrders], ['대기주문', a.pendingOrders]
-                      ].map(x => `<div class="metric"><div class="label">${x[0]}</div><div class="value">${x[1]}</div></div>`).join('');
-                      document.getElementById('analysisHoldings').innerHTML = a.holdings.map(h => `<tr><td>${h.symbol}</td><td>${money(h.marketValue)}</td><td class="${h.gainLoss>=0?'up':'down'}">${money(h.gainLoss)}</td><td class="${h.gainLossPct>=0?'up':'down'}">${pct(h.gainLossPct)}</td></tr>`).join('') || '<tr><td colspan="4">분석할 보유 종목이 없습니다.</td></tr>';
+
+                    function renderHoldings() {
+                      const rows = (lastAccount?.holdings || []).map(h => {
+                        const analytic = getAnalyticHolding(h.symbol);
+                        const gainPct = analytic ? ` / ${pct(analytic.gainLossPct)}` : '';
+                        return `<tr onclick="selectStock('${h.symbol}')"><td>${html(h.symbol)}</td><td>${h.quantity}</td><td>${money(h.marketValue)}</td><td class="${h.gainLoss>=0?'up':'down'}">${money(h.gainLoss)}${gainPct}</td></tr>`;
+                      }).join('');
+                      document.getElementById('holdings').innerHTML = rows || '<tr><td colspan="4">아직 보유 종목이 없습니다.</td></tr>';
                     }
+
+                    function renderOrders() {
+                      const rows = (lastAccount?.orders || []).slice(0, 12).map(o => `<tr>
+                        <td>${sideText(o.side)}</td><td>${html(o.symbol)}</td><td>${o.quantity}</td><td>${statusText(o.status)}</td><td>${o.fillPrice ? money(o.fillPrice) : '-'}</td><td>${o.createdAt}</td>
+                      </tr>`).join('');
+                      document.getElementById('orders').innerHTML = rows || '<tr><td colspan="6">아직 주문 내역이 없습니다.</td></tr>';
+                    }
+
+                    function renderWatchlist() {
+                      const items = lastAccount?.watchlist || [];
+                      document.getElementById('watchlist').innerHTML = items.map(s => `<span class="chip" onclick="selectStock('${s}')">${html(s)}<button aria-label="${s} 삭제" onclick="event.stopPropagation(); removeWatch('${s}')">x</button></span>`).join('') || '<span class="label">관심종목이 비어 있습니다.</span>';
+                    }
+
+                    function drawPriceChart() {
+                      const canvas = document.getElementById('priceChart');
+                      const ctx = canvas.getContext('2d');
+                      ctx.clearRect(0, 0, canvas.width, canvas.height);
+                      if (!selectedStock) return;
+                      const data = priceTrail[selectedStock.symbol] || [];
+                      document.getElementById('chartSummary').textContent = `${data.length}개 시세 포인트`;
+                      if (data.length < 2) {
+                        ctx.fillStyle = '#6b7280';
+                        ctx.fillText('실시간 시세를 수집하는 중입니다.', 24, 36);
+                        return;
+                      }
+                      const min = Math.min(...data);
+                      const max = Math.max(...data);
+                      const pad = 24;
+                      const width = canvas.width - pad * 2;
+                      const height = canvas.height - pad * 2;
+                      ctx.strokeStyle = '#d8dee8';
+                      ctx.beginPath();
+                      ctx.moveTo(pad, canvas.height - pad);
+                      ctx.lineTo(canvas.width - pad, canvas.height - pad);
+                      ctx.stroke();
+                      ctx.strokeStyle = data[data.length - 1] >= data[0] ? '#0d8b57' : '#c2413d';
+                      ctx.lineWidth = 3;
+                      ctx.beginPath();
+                      data.forEach((price, index) => {
+                        const x = pad + (index / (data.length - 1)) * width;
+                        const y = pad + (1 - ((price - min) / Math.max(max - min, 0.01))) * height;
+                        if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                      });
+                      ctx.stroke();
+                      ctx.fillStyle = '#17202a';
+                      ctx.fillText(`${money(data[data.length - 1])}`, pad, 18);
+                    }
+
                     async function addWatch(symbol) {
                       await api('/api/watchlist/add', {method:'POST', body: JSON.stringify({symbol}), headers:{'Content-Type':'application/json'}});
-                      refresh();
+                      await refresh();
                     }
+
                     async function removeWatch(symbol) {
                       await api('/api/watchlist/remove', {method:'POST', body: JSON.stringify({symbol}), headers:{'Content-Type':'application/json'}});
-                      refresh();
+                      await refresh();
                     }
+
                     async function tickMarket() {
                       await runMarketTick(true);
                     }
+
                     async function runMarketTick(showMessage) {
                       if (liveBusy) return;
                       liveBusy = true;
@@ -555,20 +746,26 @@ class HtmlRenderer {
                         liveBusy = false;
                       }
                     }
-                    function toggleLive() {
-                      if (liveTimer) {
-                        stopLive();
-                        return;
-                      }
-                      runMarketTick(false);
+
+                    function startLive() {
+                      if (liveTimer) return;
                       liveTimer = setInterval(() => runMarketTick(false), 3000);
                       updateLiveStatus();
                     }
+
+                    function toggleLive() {
+                      if (liveTimer) stopLive(); else {
+                        runMarketTick(false);
+                        startLive();
+                      }
+                    }
+
                     function stopLive() {
                       if (liveTimer) clearInterval(liveTimer);
                       liveTimer = null;
                       updateLiveStatus();
                     }
+
                     function updateLiveStatus() {
                       const button = document.getElementById('liveButton');
                       const status = document.getElementById('liveStatus');
@@ -582,6 +779,7 @@ class HtmlRenderer {
                         status.textContent = lastTickAt ? `마지막 갱신 ${lastTickAt.toLocaleTimeString('ko-KR')}` : '실시간 꺼짐';
                       }
                     }
+
                     async function importSp500() {
                       try {
                         const result = await api('/api/import/sp500', {method:'POST'});
@@ -591,6 +789,7 @@ class HtmlRenderer {
                         document.getElementById('message').textContent = err.message;
                       }
                     }
+
                     document.getElementById('orderForm').addEventListener('submit', async e => {
                       e.preventDefault();
                       if (!selectedStock) {
@@ -600,6 +799,7 @@ class HtmlRenderer {
                       const form = new FormData(e.target);
                       const payload = Object.fromEntries(form.entries());
                       payload.symbol = selectedStock.symbol;
+                      payload.side = selectedSide;
                       try {
                         const result = await api('/api/orders', {method:'POST', body: JSON.stringify(payload), headers:{'Content-Type':'application/json'}});
                         document.getElementById('message').textContent = result.message;
@@ -608,11 +808,13 @@ class HtmlRenderer {
                         document.getElementById('message').textContent = err.message;
                       }
                     });
-                    ['orderSide', 'orderType', 'orderQuantity', 'orderLimitPrice'].forEach(id => {
+
+                    ['orderType', 'orderQuantity', 'orderLimitPrice'].forEach(id => {
                       document.getElementById(id).addEventListener('input', renderOrderEstimate);
                       document.getElementById(id).addEventListener('change', renderOrderEstimate);
                     });
-                    refresh();
+
+                    refresh().then(startLive);
                   </script>
                 </body>
                 </html>
