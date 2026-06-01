@@ -374,8 +374,8 @@ class HtmlRenderer {
                       <div class="detail-grid" id="positionPanel"></div>
                       <div class="chart-panel">
                         <div class="chart-head">
-                          <h3>선택 종목 실시간 추세</h3>
-                          <div class="label" id="chartSummary">시세를 수집하는 중</div>
+                          <h3>선택 종목 외부/모의 시세 추세</h3>
+                          <div class="label" id="chartSummary">외부 소스 확인 중</div>
                         </div>
                         <canvas id="priceChart" width="760" height="220"></canvas>
                       </div>
@@ -570,7 +570,7 @@ class HtmlRenderer {
                       }
                       const prefix = Number(selectedStock.changePct) >= 0 ? '+' : '';
                       const updated = lastTickAt ? lastTickAt.toLocaleTimeString('ko-KR') : '초기 시세';
-                      const sourceText = externalQuoteState.external ? `외부 데이터 · ${externalQuoteState.source}` : '모의 시세';
+                      const sourceText = externalQuoteState.external ? `무료 외부 데이터 · ${externalQuoteState.source}` : '모의 시세 fallback';
                       panel.innerHTML = `
                         <div>
                           <div class="hero-symbol">${html(selectedStock.symbol)}</div>
@@ -584,7 +584,7 @@ class HtmlRenderer {
                         <div>
                           <div class="hero-price">${money(selectedStock.price)}</div>
                           <div class="hero-change ${selectedStock.changePct>=0?'up':'down'}">${prefix}${pct(selectedStock.changePct)} · ${money(selectedStock.change)}</div>
-                          <div class="label" style="margin-top:14px; text-align:right;">${sourceText}<br>마지막 갱신 ${externalQuoteState.updatedAt || updated}</div>
+                          <div class="label" style="margin-top:14px; text-align:right;">${sourceText}<br>공식 실시간 시세 아님<br>마지막 갱신 ${externalQuoteState.updatedAt || updated}</div>
                         </div>`;
                     }
 
@@ -724,8 +724,8 @@ class HtmlRenderer {
                       ctx.clearRect(0, 0, canvas.width, canvas.height);
                       if (!selectedStock) return;
                       const data = priceTrail[selectedStock.symbol] || [];
-                      const source = externalQuoteState.external ? externalQuoteState.source : 'simulated';
-                      document.getElementById('chartSummary').textContent = `${data.length}개 포인트 · ${source}`;
+                      const source = externalQuoteState.external ? externalQuoteState.source : 'simulated fallback';
+                      document.getElementById('chartSummary').textContent = `${data.length}개 포인트 · ${source} · 지연 가능`;
                       if (data.length < 2) {
                         ctx.fillStyle = '#6b7280';
                         ctx.fillText('실시간 시세를 수집하는 중입니다.', 24, 36);
@@ -1833,7 +1833,7 @@ class ApiController implements Controller {
         this.app = app;
     }
 
-    private record ExternalQuoteResult(Quote quote, String source, boolean external, String message) {
+    private record ExternalQuoteResult(Quote quote, String source, String sourceUrl, boolean external, String message) {
     }
 
     @Override
@@ -1908,7 +1908,7 @@ class ApiController implements Controller {
         Quote fallback = app.marketDataService.quote(symbol);
         ExternalQuoteResult result = fetchStockPricesDev(symbol)
                 .or(() -> fetchStooq(symbol, fallback))
-                .orElse(new ExternalQuoteResult(fallback, "simulated", false, "외부 데이터 연결 실패"));
+                .orElse(new ExternalQuoteResult(fallback, "simulated", "", false, "외부 데이터 연결 실패"));
         app.database.quotes.save(result.quote());
         response.json(JsonUtil.obj(
                 "ok", true,
@@ -1917,6 +1917,7 @@ class ApiController implements Controller {
                 "change", result.quote().change(),
                 "changePct", result.quote().changePct(),
                 "source", result.source(),
+                "sourceUrl", result.sourceUrl(),
                 "external", result.external(),
                 "message", result.message(),
                 "updatedAt", DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now())
@@ -1936,7 +1937,7 @@ class ApiController implements Controller {
                 previous = price;
             }
             Quote quote = new Quote(symbol, Money.of(price), Money.of(previous));
-            return Optional.of(new ExternalQuoteResult(quote, "stockprices.dev", true, "외부 현재가 반영"));
+            return Optional.of(new ExternalQuoteResult(quote, "stockprices.dev", "https://stockprices.dev/api/stocks/" + symbol, true, "무료 외부 현재가 반영"));
         } catch (Exception ex) {
             return Optional.empty();
         }
@@ -1962,7 +1963,7 @@ class ApiController implements Controller {
             BigDecimal open = NumberFormatUtil.parseDecimal(parts.get(3), fallback.previousClose().asDecimal());
             Money base = open.compareTo(BigDecimal.ZERO) > 0 ? Money.of(open) : fallback.previousClose();
             Quote quote = new Quote(symbol, Money.of(price), base);
-            return Optional.of(new ExternalQuoteResult(quote, "Stooq CSV", true, "외부 CSV 현재가 반영"));
+            return Optional.of(new ExternalQuoteResult(quote, "Stooq CSV", url, true, "무료 외부 CSV 현재가 반영"));
         } catch (Exception ex) {
             return Optional.empty();
         }
