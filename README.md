@@ -57,15 +57,27 @@ Java 표준 라이브러리만 사용해 구현한 모의주식투자 웹 프로
 
 ## 외부 시세 연동
 
-현재 프로젝트는 API Key 없이 실행 가능한 내부 모의 증권사 서버를 사용합니다. 외부 시세 데이터가 필요한 경우 한국투자증권 KIS Open API 같은 증권사 API를 연결 대상으로 둘 수 있습니다.
+현재 프로젝트는 한국투자증권 KIS Open API 환경변수가 있으면 국내주식 현재가 REST API를 사용합니다. 환경변수가 없으면 API Key 없이 실행 가능한 내부 모의 증권사 서버를 사용합니다.
 
-실제 증권사 API를 사용할 때 필요한 정보:
+KIS 연동에 사용하는 환경변수:
 
-- API Key
-- Secret
-- 계좌 정보
-- 모의투자 신청 정보
-- WebSocket 실시간 시세 접속 정보
+```powershell
+$env:KIS_APP_KEY="발급받은_APP_KEY"
+$env:KIS_APP_SECRET="발급받은_APP_SECRET"
+$env:KIS_BASE_URL="https://openapi.koreainvestment.com:9443"
+java -cp out MiniProjectApp 8080
+```
+
+사용 API:
+
+| 구분 | 값 |
+| --- | --- |
+| 토큰 발급 | `POST /oauth2/tokenP` |
+| 국내주식 현재가 | `GET /uapi/domestic-stock/v1/quotations/inquire-price` |
+| 거래 ID | `FHKST01010100` |
+| 시장 구분 | `FID_COND_MRKT_DIV_CODE=J` |
+
+모의투자/가상투자 도메인을 사용할 경우 `KIS_BASE_URL` 값을 한국투자증권에서 제공하는 모의투자 URL로 바꿉니다.
 
 ## 뉴스 연동
 

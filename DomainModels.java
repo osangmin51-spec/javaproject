@@ -31,13 +31,15 @@ class Member {
 }
 
 class Stock {
+    final String code;
     final String name;
     int price;
     int quantity;
     int priceFluct;
     double nextFluct;
 
-    Stock(String name, int price, int quantity, int priceFluct, double nextFluct) {
+    Stock(String code, String name, int price, int quantity, int priceFluct, double nextFluct) {
+        this.code = code;
         this.name = name;
         this.price = price;
         this.quantity = quantity;
@@ -46,7 +48,7 @@ class Stock {
     }
 
     Stock copy() {
-        return new Stock(name, price, quantity, priceFluct, nextFluct);
+        return new Stock(code, name, price, quantity, priceFluct, nextFluct);
     }
 
     String toJson() {
@@ -54,6 +56,7 @@ class Stock {
         double rate = previous == 0 ? 0.0 : priceFluct * 100.0 / previous;
         return Json.obj(
                 "name", name,
+                "code", code,
                 "price", price,
                 "quantity", quantity,
                 "priceFluct", priceFluct,

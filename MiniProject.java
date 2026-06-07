@@ -146,8 +146,22 @@ class MiniProject {
         return seeds;
     }
 
+    Map<String, KisQuoteTarget> kisQuoteTargets() {
+        Map<String, KisQuoteTarget> targets = new LinkedHashMap<>();
+        stocks().forEach(stock -> targets.put(stock.name, new KisQuoteTarget(stock.name, stock.code)));
+        return targets;
+    }
+
     void applyBrokerTick(BrokerTick tick) {
         brokerSource = "내장 모의 증권사 소켓 서버";
+        lastBrokerTick = LocalDateTime.now();
+        brokerTicks.incrementAndGet();
+        updateStock(marketStocks.get(tick.symbol), tick);
+        members.values().forEach(member -> updateStock(member.stocks.get(tick.symbol), tick));
+    }
+
+    void applyKisQuote(BrokerTick tick) {
+        brokerSource = "한국투자증권 KIS REST API";
         lastBrokerTick = LocalDateTime.now();
         brokerTicks.incrementAndGet();
         updateStock(marketStocks.get(tick.symbol), tick);
@@ -195,50 +209,50 @@ class MiniProject {
     }
 
     private void seedStocks() {
-        addStock("삼성전자", 72000, 1000, 2000, 1.05);
-        addStock("SK하이닉스", 213000, 700, 3500, 1.04);
-        addStock("LG에너지솔루션", 352000, 400, -5000, 0.98);
-        addStock("삼성바이오로직스", 835000, 120, 8000, 1.02);
-        addStock("현대차", 246000, 500, 2500, 1.01);
-        addStock("기아", 118000, 650, -1200, 0.99);
-        addStock("셀트리온", 184000, 450, 1700, 1.03);
-        addStock("POSCO홀딩스", 392000, 240, -4500, 0.97);
-        addStock("NAVER", 184000, 500, 2500, 1.08);
-        addStock("카카오", 52000, 900, -800, 0.91);
-        addStock("현대모비스", 228000, 300, -4000, 0.96);
-        addStock("삼성SDI", 401000, 250, 4500, 1.02);
-        addStock("LG화학", 365000, 250, -6500, 0.97);
-        addStock("KB금융", 82500, 1000, 900, 1.01);
-        addStock("신한지주", 52300, 1000, 500, 1.01);
-        addStock("하나금융지주", 61500, 900, 650, 1.02);
-        addStock("삼성물산", 142000, 350, -1000, 0.99);
-        addStock("LG전자", 98500, 700, 1200, 1.03);
-        addStock("SK이노베이션", 121000, 450, -1500, 0.98);
-        addStock("포스코퓨처엠", 268000, 220, 5200, 1.06);
-        addStock("한화에어로스페이스", 235000, 260, 3800, 1.04);
-        addStock("현대중공업", 136000, 320, 2100, 1.02);
-        addStock("HD한국조선해양", 152000, 320, 1800, 1.03);
-        addStock("삼성전기", 153000, 420, 900, 1.01);
-        addStock("카카오뱅크", 24100, 1200, -300, 0.98);
-        addStock("크래프톤", 287000, 210, 3500, 1.02);
-        addStock("하이브", 203000, 240, -2000, 0.98);
-        addStock("엔씨소프트", 186000, 210, -1700, 0.99);
-        addStock("아모레퍼시픽", 142000, 360, 2200, 1.03);
-        addStock("대한항공", 23800, 1400, 150, 1.01);
-        addStock("LG생활건강", 356000, 180, -2500, 0.99);
-        addStock("롯데케미칼", 100800, 500, 1000, 1.12);
-        addStock("S-Oil", 69200, 800, -600, 0.99);
-        addStock("한국전력", 21300, 1600, 250, 1.02);
-        addStock("KT&G", 94200, 500, 500, 1.01);
-        addStock("삼성화재", 368000, 220, 4000, 1.02);
-        addStock("미래에셋증권", 8250, 2000, 110, 1.02);
-        addStock("두산에너빌리티", 21800, 1500, 420, 1.04);
-        addStock("에코프로", 104000, 300, -1800, 0.98);
-        addStock("에코프로비엠", 184000, 300, -2200, 0.98);
+        addStock("005930", "삼성전자", 72000, 1000, 2000, 1.05);
+        addStock("000660", "SK하이닉스", 213000, 700, 3500, 1.04);
+        addStock("373220", "LG에너지솔루션", 352000, 400, -5000, 0.98);
+        addStock("207940", "삼성바이오로직스", 835000, 120, 8000, 1.02);
+        addStock("005380", "현대차", 246000, 500, 2500, 1.01);
+        addStock("000270", "기아", 118000, 650, -1200, 0.99);
+        addStock("068270", "셀트리온", 184000, 450, 1700, 1.03);
+        addStock("005490", "POSCO홀딩스", 392000, 240, -4500, 0.97);
+        addStock("035420", "NAVER", 184000, 500, 2500, 1.08);
+        addStock("035720", "카카오", 52000, 900, -800, 0.91);
+        addStock("012330", "현대모비스", 228000, 300, -4000, 0.96);
+        addStock("006400", "삼성SDI", 401000, 250, 4500, 1.02);
+        addStock("051910", "LG화학", 365000, 250, -6500, 0.97);
+        addStock("105560", "KB금융", 82500, 1000, 900, 1.01);
+        addStock("055550", "신한지주", 52300, 1000, 500, 1.01);
+        addStock("086790", "하나금융지주", 61500, 900, 650, 1.02);
+        addStock("028260", "삼성물산", 142000, 350, -1000, 0.99);
+        addStock("066570", "LG전자", 98500, 700, 1200, 1.03);
+        addStock("096770", "SK이노베이션", 121000, 450, -1500, 0.98);
+        addStock("003670", "포스코퓨처엠", 268000, 220, 5200, 1.06);
+        addStock("012450", "한화에어로스페이스", 235000, 260, 3800, 1.04);
+        addStock("329180", "현대중공업", 136000, 320, 2100, 1.02);
+        addStock("009540", "HD한국조선해양", 152000, 320, 1800, 1.03);
+        addStock("009150", "삼성전기", 153000, 420, 900, 1.01);
+        addStock("323410", "카카오뱅크", 24100, 1200, -300, 0.98);
+        addStock("259960", "크래프톤", 287000, 210, 3500, 1.02);
+        addStock("352820", "하이브", 203000, 240, -2000, 0.98);
+        addStock("036570", "엔씨소프트", 186000, 210, -1700, 0.99);
+        addStock("090430", "아모레퍼시픽", 142000, 360, 2200, 1.03);
+        addStock("003490", "대한항공", 23800, 1400, 150, 1.01);
+        addStock("051900", "LG생활건강", 356000, 180, -2500, 0.99);
+        addStock("011170", "롯데케미칼", 100800, 500, 1000, 1.12);
+        addStock("010950", "S-Oil", 69200, 800, -600, 0.99);
+        addStock("015760", "한국전력", 21300, 1600, 250, 1.02);
+        addStock("033780", "KT&G", 94200, 500, 500, 1.01);
+        addStock("000810", "삼성화재", 368000, 220, 4000, 1.02);
+        addStock("006800", "미래에셋증권", 8250, 2000, 110, 1.02);
+        addStock("034020", "두산에너빌리티", 21800, 1500, 420, 1.04);
+        addStock("086520", "에코프로", 104000, 300, -1800, 0.98);
+        addStock("247540", "에코프로비엠", 184000, 300, -2200, 0.98);
     }
 
-    private void addStock(String name, int price, int quantity, int priceFluct, double nextFluct) {
-        marketStocks.put(name, new Stock(name, price, quantity, priceFluct, nextFluct));
+    private void addStock(String code, String name, int price, int quantity, int priceFluct, double nextFluct) {
+        marketStocks.put(name, new Stock(code, name, price, quantity, priceFluct, nextFluct));
     }
 
     private void writeSeedPost(String author, String title, String content) {
