@@ -12,10 +12,15 @@ import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URI;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -35,6 +40,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MiniProjectApp {
     public static void main(String[] args) throws Exception {
@@ -72,6 +79,10 @@ class MiniHandler implements HttpHandler {
                 send(exchange, 200, "application/json; charset=utf-8", project.stateJson());
                 return;
             }
+            if ("GET".equals(exchange.getRequestMethod()) && "/api/news".equals(path)) {
+                send(exchange, 200, "application/json; charset=utf-8", project.newsJson(query(exchange), "stockName"));
+                return;
+            }
             if ("POST".equals(exchange.getRequestMethod())) {
                 Map<String, String> body = Json.parseObject(readBody(exchange));
                 String json = switch (path) {
@@ -81,8 +92,6 @@ class MiniHandler implements HttpHandler {
                     case "/api/stock/buy" -> project.buyStock(body);
                     case "/api/stock/sell" -> project.sellStock(body);
                     case "/api/day/next" -> project.nextDay();
-                    case "/api/item/buy" -> project.buyItem(body);
-                    case "/api/item/use" -> project.useItem(body);
                     case "/api/board/write" -> project.writePost(body);
                     case "/api/board/delete" -> project.deletePost(body);
                     case "/api/comment/write" -> project.writeComment(body);
@@ -104,6 +113,21 @@ class MiniHandler implements HttpHandler {
         }
     }
 
+    private Map<String, String> query(HttpExchange exchange) {
+        Map<String, String> values = new HashMap<>();
+        String raw = exchange.getRequestURI().getRawQuery();
+        if (raw == null || raw.isBlank()) return values;
+        for (String part : raw.split("&")) {
+            int equals = part.indexOf('=');
+            if (equals < 0) continue;
+            values.put(
+                    URLDecoder.decode(part.substring(0, equals), StandardCharsets.UTF_8),
+                    URLDecoder.decode(part.substring(equals + 1), StandardCharsets.UTF_8)
+            );
+        }
+        return values;
+    }
+
     private void send(HttpExchange exchange, int status, String contentType, String body) throws IOException {
         byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
         exchange.getResponseHeaders().set("Content-Type", contentType);
@@ -119,7 +143,7 @@ class MiniProject {
     private final Map<String, Stock> marketStocks = new ConcurrentHashMap<>();
     private final List<BoardPost> posts = new ArrayList<>();
     private final List<TradeLog> logs = new ArrayList<>();
-    private final Map<String, Item> itemStore = new LinkedHashMap<>();
+    private final NaverNewsClient newsClient = new NaverNewsClient();
     private final Path databaseDir = Path.of("data");
     private final AtomicLong memberIds = new AtomicLong(1000);
     private final AtomicInteger postIds = new AtomicInteger(1);
@@ -132,7 +156,6 @@ class MiniProject {
 
     MiniProject() {
         seedStocks();
-        seedItems();
         loadDatabase();
         if (members.isEmpty()) {
             register(Map.of("name", "테스트회원", "id", "test1", "pwd", "1234"));
@@ -181,7 +204,6 @@ class MiniProject {
                 "portfolio", portfolioJson(),
                 "stocks", Json.array(stocks().stream().map(Stock::toJson).toList()),
                 "shares", Json.array(currentMember == null ? List.of() : currentMember.shares.values().stream().map(this::shareJson).toList()),
-                "items", Json.array(itemStore.values().stream().map(item -> item.toJson(currentMember == null ? 0 : currentMember.items.getOrDefault(item.code, 0))).toList()),
                 "posts", Json.array(posts.stream().sorted(Comparator.comparing(BoardPost::id).reversed()).map(BoardPost::toJson).toList()),
                 "logs", Json.array(logs.stream().filter(log -> currentMember != null && log.memberUid == currentMember.uid).sorted(Comparator.comparing(TradeLog::time).reversed()).map(TradeLog::toJson).toList())
         );
@@ -241,34 +263,6 @@ class MiniProject {
         return Json.obj("ok", true, "message", currentMember.day + "일차가 되었습니다. 주가가 변동되었습니다.");
     }
 
-    String buyItem(Map<String, String> body) {
-        if (currentMember == null) return Json.obj("ok", false, "error", "로그인이 필요합니다.");
-        Item item = itemStore.get(text(body, "code"));
-        if (item == null) return Json.obj("ok", false, "error", "없는 아이템입니다.");
-        if (currentMember.balance < item.price) return Json.obj("ok", false, "error", "잔액이 부족합니다.");
-        currentMember.balance -= item.price;
-        currentMember.items.merge(item.code, 1, Integer::sum);
-        saveDatabase();
-        return Json.obj("ok", true, "message", item.name + "을 구매했습니다.");
-    }
-
-    String useItem(Map<String, String> body) {
-        if (currentMember == null) return Json.obj("ok", false, "error", "로그인이 필요합니다.");
-        Item item = itemStore.get(text(body, "code"));
-        if (item == null || currentMember.items.getOrDefault(item.code, 0) <= 0) {
-            return Json.obj("ok", false, "error", "보유한 아이템이 없습니다.");
-        }
-        currentMember.items.compute(item.code, (key, count) -> count == null || count <= 1 ? null : count - 1);
-        saveDatabase();
-        if ("predict".equals(item.code)) {
-            Stock stock = stocks().get(random.nextInt(stocks().size()));
-            double hint = stock.nextFluct * (0.8 + random.nextDouble() * 0.4);
-            return Json.obj("ok", true, "message", "소문에 따르면 " + stock.name + "는 내일 " + String.format(Locale.US, "%.2f", hint) + "배로 변동합니다.");
-        }
-        String[] luck = {"매우 나쁨", "나쁨", "보통", "좋음", "매우 좋음"};
-        return Json.obj("ok", true, "message", "오늘의 운세는 " + luck[random.nextInt(luck.length)] + "입니다.");
-    }
-
     List<String> symbolNames() {
         return marketStocks.values().stream().map(stock -> stock.name).sorted().toList();
     }
@@ -285,6 +279,13 @@ class MiniProject {
         brokerTicks.incrementAndGet();
         updateStock(marketStocks.get(tick.symbol), tick);
         members.values().forEach(member -> updateStock(member.stocks.get(tick.symbol), tick));
+    }
+
+    String newsJson(Map<String, String> body, String key) {
+        String stockName = text(body, key);
+        Stock stock = marketStocks.get(stockName);
+        if (stock == null) return Json.obj("ok", false, "error", "없는 종목입니다.");
+        return newsClient.search(stock.name + " 주가 실적 전망", stock.name);
     }
 
     String writePost(Map<String, String> body) {
@@ -321,16 +322,50 @@ class MiniProject {
     }
 
     private void seedStocks() {
-        marketStocks.put("삼성전자", new Stock("삼성전자", 72000, 1000, 2000, 1.05));
-        marketStocks.put("현대모비스", new Stock("현대모비스", 228000, 300, -4000, 0.96));
-        marketStocks.put("롯데케미칼", new Stock("롯데케미칼", 100800, 500, 1000, 1.12));
-        marketStocks.put("카카오", new Stock("카카오", 52000, 800, -800, 0.91));
-        marketStocks.put("네이버", new Stock("네이버", 184000, 400, 2500, 1.08));
+        addStock("삼성전자", 72000, 1000, 2000, 1.05);
+        addStock("SK하이닉스", 213000, 700, 3500, 1.04);
+        addStock("LG에너지솔루션", 352000, 400, -5000, 0.98);
+        addStock("삼성바이오로직스", 835000, 120, 8000, 1.02);
+        addStock("현대차", 246000, 500, 2500, 1.01);
+        addStock("기아", 118000, 650, -1200, 0.99);
+        addStock("셀트리온", 184000, 450, 1700, 1.03);
+        addStock("POSCO홀딩스", 392000, 240, -4500, 0.97);
+        addStock("NAVER", 184000, 500, 2500, 1.08);
+        addStock("카카오", 52000, 900, -800, 0.91);
+        addStock("현대모비스", 228000, 300, -4000, 0.96);
+        addStock("삼성SDI", 401000, 250, 4500, 1.02);
+        addStock("LG화학", 365000, 250, -6500, 0.97);
+        addStock("KB금융", 82500, 1000, 900, 1.01);
+        addStock("신한지주", 52300, 1000, 500, 1.01);
+        addStock("하나금융지주", 61500, 900, 650, 1.02);
+        addStock("삼성물산", 142000, 350, -1000, 0.99);
+        addStock("LG전자", 98500, 700, 1200, 1.03);
+        addStock("SK이노베이션", 121000, 450, -1500, 0.98);
+        addStock("포스코퓨처엠", 268000, 220, 5200, 1.06);
+        addStock("한화에어로스페이스", 235000, 260, 3800, 1.04);
+        addStock("현대중공업", 136000, 320, 2100, 1.02);
+        addStock("HD한국조선해양", 152000, 320, 1800, 1.03);
+        addStock("삼성전기", 153000, 420, 900, 1.01);
+        addStock("카카오뱅크", 24100, 1200, -300, 0.98);
+        addStock("크래프톤", 287000, 210, 3500, 1.02);
+        addStock("하이브", 203000, 240, -2000, 0.98);
+        addStock("엔씨소프트", 186000, 210, -1700, 0.99);
+        addStock("아모레퍼시픽", 142000, 360, 2200, 1.03);
+        addStock("대한항공", 23800, 1400, 150, 1.01);
+        addStock("LG생활건강", 356000, 180, -2500, 0.99);
+        addStock("롯데케미칼", 100800, 500, 1000, 1.12);
+        addStock("S-Oil", 69200, 800, -600, 0.99);
+        addStock("한국전력", 21300, 1600, 250, 1.02);
+        addStock("KT&G", 94200, 500, 500, 1.01);
+        addStock("삼성화재", 368000, 220, 4000, 1.02);
+        addStock("미래에셋증권", 8250, 2000, 110, 1.02);
+        addStock("두산에너빌리티", 21800, 1500, 420, 1.04);
+        addStock("에코프로", 104000, 300, -1800, 0.98);
+        addStock("에코프로비엠", 184000, 300, -2200, 0.98);
     }
 
-    private void seedItems() {
-        itemStore.put("luck", new Item("luck", "오늘의운세", 500, "무작위 운세를 확인합니다."));
-        itemStore.put("predict", new Item("predict", "주식가격예측", 10000, "무작위 종목의 다음날 변동 힌트를 확인합니다."));
+    private void addStock(String name, int price, int quantity, int priceFluct, double nextFluct) {
+        marketStocks.put(name, new Stock(name, price, quantity, priceFluct, nextFluct));
     }
 
     private void writeSeedPost(String author, String title, String content) {
@@ -578,6 +613,105 @@ class Share {
                 "profit", profit,
                 "profitRate", String.format(Locale.US, "%.2f", profitRate)
         );
+    }
+}
+
+class NaverNewsClient {
+    private final HttpClient client = HttpClient.newHttpClient();
+    private final String clientId = System.getenv("NAVER_CLIENT_ID");
+    private final String clientSecret = System.getenv("NAVER_CLIENT_SECRET");
+
+    String search(String query, String stockName) {
+        if (blank(clientId) || blank(clientSecret)) {
+            return Json.obj(
+                    "ok", true,
+                    "stockName", stockName,
+                    "source", "네이버 검색 뉴스 API",
+                    "configured", false,
+                    "message", "NAVER_CLIENT_ID와 NAVER_CLIENT_SECRET 환경변수를 설정하면 실제 뉴스가 표시됩니다.",
+                    "items", "[]"
+            );
+        }
+        try {
+            String encoded = URLEncoder.encode(query, StandardCharsets.UTF_8);
+            URI uri = URI.create("https://openapi.naver.com/v1/search/news.json?query=" + encoded + "&display=5&sort=date");
+            HttpRequest request = HttpRequest.newBuilder(uri)
+                    .header("X-Naver-Client-Id", clientId)
+                    .header("X-Naver-Client-Secret", clientSecret)
+                    .GET()
+                    .build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (response.statusCode() != 200) {
+                return Json.obj(
+                        "ok", true,
+                        "stockName", stockName,
+                        "source", "네이버 검색 뉴스 API",
+                        "configured", true,
+                        "message", "뉴스 API 응답 오류: HTTP " + response.statusCode(),
+                        "items", "[]"
+                );
+            }
+            return Json.obj(
+                    "ok", true,
+                    "stockName", stockName,
+                    "source", "네이버 검색 뉴스 API",
+                    "configured", true,
+                    "message", "최신 뉴스입니다.",
+                    "items", Json.array(parseItems(response.body()).stream().map(NewsArticle::toJson).toList())
+            );
+        } catch (Exception ex) {
+            return Json.obj(
+                    "ok", true,
+                    "stockName", stockName,
+                    "source", "네이버 검색 뉴스 API",
+                    "configured", true,
+                    "message", "뉴스를 불러오지 못했습니다: " + ex.getMessage(),
+                    "items", "[]"
+            );
+        }
+    }
+
+    private List<NewsArticle> parseItems(String json) {
+        List<NewsArticle> articles = new ArrayList<>();
+        Matcher matcher = Pattern.compile("\\{\\s*\"title\"\\s*:\\s*\"(.*?)\"\\s*,\\s*\"originallink\"\\s*:\\s*\"(.*?)\"\\s*,\\s*\"link\"\\s*:\\s*\"(.*?)\"\\s*,\\s*\"description\"\\s*:\\s*\"(.*?)\"\\s*,\\s*\"pubDate\"\\s*:\\s*\"(.*?)\"\\s*}", Pattern.DOTALL).matcher(json);
+        while (matcher.find() && articles.size() < 5) {
+            articles.add(new NewsArticle(clean(matcher.group(1)), clean(matcher.group(3)), clean(matcher.group(4)), clean(matcher.group(5))));
+        }
+        return articles;
+    }
+
+    private String clean(String text) {
+        return text
+                .replace("\\\"", "\"")
+                .replace("\\/", "/")
+                .replace("&quot;", "\"")
+                .replace("&amp;", "&")
+                .replace("&lt;", "<")
+                .replace("&gt;", ">")
+                .replaceAll("<[^>]+>", "")
+                .trim();
+    }
+
+    private boolean blank(String value) {
+        return value == null || value.isBlank();
+    }
+}
+
+class NewsArticle {
+    final String title;
+    final String link;
+    final String description;
+    final String pubDate;
+
+    NewsArticle(String title, String link, String description, String pubDate) {
+        this.title = title;
+        this.link = link;
+        this.description = description;
+        this.pubDate = pubDate;
+    }
+
+    String toJson() {
+        return Json.obj("title", title, "link", link, "description", description, "pubDate", pubDate);
     }
 }
 
@@ -946,7 +1080,6 @@ class MiniPage {
                     </div>
                     <aside class="stack">
                       <section><h2>날짜 진행</h2><div class="body"><button onclick="nextDay()">다음날로 넘어가기</button></div><div class="message" id="dayMessage"></div></section>
-                      <section><h2>아이템 상점</h2><div class="cards" id="items"></div></section>
                       <section><h2>자유 게시판</h2><form id="postForm"><label>제목<input name="title"></label><label>내용<input name="content"></label><button>글 작성</button></form><div class="cards" id="posts"></div></section>
                     </aside>
                   </main>
@@ -981,7 +1114,6 @@ class MiniPage {
                       document.getElementById('stockSelect').innerHTML = state.stocks.map(s => `<option value="${html(s.name)}">${html(s.name)}</option>`).join('');
                       document.getElementById('shares').innerHTML = state.shares.map(s => `<tr><td>${html(s.stockName)}</td><td>${s.quantity}</td><td>${won(s.purchasePrice)}</td><td>${won(s.averagePrice)}</td></tr>`).join('') || '<tr><td colspan="4">보유 주식이 없습니다.</td></tr>';
                       document.getElementById('logs').innerHTML = state.logs.map(l => `<tr><td>${l.time}</td><td>${l.type}</td><td>${html(l.stockName)}</td><td>${l.quantity}</td><td>${won(l.price)}</td></tr>`).join('') || '<tr><td colspan="5">거래 기록이 없습니다.</td></tr>';
-                      document.getElementById('items').innerHTML = state.items.map(i => `<div class="card"><strong>${html(i.name)}</strong><div class="label">${html(i.description)}</div><div>가격 ${won(i.price)} · 보유 ${i.owned}개</div><div class="row-actions"><button onclick="buyItem('${i.code}')">구매</button><button class="secondary" onclick="useItem('${i.code}')">사용</button></div></div>`).join('');
                       document.getElementById('posts').innerHTML = state.posts.map(p => `<div class="card"><strong>${html(p.title)}</strong><div class="label">${html(p.author)} · ${p.createdAt} · 조회 ${p.views}</div><div>${html(p.content)}</div><div class="comments">${p.comments.map(c => `<div>${html(c.author)}: ${html(c.content)}</div>`).join('')}</div><div class="comment-form"><input id="comment-${p.id}" placeholder="댓글"><button onclick="comment(${p.id})">댓글</button></div></div>`).join('');
                     }
                     async function submitForm(form, path) {
@@ -994,8 +1126,6 @@ class MiniPage {
                     document.getElementById('postForm').addEventListener('submit', async e => { e.preventDefault(); try { await submitForm(e.target, '/api/board/write'); e.target.reset(); await refresh(); } catch(err) { alert(err.message); } });
                     async function logout() { await api('/api/logout', {}); await refresh(); }
                     async function nextDay() { const r = await api('/api/day/next', {}); document.getElementById('dayMessage').textContent = r.message; await refresh(); }
-                    async function buyItem(code) { try { alert((await api('/api/item/buy', {code})).message); await refresh(); } catch(err) { alert(err.message); } }
-                    async function useItem(code) { try { alert((await api('/api/item/use', {code})).message); await refresh(); } catch(err) { alert(err.message); } }
                     async function comment(postId) { const input = document.getElementById('comment-' + postId); if (!input.value.trim()) return; await api('/api/comment/write', {postId, content:input.value}); input.value=''; await refresh(); }
                     refresh();
                   </script>
@@ -1051,6 +1181,8 @@ class MiniDashboardPage {
                     .actions { display:flex; gap:8px; flex-wrap:wrap; }
                     .message { color:var(--muted); padding:0 16px 14px; min-height:22px; }
                     .stockName { font-weight:850; }
+                    .stockRow { cursor:pointer; }
+                    .stockRow.active { background:#edf5ff; }
                     .up { color:var(--green); } .down { color:var(--red); }
                     .tabs { display:flex; gap:8px; padding:12px 12px 0; flex-wrap:wrap; }
                     .tab { background:#e7edf6; color:#1f2937; }
@@ -1063,13 +1195,15 @@ class MiniDashboardPage {
                     .postForm { display:grid; grid-template-columns:1fr; gap:10px; padding:16px; border-bottom:1px solid var(--line); }
                     .commentForm { display:grid; grid-template-columns:1fr auto; gap:8px; }
                     .comments { color:var(--muted); font-size:13px; display:grid; gap:4px; }
-                    .sideStack { display:grid; gap:16px; }
                     .empty { color:var(--muted); padding:16px; }
-                    details.tools { background:var(--panel); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
-                    details.tools summary { cursor:pointer; padding:14px 16px; font-weight:850; border-bottom:1px solid var(--line); background:#fbfcfe; }
-                    details.tools:not([open]) summary { border-bottom:0; }
+                    .detailGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:16px; }
+                    .newsList { display:grid; gap:10px; padding:0 16px 16px; }
+                    .newsItem { border:1px solid var(--line); border-radius:8px; padding:12px; background:#fbfcfe; display:grid; gap:6px; }
+                    .newsItem a { color:var(--blue); font-weight:850; text-decoration:none; }
+                    .newsItem p { margin:0; color:#344054; line-height:1.45; }
+                    .newsMeta { color:var(--muted); font-size:12px; }
                     @media (max-width: 1100px) { .hero, .layout { grid-template-columns:1fr; } .summary { grid-template-columns:repeat(2,1fr); } .brokerStrip { grid-template-columns:1fr 1fr; } }
-                    @media (max-width: 720px) { header { align-items:flex-start; flex-direction:column; } .auth, .summary, .brokerStrip, .tradeBox, .quantityRow { grid-template-columns:1fr; } main { padding:12px; } }
+                    @media (max-width: 720px) { header { align-items:flex-start; flex-direction:column; } .auth, .summary, .brokerStrip, .tradeBox, .quantityRow, .detailGrid { grid-template-columns:1fr; } main { padding:12px; } }
                   </style>
                 </head>
                 <body>
@@ -1133,6 +1267,12 @@ class MiniDashboardPage {
                         </section>
 
                         <section>
+                          <h2>종목 상세 / 뉴스</h2>
+                          <div class="detailGrid" id="stockDetail"></div>
+                          <div class="newsList" id="newsList"></div>
+                        </section>
+
+                        <section>
                           <div class="tabs">
                             <button class="tab active" onclick="showTab('portfolio')">보유</button>
                             <button class="tab" onclick="showTab('logs')">기록</button>
@@ -1154,17 +1294,15 @@ class MiniDashboardPage {
                           </div>
                         </section>
 
-                        <details class="tools">
-                          <summary>보조 기능</summary>
-                          <div class="cards" id="items"></div>
-                          <div class="message" id="dayMessage"></div>
-                        </details>
+                        <div class="message" id="dayMessage"></div>
                       </div>
                     </div>
                   </main>
 
                   <script>
                     let state = {};
+                    let selectedStockName = '';
+                    let selectedNews = null;
                     const won = n => Number(n || 0).toLocaleString('ko-KR') + '원';
                     const html = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
                     async function api(path, body) {
@@ -1207,21 +1345,39 @@ class MiniDashboardPage {
                         ['소켓 포트', broker.port ? `TCP ${broker.port}` : '-'],
                         ['마지막 틱', `${broker.lastTick || '-'} · ${broker.ticks || 0}회`]
                       ].map(([label, value]) => `<div><div class="labelText">${label}</div><strong>${html(value)}</strong></div>`).join('');
+                      if (!selectedStockName && (state.stocks || []).length) selectedStockName = state.stocks[0].name;
                       renderStocks();
+                      renderSelectedStock();
                       renderShares();
                       renderLogs();
-                      renderItems();
                       renderPosts();
                     }
                     function renderStocks() {
                       document.getElementById('stocks').innerHTML = (state.stocks || []).map(stock => `<tr>
-                        <td><span class="stockName">${html(stock.name)}</span></td>
+                        <td><button type="button" class="ghost" onclick="selectStock('${html(stock.name)}')">${html(stock.name)}</button></td>
                         <td>${won(stock.price)}</td>
                         <td>${stock.quantity}</td>
                         <td class="${stock.priceFluct>=0?'up':'down'}">${won(stock.priceFluct)}</td>
                         <td class="${stock.priceFluct>=0?'up':'down'}">${stock.changeRate}%</td>
                       </tr>`).join('');
                       document.getElementById('stockSelect').innerHTML = (state.stocks || []).map(stock => `<option value="${html(stock.name)}">${html(stock.name)} · ${won(stock.price)}</option>`).join('');
+                      if (selectedStockName) document.getElementById('stockSelect').value = selectedStockName;
+                    }
+                    function renderSelectedStock() {
+                      const stock = stockByName(selectedStockName) || (state.stocks || [])[0];
+                      if (!stock) {
+                        document.getElementById('stockDetail').innerHTML = '<div class="empty">종목이 없습니다.</div>';
+                        document.getElementById('newsList').innerHTML = '';
+                        return;
+                      }
+                      const positive = Number(stock.priceFluct || 0) >= 0;
+                      document.getElementById('stockDetail').innerHTML = [
+                        ['선택 종목', stock.name, ''],
+                        ['현재가', won(stock.price), ''],
+                        ['변동폭', won(stock.priceFluct), positive ? 'up' : 'down'],
+                        ['변동률', `${stock.changeRate}%`, positive ? 'up' : 'down']
+                      ].map(([label, value, cls]) => `<div class="metric"><div class="labelText">${label}</div><div class="value ${cls}">${html(value)}</div></div>`).join('');
+                      renderNews();
                     }
                     function renderShares() {
                       document.getElementById('shares').innerHTML = (state.shares || []).map(share => {
@@ -1232,13 +1388,32 @@ class MiniDashboardPage {
                     function renderLogs() {
                       document.getElementById('logs').innerHTML = (state.logs || []).map(log => `<tr><td>${log.time}</td><td>${log.type}</td><td>${html(log.stockName)}</td><td>${log.quantity}</td><td>${won(log.price)}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">거래 기록이 없습니다.</td></tr>';
                     }
-                    function renderItems() {
-                      document.getElementById('items').innerHTML = (state.items || []).map(item => `<div class="card">
-                        <div class="itemHead"><strong>${html(item.name)}</strong><span class="labelText">보유 ${item.owned}개</span></div>
-                        <div>${html(item.description)}</div>
-                        <div class="labelText">가격 ${won(item.price)}</div>
-                        <div class="actions"><button onclick="buyItem('${item.code}')">구매</button><button class="secondary" onclick="useItem('${item.code}')">사용</button></div>
-                      </div>`).join('');
+                    function renderNews() {
+                      const box = document.getElementById('newsList');
+                      if (!selectedNews || selectedNews.stockName !== selectedStockName) {
+                        box.innerHTML = '<div class="empty">종목을 클릭하면 관련 뉴스가 표시됩니다.</div>';
+                        return;
+                      }
+                      const items = selectedNews.items || [];
+                      const head = `<div class="message">${html(selectedNews.source)} · ${html(selectedNews.message)}</div>`;
+                      box.innerHTML = head + (items.length ? items.map(item => `<article class="newsItem">
+                        <a href="${html(item.link)}" target="_blank" rel="noopener noreferrer">${html(item.title)}</a>
+                        <p>${html(item.description)}</p>
+                        <div class="newsMeta">${html(item.pubDate)}</div>
+                      </article>`).join('') : '<div class="empty">표시할 뉴스가 없습니다.</div>');
+                    }
+                    async function selectStock(name) {
+                      selectedStockName = name;
+                      selectedNews = null;
+                      document.getElementById('stockSelect').value = name;
+                      renderSelectedStock();
+                      try {
+                        selectedNews = await api('/api/news?stockName=' + encodeURIComponent(name));
+                        renderNews();
+                      } catch (err) {
+                        selectedNews = {stockName:name, source:'뉴스', message:err.message, items:[]};
+                        renderNews();
+                      }
                     }
                     function renderPosts() {
                       document.getElementById('posts').innerHTML = (state.posts || []).map(post => `<div class="card">
@@ -1274,6 +1449,7 @@ class MiniDashboardPage {
                       try { const result = await api(e.submitter.value === 'buy' ? '/api/stock/buy' : '/api/stock/sell', payload); document.getElementById('tradeMessage').textContent = result.message; await refresh(); }
                       catch (err) { document.getElementById('tradeMessage').textContent = err.message; }
                     });
+                    document.getElementById('stockSelect').addEventListener('change', e => selectStock(e.target.value));
                     document.getElementById('postForm').addEventListener('submit', async e => {
                       e.preventDefault();
                       try { await submitForm(e.target, '/api/board/write'); e.target.reset(); await refresh(); showTab('board'); }
@@ -1281,8 +1457,6 @@ class MiniDashboardPage {
                     });
                     async function logout() { await api('/api/logout', {}); await refresh(); }
                     async function nextDay() { try { const result = await api('/api/day/next', {}); document.getElementById('dayMessage').textContent = result.message; await refresh(); } catch (err) { document.getElementById('dayMessage').textContent = err.message; } }
-                    async function buyItem(code) { try { alert((await api('/api/item/buy', {code})).message); await refresh(); } catch (err) { alert(err.message); } }
-                    async function useItem(code) { try { alert((await api('/api/item/use', {code})).message); await refresh(); } catch (err) { alert(err.message); } }
                     async function comment(postId) {
                       const input = document.getElementById('comment-' + postId);
                       if (!input.value.trim()) return;

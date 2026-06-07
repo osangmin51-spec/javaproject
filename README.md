@@ -11,8 +11,8 @@ Java 표준 라이브러리만 사용해 구현한 모의주식투자 웹 프로
 - 주식 매수 / 매도
 - 보유 종목별 평가금액, 손익, 수익률 계산
 - 거래 기록 조회
+- 종목별 뉴스 조회
 - 게시판과 댓글
-- 아이템 상점
 
 ## 화면 구성
 
@@ -21,8 +21,8 @@ Java 표준 라이브러리만 사용해 구현한 모의주식투자 웹 프로
 - 상단: 현금, 주식 평가액, 총 자산, 손익, 수익률
 - 가격 연결: 가격 소스, 구독 명령, 소켓 포트, 마지막 수신 시각
 - 매매 영역: 종목 선택, 수량 입력, 매수/매도 버튼
+- 종목 상세: 종목 클릭 시 현재가, 변동률, 관련 뉴스 표시
 - 탭 영역: 보유, 기록, 게시판
-- 보조 기능: 아이템 상점
 
 ## 데이터 저장
 
@@ -68,6 +68,20 @@ Java 표준 라이브러리만 사용해 구현한 모의주식투자 웹 프로
 - 모의투자 신청 정보
 - WebSocket 실시간 시세 접속 정보
 
+## 뉴스 연동
+
+종목을 클릭하면 `/api/news` API가 해당 회사 관련 뉴스를 조회합니다.
+
+네이버 검색 뉴스 API를 사용하려면 실행 전에 환경변수를 설정합니다.
+
+```powershell
+$env:NAVER_CLIENT_ID="발급받은_Client_ID"
+$env:NAVER_CLIENT_SECRET="발급받은_Client_Secret"
+java -cp out MiniProjectApp 8080
+```
+
+환경변수가 없으면 뉴스 영역에는 API 키 설정 안내가 표시됩니다.
+
 ## 실행 방법
 
 Java 21 이상을 권장합니다.
@@ -109,14 +123,13 @@ tcp://127.0.0.1:9090
 | --- | --- | --- |
 | `GET` | `/` | 웹 화면 |
 | `GET` | `/api/state` | 전체 화면 상태 |
+| `GET` | `/api/news` | 선택 종목 뉴스 조회 |
 | `POST` | `/api/register` | 회원가입 |
 | `POST` | `/api/login` | 로그인 |
 | `POST` | `/api/logout` | 로그아웃 |
 | `POST` | `/api/stock/buy` | 주식 구매 |
 | `POST` | `/api/stock/sell` | 주식 판매 |
 | `POST` | `/api/day/next` | 다음날 진행 |
-| `POST` | `/api/item/buy` | 아이템 구매 |
-| `POST` | `/api/item/use` | 아이템 사용 |
 | `POST` | `/api/board/write` | 게시글 작성 |
 | `POST` | `/api/board/delete` | 게시글 삭제 |
 | `POST` | `/api/comment/write` | 댓글 작성 |
