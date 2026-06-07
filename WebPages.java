@@ -55,11 +55,23 @@ class MiniDashboardPage {
                     .empty { color:var(--muted); padding:16px; }
                     .detailGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:16px; }
                     .companyInfo { padding:0 16px 16px; color:#344054; line-height:1.55; }
+                    .chartWrap { margin:0 16px 16px; border:1px solid var(--line); border-radius:8px; background:#fbfcfe; padding:12px; }
+                    .priceChart { width:100%; height:210px; display:block; }
+                    .chartLine { fill:none; stroke:var(--blue); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
+                    .chartArea { fill:rgba(31,95,191,.08); }
+                    .chartGrid { stroke:#dbe4ef; stroke-width:1; }
+                    .chartPoint { fill:#fff; stroke:var(--blue); stroke-width:2; }
+                    .chartMeta { display:flex; justify-content:space-between; gap:10px; color:var(--muted); font-size:12px; flex-wrap:wrap; }
                     .newsList { display:grid; gap:10px; padding:0 16px 16px; }
                     .newsItem { border:1px solid var(--line); border-radius:8px; padding:12px; background:#fbfcfe; display:grid; gap:6px; }
                     .newsItem a { color:var(--blue); font-weight:850; text-decoration:none; }
                     .newsItem p { margin:0; color:#344054; line-height:1.45; }
                     .newsMeta { color:var(--muted); font-size:12px; }
+                    .impactRow { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+                    .impactBadge { border-radius:999px; padding:4px 8px; font-size:12px; font-weight:850; }
+                    .impactGood { background:#e7f7ef; color:var(--green); }
+                    .impactBad { background:#fdeceb; color:var(--red); }
+                    .impactNeutral { background:#edf1f7; color:#405164; }
                     @media (max-width: 1100px) { .hero, .layout { grid-template-columns:1fr; } .summary { grid-template-columns:repeat(2,1fr); } }
                     @media (max-width: 720px) { header { align-items:flex-start; flex-direction:column; } .auth, .summary, .tradeBox, .detailGrid { grid-template-columns:1fr; } main { padding:12px; } }
                   </style>
@@ -124,6 +136,10 @@ class MiniDashboardPage {
                           <h2>종목 상세 / 뉴스</h2>
                           <div class="detailGrid" id="stockDetail"></div>
                           <div class="companyInfo" id="companyInfo"></div>
+                          <div class="chartWrap">
+                            <svg class="priceChart" id="priceChart" viewBox="0 0 640 210" role="img" aria-label="종목 가격 변화 추이"></svg>
+                            <div class="chartMeta" id="chartMeta"></div>
+                          </div>
                           <div class="newsList" id="newsList"></div>
                         </section>
 
@@ -216,6 +232,8 @@ class MiniDashboardPage {
                       if (!stock) {
                         document.getElementById('stockDetail').innerHTML = '<div class="empty">종목이 없습니다.</div>';
                         document.getElementById('companyInfo').innerHTML = '';
+                        document.getElementById('priceChart').innerHTML = '<text x="320" y="105" text-anchor="middle" fill="#667085">가격 데이터가 없습니다.</text>';
+                        document.getElementById('chartMeta').innerHTML = '';
                         document.getElementById('newsList').innerHTML = '';
                         return;
                       }
@@ -231,7 +249,40 @@ class MiniDashboardPage {
                         ['시장 수량', stock.quantity, '']
                       ].map(([label, value, cls]) => `<div class="metric"><div class="labelText">${label}</div><div class="value ${cls}">${html(value)}</div></div>`).join('');
                       document.getElementById('companyInfo').innerHTML = html(stock.description || '회사 정보가 없습니다.');
+                      renderPriceChart(stock);
                       renderNews();
+                    }
+                    function renderPriceChart(stock) {
+                      const svg = document.getElementById('priceChart');
+                      const meta = document.getElementById('chartMeta');
+                      const history = (stock.history || []).filter(point => Number(point.price) > 0);
+                      if (history.length < 2) {
+                        svg.innerHTML = '<text x="320" y="105" text-anchor="middle" fill="#667085">실시간 가격이 더 쌓이면 추이 그래프가 표시됩니다.</text>';
+                        meta.innerHTML = '<span>가격 포인트 1개 이하</span>';
+                        return;
+                      }
+                      const width = 640;
+                      const height = 210;
+                      const pad = 24;
+                      const prices = history.map(point => Number(point.price));
+                      const min = Math.min(...prices);
+                      const max = Math.max(...prices);
+                      const range = Math.max(1, max - min);
+                      const points = history.map((point, index) => {
+                        const x = pad + (index * (width - pad * 2)) / Math.max(1, history.length - 1);
+                        const y = height - pad - ((Number(point.price) - min) * (height - pad * 2)) / range;
+                        return {x, y, price:Number(point.price), time:point.time};
+                      });
+                      const line = points.map(point => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
+                      const area = `${pad},${height - pad} ${line} ${width - pad},${height - pad}`;
+                      const guideY = [pad, height / 2, height - pad].map(y => `<line class="chartGrid" x1="${pad}" y1="${y}" x2="${width - pad}" y2="${y}"></line>`).join('');
+                      const circles = points.slice(-8).map(point => `<circle class="chartPoint" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="3"><title>${html(point.time)} ${won(point.price)}</title></circle>`).join('');
+                      svg.innerHTML = `${guideY}<polygon class="chartArea" points="${area}"></polygon><polyline class="chartLine" points="${line}"></polyline>${circles}`;
+                      const latest = history[history.length - 1];
+                      const first = history[0];
+                      const diff = Number(latest.price) - Number(first.price);
+                      const cls = diff >= 0 ? 'up' : 'down';
+                      meta.innerHTML = `<span>최근 ${history.length}개 가격 포인트</span><span>최저 ${won(min)} · 최고 ${won(max)}</span><span class="${cls}">${first.time} 대비 ${won(diff)}</span>`;
                     }
                     function renderShares() {
                       document.getElementById('shares').innerHTML = (state.shares || []).map(share => {
@@ -250,11 +301,16 @@ class MiniDashboardPage {
                       }
                       const items = selectedNews.items || [];
                       const head = `<div class="message">${html(selectedNews.source)} · ${html(selectedNews.message)}</div>`;
-                      box.innerHTML = head + (items.length ? items.map(item => `<article class="newsItem">
-                        <a href="${html(item.link)}" target="_blank" rel="noopener noreferrer">${html(item.title)}</a>
-                        <p>${html(item.description)}</p>
-                        <div class="newsMeta">${html(item.pubDate)}</div>
-                      </article>`).join('') : '<div class="empty">표시할 뉴스가 없습니다.</div>');
+                      box.innerHTML = head + (items.length ? items.map(item => {
+                        const impact = item.impact || '중립';
+                        const impactClass = impact.includes('호재') ? 'impactGood' : impact.includes('악재') ? 'impactBad' : 'impactNeutral';
+                        return `<article class="newsItem">
+                          <a href="${html(item.link)}" target="_blank" rel="noopener noreferrer">${html(item.title)}</a>
+                          <div class="impactRow"><span class="impactBadge ${impactClass}">${html(impact)}</span><span class="newsMeta">${html(item.impactReason || '')}</span></div>
+                          <p>${html(item.description)}</p>
+                          <div class="newsMeta">${html(item.pubDate)}</div>
+                        </article>`;
+                      }).join('') : '<div class="empty">표시할 뉴스가 없습니다.</div>');
                     }
                     async function selectStock(name) {
                       selectedStockName = name;

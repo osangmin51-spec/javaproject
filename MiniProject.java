@@ -164,8 +164,8 @@ class MiniProject {
         brokerSource = "한국투자증권 KIS REST API";
         lastBrokerTick = LocalDateTime.now();
         brokerTicks.incrementAndGet();
-        updateStock(marketStocks.get(tick.symbol), tick);
-        members.values().forEach(member -> updateStock(member.stocks.get(tick.symbol), tick));
+        updateExternalStock(marketStocks.get(tick.symbol), tick);
+        members.values().forEach(member -> updateExternalStock(member.stocks.get(tick.symbol), tick));
     }
 
     String newsJson(Map<String, String> body, String key) {
@@ -308,9 +308,12 @@ class MiniProject {
 
     private void updateStock(Stock stock, BrokerTick tick) {
         if (stock == null) return;
-        stock.price = Math.max(100, tick.price);
-        stock.priceFluct = tick.change;
-        stock.nextFluct = 1.0 + tick.percent / 100.0;
+        stock.updatePrice(Math.max(100, tick.price), tick.change, tick.percent);
+    }
+
+    private void updateExternalStock(Stock stock, BrokerTick tick) {
+        if (stock == null) return;
+        stock.updateExternalPrice(Math.max(100, tick.price), tick.change, tick.percent);
     }
 
     private String brokerJson() {

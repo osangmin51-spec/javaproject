@@ -40,6 +40,7 @@ class Stock {
     int quantity;
     int priceFluct;
     double nextFluct;
+    final List<PricePoint> history = new ArrayList<>();
 
     Stock(String code, String name, String market, String sector, String description, int price, int quantity, int priceFluct, double nextFluct) {
         this.code = code;
@@ -51,10 +52,43 @@ class Stock {
         this.quantity = quantity;
         this.priceFluct = priceFluct;
         this.nextFluct = nextFluct;
+        recordPrice(price);
     }
 
     Stock copy() {
-        return new Stock(code, name, market, sector, description, price, quantity, priceFluct, nextFluct);
+        Stock copy = new Stock(code, name, market, sector, description, price, quantity, priceFluct, nextFluct);
+        synchronized (history) {
+            copy.history.clear();
+            copy.history.addAll(history);
+        }
+        return copy;
+    }
+
+    void updatePrice(int nextPrice, int change, double changeRate) {
+        price = nextPrice;
+        priceFluct = change;
+        nextFluct = 1.0 + changeRate / 100.0;
+        recordPrice(nextPrice);
+    }
+
+    void updateExternalPrice(int nextPrice, int change, double changeRate) {
+        synchronized (history) {
+            if (history.size() == 1) {
+                history.clear();
+                int previousPrice = nextPrice - change;
+                if (previousPrice > 0 && previousPrice != nextPrice) {
+                    history.add(new PricePoint(LocalDateTime.now().minusMinutes(1), previousPrice));
+                }
+            }
+        }
+        updatePrice(nextPrice, change, changeRate);
+    }
+
+    private void recordPrice(int value) {
+        synchronized (history) {
+            history.add(new PricePoint(LocalDateTime.now(), value));
+            while (history.size() > 40) history.remove(0);
+        }
     }
 
     String toJson() {
@@ -70,8 +104,29 @@ class Stock {
                 "quantity", quantity,
                 "priceFluct", priceFluct,
                 "changeRate", String.format(Locale.US, "%.2f", rate),
-                "nextFluct", String.format(Locale.US, "%.2f", nextFluct)
+                "nextFluct", String.format(Locale.US, "%.2f", nextFluct),
+                "history", historyJson()
         );
+    }
+
+    private String historyJson() {
+        synchronized (history) {
+            return Json.array(history.stream().map(PricePoint::toJson).toList());
+        }
+    }
+}
+
+class PricePoint {
+    final LocalDateTime time;
+    final int price;
+
+    PricePoint(LocalDateTime time, int price) {
+        this.time = time;
+        this.price = price;
+    }
+
+    String toJson() {
+        return Json.obj("time", time.format(DateTimeFormatter.ofPattern("HH:mm:ss")), "price", price);
     }
 }
 

@@ -68,7 +68,10 @@ class NaverNewsClient {
         List<NewsArticle> articles = new ArrayList<>();
         Matcher matcher = Pattern.compile("\\{\\s*\"title\"\\s*:\\s*\"(.*?)\"\\s*,\\s*\"originallink\"\\s*:\\s*\"(.*?)\"\\s*,\\s*\"link\"\\s*:\\s*\"(.*?)\"\\s*,\\s*\"description\"\\s*:\\s*\"(.*?)\"\\s*,\\s*\"pubDate\"\\s*:\\s*\"(.*?)\"\\s*}", Pattern.DOTALL).matcher(json);
         while (matcher.find() && articles.size() < 5) {
-            articles.add(new NewsArticle(clean(matcher.group(1)), clean(matcher.group(3)), clean(matcher.group(4)), clean(matcher.group(5))));
+            String title = clean(matcher.group(1));
+            String description = clean(matcher.group(4));
+            NewsImpact impact = NewsImpact.from(title + " " + description);
+            articles.add(new NewsArticle(title, clean(matcher.group(3)), description, clean(matcher.group(5)), impact));
         }
         return articles;
     }
@@ -90,20 +93,58 @@ class NaverNewsClient {
     }
 }
 
+class NewsImpact {
+    final String label;
+    final String reason;
+
+    NewsImpact(String label, String reason) {
+        this.label = label;
+        this.reason = reason;
+    }
+
+    static NewsImpact from(String text) {
+        String source = text == null ? "" : text;
+        String[] positive = {"상승", "호실적", "수주", "증가", "성장", "돌파", "최대", "강세", "매수", "상향", "흑자", "계약", "신제품"};
+        String[] negative = {"하락", "부진", "감소", "적자", "약세", "매도", "하향", "손실", "리콜", "소송", "규제", "우려", "부담"};
+        int pos = count(source, positive);
+        int neg = count(source, negative);
+        if (pos > neg) return new NewsImpact("호재 가능", "실적, 성장, 수주, 상향 등 긍정 키워드가 더 많습니다.");
+        if (neg > pos) return new NewsImpact("악재 가능", "부진, 하락, 규제, 우려 등 부정 키워드가 더 많습니다.");
+        return new NewsImpact("중립", "가격 방향을 단정할 키워드가 뚜렷하지 않습니다.");
+    }
+
+    private static int count(String text, String[] words) {
+        int score = 0;
+        for (String word : words) {
+            if (text.contains(word)) score++;
+        }
+        return score;
+    }
+}
+
 class NewsArticle {
     final String title;
     final String link;
     final String description;
     final String pubDate;
+    final NewsImpact impact;
 
-    NewsArticle(String title, String link, String description, String pubDate) {
+    NewsArticle(String title, String link, String description, String pubDate, NewsImpact impact) {
         this.title = title;
         this.link = link;
         this.description = description;
         this.pubDate = pubDate;
+        this.impact = impact;
     }
 
     String toJson() {
-        return Json.obj("title", title, "link", link, "description", description, "pubDate", pubDate);
+        return Json.obj(
+                "title", title,
+                "link", link,
+                "description", description,
+                "pubDate", pubDate,
+                "impact", impact.label,
+                "impactReason", impact.reason
+        );
     }
 }
