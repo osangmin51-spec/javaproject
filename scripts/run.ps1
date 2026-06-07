@@ -8,7 +8,8 @@ if (-not (Test-Path out)) {
     New-Item -ItemType Directory -Force out | Out-Null
 }
 
-javac -encoding UTF-8 -d out MiniProjectApp.java
+$sources = Get-ChildItem -Path . -Filter *.java | Where-Object { $_.Name -ne "MockStockApp.java" } | ForEach-Object { $_.FullName }
+javac -encoding UTF-8 -d out $sources
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }

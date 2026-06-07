@@ -86,7 +86,8 @@ java -cp out MiniProjectApp 8080
 Java 21 이상을 권장합니다.
 
 ```powershell
-javac -encoding UTF-8 -d out MiniProjectApp.java
+$sources = Get-ChildItem -Filter *.java | Where-Object { $_.Name -ne "MockStockApp.java" } | ForEach-Object { $_.FullName }
+javac -encoding UTF-8 -d out $sources
 java -cp out MiniProjectApp 8080
 ```
 
@@ -142,3 +143,19 @@ tcp://127.0.0.1:9090
 - Thread 기반 멀티 클라이언트 처리
 - TSV 파일 저장
 - HTML / CSS / JavaScript
+
+## 코드 구조
+
+| 파일 | 역할 |
+| --- | --- |
+| `MiniProjectApp.java` | 앱 시작점 |
+| `MiniHandler.java` | HTTP 라우팅과 API 요청 처리 |
+| `MiniProject.java` | 회원, 매매, 포트폴리오, DB 저장 흐름 |
+| `DomainModels.java` | 회원, 주식, 보유 주식, 게시글, 거래 기록 모델 |
+| `BrokerIntegration.java` | 모의 증권사 소켓 서버와 가격 구독 클라이언트 |
+| `NewsIntegration.java` | 네이버 검색 뉴스 API 연동 |
+| `CompanyProfile.java` | 회사 프로필/뉴스 키워드 인터페이스 |
+| `CompanyProfiles.java` | 회사 프로필 구현 클래스 |
+| `NewsKeywordProfiles.java` | 뉴스 키워드 구현 클래스 |
+| `WebPages.java` | 웹 화면 HTML/CSS/JavaScript 렌더링 |
+| `Json.java` | JSON 응답 생성과 요청 body 파싱 |
