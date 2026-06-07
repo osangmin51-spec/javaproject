@@ -928,7 +928,7 @@ class MiniPage {
                   <header>
                     <div>
                       <h1>모의 주식 투자 프로그램</h1>
-                      <div class="label">GitHub _miniproject 내용만 웹으로 구현</div>
+                      <div class="label">Java 기반 모의주식투자 웹앱</div>
                     </div>
                     <div class="row-actions"><button onclick="refresh()">새로고침</button><button class="secondary" onclick="logout()">로그아웃</button></div>
                   </header>
@@ -1036,7 +1036,7 @@ class MiniDashboardPage {
                     section, .panel { background:var(--panel); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
                     .topbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
                     .pill { border:1px solid rgba(255,255,255,.22); border-radius:999px; padding:7px 10px; color:#dbe4ef; font-size:13px; }
-                    .hero { display:grid; grid-template-columns:1.2fr .8fr; gap:16px; align-items:stretch; }
+                    .hero { display:grid; grid-template-columns:1fr; gap:16px; align-items:stretch; max-width:920px; }
                     .auth { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
                     .auth form { display:grid; gap:10px; padding:16px; }
                     .summary { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; }
@@ -1044,7 +1044,7 @@ class MiniDashboardPage {
                     .brokerStrip { display:grid; grid-template-columns:1.2fr .8fr .8fr .8fr; gap:10px; padding:14px 16px; align-items:center; }
                     .labelText { color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
                     .value { margin-top:8px; font-size:24px; font-weight:850; }
-                    .layout { display:grid; grid-template-columns:minmax(0,1.1fr) 370px; gap:16px; align-items:start; }
+                    .layout { display:grid; grid-template-columns:1fr; gap:16px; align-items:start; }
                     .workspace { display:grid; gap:16px; }
                     .tradeBox { display:grid; grid-template-columns:1fr 110px; gap:10px; padding:16px; align-items:end; }
                     .quantityRow { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
@@ -1065,6 +1065,9 @@ class MiniDashboardPage {
                     .comments { color:var(--muted); font-size:13px; display:grid; gap:4px; }
                     .sideStack { display:grid; gap:16px; }
                     .empty { color:var(--muted); padding:16px; }
+                    details.tools { background:var(--panel); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+                    details.tools summary { cursor:pointer; padding:14px 16px; font-weight:850; border-bottom:1px solid var(--line); background:#fbfcfe; }
+                    details.tools:not([open]) summary { border-bottom:0; }
                     @media (max-width: 1100px) { .hero, .layout { grid-template-columns:1fr; } .summary { grid-template-columns:repeat(2,1fr); } .brokerStrip { grid-template-columns:1fr 1fr; } }
                     @media (max-width: 720px) { header { align-items:flex-start; flex-direction:column; } .auth, .summary, .brokerStrip, .tradeBox, .quantityRow { grid-template-columns:1fr; } main { padding:12px; } }
                   </style>
@@ -1073,7 +1076,7 @@ class MiniDashboardPage {
                   <header>
                     <div>
                       <h1>KH 미니프로젝트 모의주식</h1>
-                      <div class="labelText">원본 콘솔 프로젝트를 실사용형 웹 대시보드로 재구성</div>
+                      <div class="labelText">실시간 가격 구독과 포트폴리오 손익을 확인하는 Java 웹앱</div>
                     </div>
                     <div class="topbar">
                       <span class="pill" id="loginPill">로그인 필요</span>
@@ -1085,7 +1088,7 @@ class MiniDashboardPage {
                   <main>
                     <div class="hero" id="authArea">
                       <section>
-                        <h2>바로 시작</h2>
+                        <h2>로그인 / 회원가입</h2>
                         <div class="auth">
                           <form id="loginForm">
                             <label>아이디<input name="id" value="test1"></label>
@@ -1101,26 +1104,18 @@ class MiniDashboardPage {
                         </div>
                         <div class="message" id="loginMessage"></div>
                       </section>
-                      <section>
-                        <h2>사용 흐름</h2>
-                        <div class="cards">
-                          <div class="card"><strong>1. 로그인</strong><span class="labelText">기본 계정 test1 / 1234</span></div>
-                          <div class="card"><strong>2. 주식 매매</strong><span class="labelText">종목을 고르고 구매/판매</span></div>
-                          <div class="card"><strong>3. 다음날 진행</strong><span class="labelText">가격 변동과 아이템 힌트 확인</span></div>
-                        </div>
-                      </section>
                     </div>
 
                     <div class="summary" id="summary"></div>
                     <section>
-                      <h2>실시간 가격 구독</h2>
+                      <h2>가격 연결</h2>
                       <div class="brokerStrip" id="brokerInfo"></div>
                     </section>
 
                     <div class="layout">
                       <div class="workspace">
                         <section>
-                          <h2>주식 매매</h2>
+                          <h2>매매</h2>
                           <form id="tradeForm" class="tradeBox">
                             <label>종목 선택<select name="stockName" id="stockSelect"></select></label>
                             <label>수량<input name="quantity" type="number" min="1" value="1"></label>
@@ -1139,9 +1134,9 @@ class MiniDashboardPage {
 
                         <section>
                           <div class="tabs">
-                            <button class="tab active" onclick="showTab('portfolio')">보유 주식</button>
-                            <button class="tab" onclick="showTab('logs')">거래 기록</button>
-                            <button class="tab" onclick="showTab('board')">자유 게시판</button>
+                            <button class="tab active" onclick="showTab('portfolio')">보유</button>
+                            <button class="tab" onclick="showTab('logs')">기록</button>
+                            <button class="tab" onclick="showTab('board')">게시판</button>
                           </div>
                           <div class="tabPanel active" id="panel-portfolio">
                             <table><thead><tr><th>종목</th><th>수량</th><th>평단가</th><th>현재가</th><th>평가금액</th><th>손익</th><th>수익률</th></tr></thead><tbody id="shares"></tbody></table>
@@ -1158,25 +1153,13 @@ class MiniDashboardPage {
                             <div class="cards" id="posts"></div>
                           </div>
                         </section>
-                      </div>
 
-                      <aside class="sideStack">
-                        <section>
-                          <h2>날짜 진행</h2>
-                          <div class="cards">
-                            <div class="card">
-                              <strong>다음날로 넘어가기</strong>
-                              <span class="labelText">원본 StockController.randomStockPrice 흐름</span>
-                              <button onclick="nextDay()">시세 변동 실행</button>
-                            </div>
-                          </div>
-                          <div class="message" id="dayMessage"></div>
-                        </section>
-                        <section>
-                          <h2>아이템 상점</h2>
+                        <details class="tools">
+                          <summary>보조 기능</summary>
                           <div class="cards" id="items"></div>
-                        </section>
-                      </aside>
+                          <div class="message" id="dayMessage"></div>
+                        </details>
+                      </div>
                     </div>
                   </main>
 
@@ -1266,7 +1249,7 @@ class MiniDashboardPage {
                       </div>`).join('') || '<div class="empty">게시글이 없습니다.</div>';
                     }
                     function showTab(name) {
-                      const labels = {portfolio:'보유 주식', logs:'거래 기록', board:'자유 게시판'};
+                      const labels = {portfolio:'보유', logs:'기록', board:'게시판'};
                       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
                       document.querySelectorAll('.tabPanel').forEach(panel => panel.classList.remove('active'));
                       document.querySelectorAll('.tab').forEach(tab => { if (tab.textContent === labels[name]) tab.classList.add('active'); });
