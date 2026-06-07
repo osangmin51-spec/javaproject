@@ -715,6 +715,102 @@ class NewsArticle {
     }
 }
 
+abstract class CompanyProfile {
+    final String companyName;
+    final String sector;
+
+    CompanyProfile(String companyName, String sector) {
+        this.companyName = companyName;
+        this.sector = sector;
+    }
+}
+
+interface NewsKeywordProfile {
+    String keyword();
+}
+
+class SamsungElectronicsProfile extends CompanyProfile { SamsungElectronicsProfile() { super("삼성전자", "반도체"); } }
+class SkHynixProfile extends CompanyProfile { SkHynixProfile() { super("SK하이닉스", "반도체"); } }
+class LgEnergySolutionProfile extends CompanyProfile { LgEnergySolutionProfile() { super("LG에너지솔루션", "2차전지"); } }
+class SamsungBiologicsProfile extends CompanyProfile { SamsungBiologicsProfile() { super("삼성바이오로직스", "바이오"); } }
+class HyundaiMotorProfile extends CompanyProfile { HyundaiMotorProfile() { super("현대차", "자동차"); } }
+class KiaProfile extends CompanyProfile { KiaProfile() { super("기아", "자동차"); } }
+class CelltrionProfile extends CompanyProfile { CelltrionProfile() { super("셀트리온", "바이오"); } }
+class PoscoHoldingsProfile extends CompanyProfile { PoscoHoldingsProfile() { super("POSCO홀딩스", "철강"); } }
+class NaverProfile extends CompanyProfile { NaverProfile() { super("NAVER", "인터넷"); } }
+class KakaoProfile extends CompanyProfile { KakaoProfile() { super("카카오", "인터넷"); } }
+class HyundaiMobisProfile extends CompanyProfile { HyundaiMobisProfile() { super("현대모비스", "자동차부품"); } }
+class SamsungSdiProfile extends CompanyProfile { SamsungSdiProfile() { super("삼성SDI", "2차전지"); } }
+class LgChemProfile extends CompanyProfile { LgChemProfile() { super("LG화학", "화학"); } }
+class KbFinancialProfile extends CompanyProfile { KbFinancialProfile() { super("KB금융", "금융"); } }
+class ShinhanFinancialProfile extends CompanyProfile { ShinhanFinancialProfile() { super("신한지주", "금융"); } }
+class HanaFinancialProfile extends CompanyProfile { HanaFinancialProfile() { super("하나금융지주", "금융"); } }
+class SamsungCAndTProfile extends CompanyProfile { SamsungCAndTProfile() { super("삼성물산", "지주"); } }
+class LgElectronicsProfile extends CompanyProfile { LgElectronicsProfile() { super("LG전자", "전자"); } }
+class SkInnovationProfile extends CompanyProfile { SkInnovationProfile() { super("SK이노베이션", "에너지"); } }
+class PoscoFutureMProfile extends CompanyProfile { PoscoFutureMProfile() { super("포스코퓨처엠", "2차전지소재"); } }
+class HanwhaAerospaceProfile extends CompanyProfile { HanwhaAerospaceProfile() { super("한화에어로스페이스", "방산"); } }
+class HyundaiHeavyProfile extends CompanyProfile { HyundaiHeavyProfile() { super("현대중공업", "조선"); } }
+class HdKsoeProfile extends CompanyProfile { HdKsoeProfile() { super("HD한국조선해양", "조선"); } }
+class SamsungElectroMechanicsProfile extends CompanyProfile { SamsungElectroMechanicsProfile() { super("삼성전기", "전자부품"); } }
+class KakaoBankProfile extends CompanyProfile { KakaoBankProfile() { super("카카오뱅크", "금융"); } }
+class KraftonProfile extends CompanyProfile { KraftonProfile() { super("크래프톤", "게임"); } }
+class HybeProfile extends CompanyProfile { HybeProfile() { super("하이브", "엔터테인먼트"); } }
+class NcsoftProfile extends CompanyProfile { NcsoftProfile() { super("엔씨소프트", "게임"); } }
+class AmorePacificProfile extends CompanyProfile { AmorePacificProfile() { super("아모레퍼시픽", "화장품"); } }
+class KoreanAirProfile extends CompanyProfile { KoreanAirProfile() { super("대한항공", "항공"); } }
+class LgHouseholdProfile extends CompanyProfile { LgHouseholdProfile() { super("LG생활건강", "생활소비재"); } }
+class LotteChemicalProfile extends CompanyProfile { LotteChemicalProfile() { super("롯데케미칼", "화학"); } }
+class SOilProfile extends CompanyProfile { SOilProfile() { super("S-Oil", "정유"); } }
+class KepcoProfile extends CompanyProfile { KepcoProfile() { super("한국전력", "전력"); } }
+class KtngProfile extends CompanyProfile { KtngProfile() { super("KT&G", "소비재"); } }
+class SamsungFireProfile extends CompanyProfile { SamsungFireProfile() { super("삼성화재", "보험"); } }
+class MiraeAssetProfile extends CompanyProfile { MiraeAssetProfile() { super("미래에셋증권", "증권"); } }
+class DoosanEnerbilityProfile extends CompanyProfile { DoosanEnerbilityProfile() { super("두산에너빌리티", "에너지설비"); } }
+class EcoproProfile extends CompanyProfile { EcoproProfile() { super("에코프로", "2차전지소재"); } }
+class EcoproBmProfile extends CompanyProfile { EcoproBmProfile() { super("에코프로비엠", "2차전지소재"); } }
+
+class SamsungElectronicsNewsKeyword implements NewsKeywordProfile { public String keyword() { return "삼성전자 주가 실적 전망"; } }
+class SkHynixNewsKeyword implements NewsKeywordProfile { public String keyword() { return "SK하이닉스 주가 실적 전망"; } }
+class LgEnergySolutionNewsKeyword implements NewsKeywordProfile { public String keyword() { return "LG에너지솔루션 주가 실적 전망"; } }
+class SamsungBiologicsNewsKeyword implements NewsKeywordProfile { public String keyword() { return "삼성바이오로직스 주가 실적 전망"; } }
+class HyundaiMotorNewsKeyword implements NewsKeywordProfile { public String keyword() { return "현대차 주가 실적 전망"; } }
+class KiaNewsKeyword implements NewsKeywordProfile { public String keyword() { return "기아 주가 실적 전망"; } }
+class CelltrionNewsKeyword implements NewsKeywordProfile { public String keyword() { return "셀트리온 주가 실적 전망"; } }
+class PoscoHoldingsNewsKeyword implements NewsKeywordProfile { public String keyword() { return "POSCO홀딩스 주가 실적 전망"; } }
+class NaverNewsKeyword implements NewsKeywordProfile { public String keyword() { return "NAVER 주가 실적 전망"; } }
+class KakaoNewsKeyword implements NewsKeywordProfile { public String keyword() { return "카카오 주가 실적 전망"; } }
+class HyundaiMobisNewsKeyword implements NewsKeywordProfile { public String keyword() { return "현대모비스 주가 실적 전망"; } }
+class SamsungSdiNewsKeyword implements NewsKeywordProfile { public String keyword() { return "삼성SDI 주가 실적 전망"; } }
+class LgChemNewsKeyword implements NewsKeywordProfile { public String keyword() { return "LG화학 주가 실적 전망"; } }
+class KbFinancialNewsKeyword implements NewsKeywordProfile { public String keyword() { return "KB금융 주가 실적 전망"; } }
+class ShinhanFinancialNewsKeyword implements NewsKeywordProfile { public String keyword() { return "신한지주 주가 실적 전망"; } }
+class HanaFinancialNewsKeyword implements NewsKeywordProfile { public String keyword() { return "하나금융지주 주가 실적 전망"; } }
+class SamsungCAndTNewsKeyword implements NewsKeywordProfile { public String keyword() { return "삼성물산 주가 실적 전망"; } }
+class LgElectronicsNewsKeyword implements NewsKeywordProfile { public String keyword() { return "LG전자 주가 실적 전망"; } }
+class SkInnovationNewsKeyword implements NewsKeywordProfile { public String keyword() { return "SK이노베이션 주가 실적 전망"; } }
+class PoscoFutureMNewsKeyword implements NewsKeywordProfile { public String keyword() { return "포스코퓨처엠 주가 실적 전망"; } }
+class HanwhaAerospaceNewsKeyword implements NewsKeywordProfile { public String keyword() { return "한화에어로스페이스 주가 실적 전망"; } }
+class HyundaiHeavyNewsKeyword implements NewsKeywordProfile { public String keyword() { return "현대중공업 주가 실적 전망"; } }
+class HdKsoeNewsKeyword implements NewsKeywordProfile { public String keyword() { return "HD한국조선해양 주가 실적 전망"; } }
+class SamsungElectroMechanicsNewsKeyword implements NewsKeywordProfile { public String keyword() { return "삼성전기 주가 실적 전망"; } }
+class KakaoBankNewsKeyword implements NewsKeywordProfile { public String keyword() { return "카카오뱅크 주가 실적 전망"; } }
+class KraftonNewsKeyword implements NewsKeywordProfile { public String keyword() { return "크래프톤 주가 실적 전망"; } }
+class HybeNewsKeyword implements NewsKeywordProfile { public String keyword() { return "하이브 주가 실적 전망"; } }
+class NcsoftNewsKeyword implements NewsKeywordProfile { public String keyword() { return "엔씨소프트 주가 실적 전망"; } }
+class AmorePacificNewsKeyword implements NewsKeywordProfile { public String keyword() { return "아모레퍼시픽 주가 실적 전망"; } }
+class KoreanAirNewsKeyword implements NewsKeywordProfile { public String keyword() { return "대한항공 주가 실적 전망"; } }
+class LgHouseholdNewsKeyword implements NewsKeywordProfile { public String keyword() { return "LG생활건강 주가 실적 전망"; } }
+class LotteChemicalNewsKeyword implements NewsKeywordProfile { public String keyword() { return "롯데케미칼 주가 실적 전망"; } }
+class SOilNewsKeyword implements NewsKeywordProfile { public String keyword() { return "S-Oil 주가 실적 전망"; } }
+class KepcoNewsKeyword implements NewsKeywordProfile { public String keyword() { return "한국전력 주가 실적 전망"; } }
+class KtngNewsKeyword implements NewsKeywordProfile { public String keyword() { return "KT&G 주가 실적 전망"; } }
+class SamsungFireNewsKeyword implements NewsKeywordProfile { public String keyword() { return "삼성화재 주가 실적 전망"; } }
+class MiraeAssetNewsKeyword implements NewsKeywordProfile { public String keyword() { return "미래에셋증권 주가 실적 전망"; } }
+class DoosanEnerbilityNewsKeyword implements NewsKeywordProfile { public String keyword() { return "두산에너빌리티 주가 실적 전망"; } }
+class EcoproNewsKeyword implements NewsKeywordProfile { public String keyword() { return "에코프로 주가 실적 전망"; } }
+class EcoproBmNewsKeyword implements NewsKeywordProfile { public String keyword() { return "에코프로비엠 주가 실적 전망"; } }
+
 class Item {
     final String code;
     final String name;
@@ -1171,7 +1267,6 @@ class MiniDashboardPage {
                     .auth form { display:grid; gap:10px; padding:16px; }
                     .summary { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; }
                     .metric { background:#fff; border:1px solid var(--line); border-radius:8px; padding:14px; min-height:86px; }
-                    .brokerStrip { display:grid; grid-template-columns:1.2fr .8fr .8fr .8fr; gap:10px; padding:14px 16px; align-items:center; }
                     .labelText { color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
                     .value { margin-top:8px; font-size:24px; font-weight:850; }
                     .layout { display:grid; grid-template-columns:1fr; gap:16px; align-items:start; }
@@ -1202,8 +1297,8 @@ class MiniDashboardPage {
                     .newsItem a { color:var(--blue); font-weight:850; text-decoration:none; }
                     .newsItem p { margin:0; color:#344054; line-height:1.45; }
                     .newsMeta { color:var(--muted); font-size:12px; }
-                    @media (max-width: 1100px) { .hero, .layout { grid-template-columns:1fr; } .summary { grid-template-columns:repeat(2,1fr); } .brokerStrip { grid-template-columns:1fr 1fr; } }
-                    @media (max-width: 720px) { header { align-items:flex-start; flex-direction:column; } .auth, .summary, .brokerStrip, .tradeBox, .quantityRow, .detailGrid { grid-template-columns:1fr; } main { padding:12px; } }
+                    @media (max-width: 1100px) { .hero, .layout { grid-template-columns:1fr; } .summary { grid-template-columns:repeat(2,1fr); } }
+                    @media (max-width: 720px) { header { align-items:flex-start; flex-direction:column; } .auth, .summary, .tradeBox, .quantityRow, .detailGrid { grid-template-columns:1fr; } main { padding:12px; } }
                   </style>
                 </head>
                 <body>
@@ -1241,10 +1336,6 @@ class MiniDashboardPage {
                     </div>
 
                     <div class="summary" id="summary"></div>
-                    <section>
-                      <h2>가격 연결</h2>
-                      <div class="brokerStrip" id="brokerInfo"></div>
-                    </section>
 
                     <div class="layout">
                       <div class="workspace">
@@ -1329,7 +1420,6 @@ class MiniDashboardPage {
                       const logged = !!state.loggedIn;
                       const member = state.member || {};
                       const portfolio = state.portfolio || {};
-                      const broker = state.broker || {};
                       document.getElementById('authArea').style.display = logged ? 'none' : 'grid';
                       document.getElementById('loginPill').textContent = logged ? `${member.id} · ${member.day}일차` : '로그인 필요';
                       document.getElementById('summary').innerHTML = [
@@ -1339,12 +1429,6 @@ class MiniDashboardPage {
                         ['실시간 손익', logged ? won(portfolio.profit) : '-', Number(portfolio.profit || 0) >= 0 ? 'up' : 'down'],
                         ['수익률', logged ? `${portfolio.profitRate}%` : '-', Number(portfolio.profit || 0) >= 0 ? 'up' : 'down']
                       ].map(([label, value, cls]) => `<div class="metric"><div class="labelText">${label}</div><div class="value ${cls}">${value}</div></div>`).join('');
-                      document.getElementById('brokerInfo').innerHTML = [
-                        ['가격 소스', broker.source || '-'],
-                        ['구독 명령', broker.protocol || '-'],
-                        ['소켓 포트', broker.port ? `TCP ${broker.port}` : '-'],
-                        ['마지막 틱', `${broker.lastTick || '-'} · ${broker.ticks || 0}회`]
-                      ].map(([label, value]) => `<div><div class="labelText">${label}</div><strong>${html(value)}</strong></div>`).join('');
                       if (!selectedStockName && (state.stocks || []).length) selectedStockName = state.stocks[0].name;
                       renderStocks();
                       renderSelectedStock();
