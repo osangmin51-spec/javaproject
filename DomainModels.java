@@ -33,14 +33,20 @@ class Member {
 class Stock {
     final String code;
     final String name;
+    final String market;
+    final String sector;
+    final String description;
     int price;
     int quantity;
     int priceFluct;
     double nextFluct;
 
-    Stock(String code, String name, int price, int quantity, int priceFluct, double nextFluct) {
+    Stock(String code, String name, String market, String sector, String description, int price, int quantity, int priceFluct, double nextFluct) {
         this.code = code;
         this.name = name;
+        this.market = market;
+        this.sector = sector;
+        this.description = description;
         this.price = price;
         this.quantity = quantity;
         this.priceFluct = priceFluct;
@@ -48,7 +54,7 @@ class Stock {
     }
 
     Stock copy() {
-        return new Stock(code, name, price, quantity, priceFluct, nextFluct);
+        return new Stock(code, name, market, sector, description, price, quantity, priceFluct, nextFluct);
     }
 
     String toJson() {
@@ -57,6 +63,9 @@ class Stock {
         return Json.obj(
                 "name", name,
                 "code", code,
+                "market", market,
+                "sector", sector,
+                "description", description,
                 "price", price,
                 "quantity", quantity,
                 "priceFluct", priceFluct,

@@ -54,6 +54,7 @@ class MiniDashboardPage {
                     .comments { color:var(--muted); font-size:13px; display:grid; gap:4px; }
                     .empty { color:var(--muted); padding:16px; }
                     .detailGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:16px; }
+                    .companyInfo { padding:0 16px 16px; color:#344054; line-height:1.55; }
                     .newsList { display:grid; gap:10px; padding:0 16px 16px; }
                     .newsItem { border:1px solid var(--line); border-radius:8px; padding:12px; background:#fbfcfe; display:grid; gap:6px; }
                     .newsItem a { color:var(--blue); font-weight:850; text-decoration:none; }
@@ -122,6 +123,7 @@ class MiniDashboardPage {
                         <section>
                           <h2>종목 상세 / 뉴스</h2>
                           <div class="detailGrid" id="stockDetail"></div>
+                          <div class="companyInfo" id="companyInfo"></div>
                           <div class="newsList" id="newsList"></div>
                         </section>
 
@@ -213,16 +215,22 @@ class MiniDashboardPage {
                       const stock = stockByName(selectedStockName) || (state.stocks || [])[0];
                       if (!stock) {
                         document.getElementById('stockDetail').innerHTML = '<div class="empty">종목이 없습니다.</div>';
+                        document.getElementById('companyInfo').innerHTML = '';
                         document.getElementById('newsList').innerHTML = '';
                         return;
                       }
                       const positive = Number(stock.priceFluct || 0) >= 0;
                       document.getElementById('stockDetail').innerHTML = [
                         ['선택 종목', stock.name, ''],
+                        ['종목 코드', stock.code, ''],
+                        ['시장', stock.market, ''],
+                        ['업종', stock.sector, ''],
                         ['현재가', won(stock.price), ''],
                         ['변동폭', won(stock.priceFluct), positive ? 'up' : 'down'],
-                        ['변동률', `${stock.changeRate}%`, positive ? 'up' : 'down']
+                        ['변동률', `${stock.changeRate}%`, positive ? 'up' : 'down'],
+                        ['시장 수량', stock.quantity, '']
                       ].map(([label, value, cls]) => `<div class="metric"><div class="labelText">${label}</div><div class="value ${cls}">${html(value)}</div></div>`).join('');
+                      document.getElementById('companyInfo').innerHTML = html(stock.description || '회사 정보가 없습니다.');
                       renderNews();
                     }
                     function renderShares() {
