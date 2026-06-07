@@ -51,17 +51,19 @@ class KisQuote {
     final int price;
     final int change;
     final double changeRate;
+    final long volume;
 
-    KisQuote(String name, String code, int price, int change, double changeRate) {
+    KisQuote(String name, String code, int price, int change, double changeRate, long volume) {
         this.name = name;
         this.code = code;
         this.price = price;
         this.change = change;
         this.changeRate = changeRate;
+        this.volume = volume;
     }
 
     BrokerTick toTick() {
-        return new BrokerTick(name, price, change, changeRate);
+        return new BrokerTick(name, price, change, changeRate, volume);
     }
 }
 
@@ -94,8 +96,9 @@ class KisQuoteClient {
         int price = intValue(body, "stck_prpr");
         int change = intValue(body, "prdy_vrss");
         double rate = doubleValue(body, "prdy_ctrt");
+        long volume = longValue(body, "acml_vol");
         if (price <= 0) throw new IllegalStateException("KIS 현재가 응답에 가격이 없습니다.");
-        return new KisQuote(target.name, target.code, price, change, rate);
+        return new KisQuote(target.name, target.code, price, change, rate, volume);
     }
 
     private String accessToken() throws Exception {
@@ -133,6 +136,12 @@ class KisQuoteClient {
         String value = stringValue(json, key).replace(",", "").trim();
         if (value.isBlank()) return 0;
         return Integer.parseInt(value);
+    }
+
+    private long longValue(String json, String key) {
+        String value = stringValue(json, key).replace(",", "").trim();
+        if (value.isBlank()) return 0L;
+        return Long.parseLong(value);
     }
 
     private double doubleValue(String json, String key) {

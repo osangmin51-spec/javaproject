@@ -40,6 +40,7 @@ class Stock {
     int quantity;
     int priceFluct;
     double nextFluct;
+    long tradingVolume;
     String quoteSource = "초기 데이터";
     String lastUpdated = "";
     final List<PricePoint> history = new ArrayList<>();
@@ -54,11 +55,13 @@ class Stock {
         this.quantity = quantity;
         this.priceFluct = priceFluct;
         this.nextFluct = nextFluct;
+        this.tradingVolume = quantity;
         recordPrice(price);
     }
 
     Stock copy() {
         Stock copy = new Stock(code, name, market, sector, description, price, quantity, priceFluct, nextFluct);
+        copy.tradingVolume = tradingVolume;
         copy.quoteSource = quoteSource;
         copy.lastUpdated = lastUpdated;
         synchronized (history) {
@@ -68,16 +71,21 @@ class Stock {
         return copy;
     }
 
-    void updatePrice(int nextPrice, int change, double changeRate) {
+    void updatePrice(int nextPrice, int change, double changeRate, long volume) {
         price = nextPrice;
         priceFluct = change;
         nextFluct = 1.0 + changeRate / 100.0;
+        if (volume > 0) tradingVolume = volume;
         quoteSource = "내장 모의 시세";
         lastUpdated = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
         recordPrice(nextPrice);
     }
 
-    void updateExternalPrice(int nextPrice, int change, double changeRate) {
+    void updatePrice(int nextPrice, int change, double changeRate) {
+        updatePrice(nextPrice, change, changeRate, 0);
+    }
+
+    void updateExternalPrice(int nextPrice, int change, double changeRate, long volume) {
         synchronized (history) {
             if (history.size() == 1) {
                 history.clear();
@@ -88,8 +96,12 @@ class Stock {
             }
         }
         quoteSource = "한국투자증권 KIS";
-        updatePrice(nextPrice, change, changeRate);
+        updatePrice(nextPrice, change, changeRate, volume);
         quoteSource = "한국투자증권 KIS";
+    }
+
+    void updateExternalPrice(int nextPrice, int change, double changeRate) {
+        updateExternalPrice(nextPrice, change, changeRate, 0);
     }
 
     private void recordPrice(int value) {
@@ -110,6 +122,7 @@ class Stock {
                 "description", description,
                 "price", price,
                 "quantity", quantity,
+                "tradingVolume", tradingVolume,
                 "priceFluct", priceFluct,
                 "changeRate", String.format(Locale.US, "%.2f", rate),
                 "nextFluct", String.format(Locale.US, "%.2f", nextFluct),

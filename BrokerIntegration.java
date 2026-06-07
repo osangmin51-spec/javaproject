@@ -22,12 +22,18 @@ class BrokerTick {
     final int price;
     final int change;
     final double percent;
+    final long volume;
 
     BrokerTick(String symbol, int price, int change, double percent) {
+        this(symbol, price, change, percent, 0);
+    }
+
+    BrokerTick(String symbol, int price, int change, double percent, long volume) {
         this.symbol = symbol;
         this.price = price;
         this.change = change;
         this.percent = percent;
+        this.volume = volume;
     }
 }
 
@@ -36,10 +42,12 @@ class BrokerQuote {
     int price;
     int change;
     double percent;
+    long volume;
 
     BrokerQuote(String symbol, int price) {
         this.symbol = symbol;
         this.price = price;
+        this.volume = 10_000;
     }
 
     BrokerTick move(Random random) {
@@ -48,7 +56,8 @@ class BrokerQuote {
         price = Math.max(100, (int) Math.round(price * drift));
         change = price - previous;
         percent = previous == 0 ? 0.0 : change * 100.0 / previous;
-        return new BrokerTick(symbol, price, change, percent);
+        volume += 500 + random.nextInt(25_000);
+        return new BrokerTick(symbol, price, change, percent, volume);
     }
 }
 
@@ -137,7 +146,7 @@ class BrokerClientSession implements Runnable {
         PrintWriter out = writer;
         if (out == null) return;
         if (subscriptions.contains("ALL") || subscriptions.contains(tick.symbol.toUpperCase(Locale.ROOT))) {
-            out.println("TICK|" + tick.symbol + "|" + tick.price + "|" + tick.change + "|" + String.format(Locale.US, "%.2f", tick.percent) + "|" + LocalDateTime.now());
+            out.println("TICK|" + tick.symbol + "|" + tick.price + "|" + tick.change + "|" + String.format(Locale.US, "%.2f", tick.percent) + "|" + tick.volume + "|" + LocalDateTime.now());
         }
     }
 
@@ -211,7 +220,8 @@ class BrokerFeedClient {
         String[] cols = line.split("\\|");
         if (cols.length < 5) return;
         try {
-            consumer.accept(new BrokerTick(cols[1], Integer.parseInt(cols[2]), Integer.parseInt(cols[3]), Double.parseDouble(cols[4])));
+            long volume = cols.length > 5 ? Long.parseLong(cols[5]) : 0;
+            consumer.accept(new BrokerTick(cols[1], Integer.parseInt(cols[2]), Integer.parseInt(cols[3]), Double.parseDouble(cols[4]), volume));
         } catch (NumberFormatException ignored) {
         }
     }

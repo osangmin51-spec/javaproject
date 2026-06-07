@@ -127,7 +127,7 @@ class MiniDashboardPage {
                           </form>
                           <div class="message" id="tradeMessage"></div>
                           <table>
-                            <thead><tr><th>종목</th><th>가격</th><th>시장수량</th><th>변동폭</th><th>변동률</th></tr></thead>
+                            <thead><tr><th>종목</th><th>가격</th><th>거래량</th><th>변동폭</th><th>변동률</th></tr></thead>
                             <tbody id="stocks"></tbody>
                           </table>
                         </section>
@@ -175,6 +175,7 @@ class MiniDashboardPage {
                     let selectedNews = null;
                     let refreshing = false;
                     const won = n => Number(n || 0).toLocaleString('ko-KR') + '원';
+                    const count = n => Number(n || 0).toLocaleString('ko-KR');
                     const html = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
                     async function api(path, body) {
                       const options = body ? {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)} : {};
@@ -220,7 +221,7 @@ class MiniDashboardPage {
                       document.getElementById('stocks').innerHTML = (state.stocks || []).map(stock => `<tr>
                         <td><button type="button" class="ghost" onclick="selectStock('${html(stock.name)}')">${html(stock.name)}</button></td>
                         <td>${won(stock.price)}<div class="newsMeta">${html(stock.quoteSource || '초기 데이터')}</div></td>
-                        <td>${stock.quantity}</td>
+                        <td>${count(stock.tradingVolume || stock.quantity)}</td>
                         <td class="${stock.priceFluct>=0?'up':'down'}">${won(stock.priceFluct)}</td>
                         <td class="${stock.priceFluct>=0?'up':'down'}">${stock.changeRate}%</td>
                       </tr>`).join('');
@@ -246,7 +247,7 @@ class MiniDashboardPage {
                         ['현재가', won(stock.price), ''],
                         ['변동폭', won(stock.priceFluct), positive ? 'up' : 'down'],
                         ['변동률', `${stock.changeRate}%`, positive ? 'up' : 'down'],
-                        ['시장 수량', stock.quantity, ''],
+                        ['거래량', count(stock.tradingVolume || stock.quantity), ''],
                         ['시세 출처', stock.quoteSource || '초기 데이터', ''],
                         ['갱신 시각', stock.lastUpdated || 'KIS 갱신 대기', '']
                       ].map(([label, value, cls]) => `<div class="metric"><div class="labelText">${label}</div><div class="value ${cls}">${html(value)}</div></div>`).join('');

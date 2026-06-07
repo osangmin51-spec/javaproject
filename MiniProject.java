@@ -326,12 +326,12 @@ class MiniProject {
 
     private void updateStock(Stock stock, BrokerTick tick) {
         if (stock == null) return;
-        stock.updatePrice(Math.max(100, tick.price), tick.change, tick.percent);
+        stock.updatePrice(Math.max(100, tick.price), tick.change, tick.percent, tick.volume);
     }
 
     private void updateExternalStock(Stock stock, BrokerTick tick) {
         if (stock == null) return;
-        stock.updateExternalPrice(Math.max(100, tick.price), tick.change, tick.percent);
+        stock.updateExternalPrice(Math.max(100, tick.price), tick.change, tick.percent, tick.volume);
     }
 
     private String brokerJson() {
@@ -447,8 +447,12 @@ class MiniProject {
     }
 
     private List<Stock> stocks() {
-        if (currentMember == null) return marketStocks.values().stream().sorted(Comparator.comparing(stock -> stock.name)).toList();
-        return currentMember.stocks.values().stream().sorted(Comparator.comparing(stock -> stock.name)).toList();
+        Comparator<Stock> popularFirst = Comparator
+                .comparingLong((Stock stock) -> stock.tradingVolume)
+                .reversed()
+                .thenComparing(stock -> stock.name);
+        if (currentMember == null) return marketStocks.values().stream().sorted(popularFirst).toList();
+        return currentMember.stocks.values().stream().sorted(popularFirst).toList();
     }
 
     private Map<String, Stock> copyStocks(Map<String, Stock> source) {
