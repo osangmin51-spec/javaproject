@@ -148,7 +148,12 @@ class MiniProject {
 
     Map<String, KisQuoteTarget> kisQuoteTargets() {
         Map<String, KisQuoteTarget> targets = new LinkedHashMap<>();
-        stocks().forEach(stock -> targets.put(stock.name, new KisQuoteTarget(stock.name, stock.code)));
+        List<String> priority = List.of("삼성전자", "SK하이닉스", "현대차", "NAVER", "카카오", "LG에너지솔루션", "삼성바이오로직스");
+        priority.forEach(name -> {
+            Stock stock = marketStocks.get(name);
+            if (stock != null) targets.put(stock.name, new KisQuoteTarget(stock.name, stock.code));
+        });
+        stocks().forEach(stock -> targets.putIfAbsent(stock.name, new KisQuoteTarget(stock.name, stock.code)));
         return targets;
     }
 

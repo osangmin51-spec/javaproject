@@ -164,17 +164,28 @@ class KisQuotePoller {
         System.out.println("한국투자증권 KIS 현재가 연동 시작: " + LocalDateTime.now());
         while (running) {
             for (KisQuoteTarget target : targets.values()) {
-                try {
-                    consumer.accept(client.inquirePrice(target).toTick());
-                    Thread.sleep(700);
-                } catch (InterruptedException ex) {
-                    Thread.currentThread().interrupt();
-                    running = false;
-                    return;
-                } catch (Exception ex) {
+                pollTarget(target);
+            }
+        }
+    }
+
+    private void pollTarget(KisQuoteTarget target) {
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                consumer.accept(client.inquirePrice(target).toTick());
+                Thread.sleep(700);
+                return;
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                running = false;
+                return;
+            } catch (Exception ex) {
+                if (attempt == 3) {
                     System.err.println("KIS 현재가 조회 실패(" + target.name + "): " + ex.getMessage());
                     sleep(2_000);
+                    return;
                 }
+                sleep(600);
             }
         }
     }

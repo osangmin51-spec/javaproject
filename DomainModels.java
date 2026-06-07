@@ -40,6 +40,8 @@ class Stock {
     int quantity;
     int priceFluct;
     double nextFluct;
+    String quoteSource = "초기 데이터";
+    String lastUpdated = "";
     final List<PricePoint> history = new ArrayList<>();
 
     Stock(String code, String name, String market, String sector, String description, int price, int quantity, int priceFluct, double nextFluct) {
@@ -57,6 +59,8 @@ class Stock {
 
     Stock copy() {
         Stock copy = new Stock(code, name, market, sector, description, price, quantity, priceFluct, nextFluct);
+        copy.quoteSource = quoteSource;
+        copy.lastUpdated = lastUpdated;
         synchronized (history) {
             copy.history.clear();
             copy.history.addAll(history);
@@ -68,6 +72,8 @@ class Stock {
         price = nextPrice;
         priceFluct = change;
         nextFluct = 1.0 + changeRate / 100.0;
+        quoteSource = "내장 모의 시세";
+        lastUpdated = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
         recordPrice(nextPrice);
     }
 
@@ -81,7 +87,9 @@ class Stock {
                 }
             }
         }
+        quoteSource = "한국투자증권 KIS";
         updatePrice(nextPrice, change, changeRate);
+        quoteSource = "한국투자증권 KIS";
     }
 
     private void recordPrice(int value) {
@@ -105,6 +113,8 @@ class Stock {
                 "priceFluct", priceFluct,
                 "changeRate", String.format(Locale.US, "%.2f", rate),
                 "nextFluct", String.format(Locale.US, "%.2f", nextFluct),
+                "quoteSource", quoteSource,
+                "lastUpdated", lastUpdated,
                 "history", historyJson()
         );
     }

@@ -6,7 +6,7 @@ class MiniDashboardPage {
                 <head>
                   <meta charset="utf-8">
                   <meta name="viewport" content="width=device-width, initial-scale=1">
-                  <title>KH 미니프로젝트 투자 대시보드</title>
+                  <title>Java 프로젝트 모의주식</title>
                   <style>
                     :root { --ink:#182230; --muted:#667085; --line:#d7deea; --panel:#fff; --blue:#1f5fbf; --green:#0b7f55; --red:#bd3d3a; }
                     * { box-sizing:border-box; }
@@ -79,7 +79,7 @@ class MiniDashboardPage {
                 <body>
                   <header>
                     <div>
-                      <h1>KH 미니프로젝트 모의주식</h1>
+                      <h1>Java 프로젝트 모의주식</h1>
                       <div class="labelText">실시간 가격 구독과 포트폴리오 손익을 확인하는 Java 웹앱</div>
                     </div>
                     <div class="topbar">
@@ -219,7 +219,7 @@ class MiniDashboardPage {
                     function renderStocks() {
                       document.getElementById('stocks').innerHTML = (state.stocks || []).map(stock => `<tr>
                         <td><button type="button" class="ghost" onclick="selectStock('${html(stock.name)}')">${html(stock.name)}</button></td>
-                        <td>${won(stock.price)}</td>
+                        <td>${won(stock.price)}<div class="newsMeta">${html(stock.quoteSource || '초기 데이터')}</div></td>
                         <td>${stock.quantity}</td>
                         <td class="${stock.priceFluct>=0?'up':'down'}">${won(stock.priceFluct)}</td>
                         <td class="${stock.priceFluct>=0?'up':'down'}">${stock.changeRate}%</td>
@@ -246,7 +246,9 @@ class MiniDashboardPage {
                         ['현재가', won(stock.price), ''],
                         ['변동폭', won(stock.priceFluct), positive ? 'up' : 'down'],
                         ['변동률', `${stock.changeRate}%`, positive ? 'up' : 'down'],
-                        ['시장 수량', stock.quantity, '']
+                        ['시장 수량', stock.quantity, ''],
+                        ['시세 출처', stock.quoteSource || '초기 데이터', ''],
+                        ['갱신 시각', stock.lastUpdated || 'KIS 갱신 대기', '']
                       ].map(([label, value, cls]) => `<div class="metric"><div class="labelText">${label}</div><div class="value ${cls}">${html(value)}</div></div>`).join('');
                       document.getElementById('companyInfo').innerHTML = html(stock.description || '회사 정보가 없습니다.');
                       renderPriceChart(stock);
