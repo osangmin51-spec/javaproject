@@ -2,31 +2,50 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "compile",
+      "label": "compile MiniProjectApp",
       "type": "shell",
-      "command": "javac",
+      "command": "powershell",
       "args": [
-        "-encoding",
-        "UTF-8",
-        "-d",
-        "out",
-        "MockStockApp.java"
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "$sources = Get-ChildItem -Path . -Filter *.java | Where-Object { $_.Name -ne 'MockStockApp.java' } | ForEach-Object { $_.FullName }; javac -encoding UTF-8 -d out $sources"
       ],
       "group": "build",
       "problemMatcher": "$javac"
     },
     {
-      "label": "run server",
+      "label": "start MiniProjectApp server",
       "type": "shell",
-      "command": "java",
+      "command": "powershell",
       "args": [
-        "-cp",
-        "out",
-        "MockStockApp",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\start-server.ps1",
+        "-Port",
         "8080"
       ],
-      "dependsOn": "compile",
-      "isBackground": true,
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "stop MiniProjectApp server",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\stop-server.ps1",
+        "-Port",
+        "8080"
+      ],
       "problemMatcher": []
     }
   ]

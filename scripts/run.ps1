@@ -14,4 +14,4 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-java -cp out MiniProjectApp $Port
+java -cp "out;lib/*" MiniProjectApp $Port

@@ -4,9 +4,7 @@ import com.sun.net.httpserver.HttpHandler;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
 
 class MiniHandler implements HttpHandler {
@@ -28,10 +26,6 @@ class MiniHandler implements HttpHandler {
                 send(exchange, 200, "application/json; charset=utf-8", project.stateJson());
                 return;
             }
-            if ("GET".equals(exchange.getRequestMethod()) && "/api/news".equals(path)) {
-                send(exchange, 200, "application/json; charset=utf-8", project.newsJson(query(exchange), "stockName"));
-                return;
-            }
             if ("POST".equals(exchange.getRequestMethod())) {
                 Map<String, String> body = Json.parseObject(readBody(exchange));
                 String json = switch (path) {
@@ -40,7 +34,6 @@ class MiniHandler implements HttpHandler {
                     case "/api/logout" -> project.logout();
                     case "/api/stock/buy" -> project.buyStock(body);
                     case "/api/stock/sell" -> project.sellStock(body);
-                    case "/api/day/next" -> project.nextDay();
                     case "/api/board/write" -> project.writePost(body);
                     case "/api/board/delete" -> project.deletePost(body);
                     case "/api/comment/write" -> project.writeComment(body);
@@ -60,21 +53,6 @@ class MiniHandler implements HttpHandler {
         try (InputStream input = exchange.getRequestBody()) {
             return new String(input.readAllBytes(), StandardCharsets.UTF_8);
         }
-    }
-
-    private Map<String, String> query(HttpExchange exchange) {
-        Map<String, String> values = new HashMap<>();
-        String raw = exchange.getRequestURI().getRawQuery();
-        if (raw == null || raw.isBlank()) return values;
-        for (String part : raw.split("&")) {
-            int equals = part.indexOf('=');
-            if (equals < 0) continue;
-            values.put(
-                    URLDecoder.decode(part.substring(0, equals), StandardCharsets.UTF_8),
-                    URLDecoder.decode(part.substring(equals + 1), StandardCharsets.UTF_8)
-            );
-        }
-        return values;
     }
 
     private void send(HttpExchange exchange, int status, String contentType, String body) throws IOException {

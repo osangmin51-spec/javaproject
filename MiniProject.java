@@ -1,16 +1,11 @@
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -20,13 +15,11 @@ class MiniProject {
     private final Map<String, Stock> marketStocks = new ConcurrentHashMap<>();
     private final List<BoardPost> posts = new ArrayList<>();
     private final List<TradeLog> logs = new ArrayList<>();
-    private final NaverNewsClient newsClient = new NaverNewsClient();
-    private final Path databaseDir = Path.of("data");
     private final AtomicLong memberIds = new AtomicLong(1000);
     private final AtomicInteger postIds = new AtomicInteger(1);
     private final AtomicInteger commentIds = new AtomicInteger(1);
-    private final Random random = new Random();
     private final AtomicLong brokerTicks = new AtomicLong();
+    private MySqlDatabase mySqlDatabase;
     private volatile String brokerSource = "내장 모의 증권사 소켓 서버";
     private volatile LocalDateTime lastBrokerTick;
     private Member currentMember;
@@ -127,19 +120,6 @@ class MiniProject {
         return Json.obj("ok", true, "message", stockName + " " + quantity + "주를 판매했습니다.");
     }
 
-    String nextDay() {
-        if (currentMember == null) return Json.obj("ok", false, "error", "로그인이 필요합니다.");
-        currentMember.day++;
-        for (Stock stock : currentMember.stocks.values()) {
-            int previous = stock.price;
-            stock.price = Math.max(100, (int) (previous * stock.nextFluct));
-            stock.priceFluct = stock.price - previous;
-            stock.nextFluct = 0.8 + random.nextDouble() * 0.4;
-        }
-        saveDatabase();
-        return Json.obj("ok", true, "message", currentMember.day + "일차가 되었습니다. 주가가 변동되었습니다.");
-    }
-
     Map<String, Integer> quoteSeeds() {
         Map<String, Integer> seeds = new LinkedHashMap<>();
         stocks().forEach(stock -> seeds.put(stock.name, stock.price));
@@ -155,6 +135,43 @@ class MiniProject {
         });
         stocks().forEach(stock -> targets.putIfAbsent(stock.name, new KisQuoteTarget(stock.name, stock.code)));
         return targets;
+    }
+
+    synchronized void applyKisVolumeRank(List<KisVolumeRankItem> ranked) {
+        for (KisVolumeRankItem item : ranked) {
+            if (item.name.isBlank() || item.code.isBlank()) continue;
+            Stock stock = marketStocks.get(item.name);
+            if (stock == null) {
+                stock = new Stock(
+                        item.code,
+                        item.name,
+                        "KIS",
+                        "거래량 상위",
+                        "한국투자증권 KIS 거래량 순위에서 자동 선별된 종목입니다.",
+                        100,
+                        1_000_000,
+                        0,
+                        1.0
+                );
+                stock.quoteSource = "KIS 거래량 순위";
+                marketStocks.put(item.name, stock);
+            }
+            if (item.price > 0) {
+                stock.updateExternalPrice(item.price, item.change, item.changeRate, item.volume);
+            } else if (item.volume > 0) {
+                stock.tradingVolume = item.volume;
+            }
+            stock.lastUpdated = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+            Stock snapshot = stock.copy();
+            members.values().forEach(member -> member.stocks.merge(item.name, snapshot.copy(), (oldStock, newStock) -> {
+                if (item.price > 0) {
+                    oldStock.updateExternalPrice(item.price, item.change, item.changeRate, item.volume);
+                }
+                if (item.volume > 0) oldStock.tradingVolume = item.volume;
+                oldStock.lastUpdated = snapshot.lastUpdated;
+                return oldStock;
+            }));
+        }
     }
 
     void applyBrokerTick(BrokerTick tick) {
@@ -173,12 +190,14 @@ class MiniProject {
         members.values().forEach(member -> updateExternalStock(member.stocks.get(tick.symbol), tick));
     }
 
-    String newsJson(Map<String, String> body, String key) {
-        String stockName = text(body, key);
-        Stock stock = marketStocks.get(stockName);
-        if (stock == null) return Json.obj("ok", false, "error", "없는 종목입니다.");
-        return newsClient.search(stock.name + " 주가 실적 전망", stock.name);
+    void applyKisWebSocketQuote(BrokerTick tick) {
+        brokerSource = "한국투자증권 KIS WebSocket";
+        lastBrokerTick = LocalDateTime.now();
+        brokerTicks.incrementAndGet();
+        updateExternalStock(marketStocks.get(tick.symbol), tick);
+        members.values().forEach(member -> updateExternalStock(member.stocks.get(tick.symbol), tick));
     }
+
 
     String writePost(Map<String, String> body) {
         if (currentMember == null) return Json.obj("ok", false, "error", "로그인이 필요합니다.");
@@ -337,11 +356,18 @@ class MiniProject {
     private String brokerJson() {
         return Json.obj(
                 "source", brokerSource,
-                "protocol", "TCP SOCKET SUB ALL",
-                "port", 9090,
+                "protocol", brokerProtocol(),
+                "port", brokerSource.contains("소켓") ? 9090 : 0,
                 "ticks", brokerTicks.get(),
-                "lastTick", lastBrokerTick == null ? "-" : lastBrokerTick.format(DateTimeFormatter.ofPattern("HH:mm:ss"))
+                "tradeDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
+                "lastTick", lastBrokerTick == null ? "시세 갱신 대기" : lastBrokerTick.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
         );
+    }
+
+    private String brokerProtocol() {
+        if (brokerSource.contains("WebSocket")) return "KIS WebSocket";
+        if (brokerSource.contains("REST")) return "KIS REST API";
+        return "TCP SOCKET SUB ALL";
     }
 
     private String portfolioJson() {
@@ -376,69 +402,32 @@ class MiniProject {
     }
 
     private synchronized void loadDatabase() {
-        Path membersFile = databaseDir.resolve("members.tsv");
-        Path sharesFile = databaseDir.resolve("shares.tsv");
-        Path tradesFile = databaseDir.resolve("trades.tsv");
+        mySqlDatabase = MySqlDatabase.fromEnv();
+        if (mySqlDatabase == null) {
+            System.err.println("MYSQL_URL/MYSQL_USER 환경변수가 없어 메모리 모드로 실행합니다. 서버를 종료하면 거래 데이터는 저장되지 않습니다.");
+            return;
+        }
         try {
-            if (Files.exists(membersFile)) {
-                for (String line : Files.readAllLines(membersFile, StandardCharsets.UTF_8)) {
-                    if (line.isBlank() || line.startsWith("#")) continue;
-                    String[] cols = line.split("\t", -1);
-                    if (cols.length < 6) continue;
-                    long uid = Long.parseLong(cols[0]);
-                    Member member = new Member(uid, dec(cols[1]), dec(cols[2]), dec(cols[3]), copyStocks(marketStocks));
-                    member.balance = Integer.parseInt(cols[4]);
-                    member.day = Integer.parseInt(cols[5]);
-                    members.put(uid, member);
-                    memberIds.set(Math.max(memberIds.get(), uid));
-                }
-            }
-            if (Files.exists(sharesFile)) {
-                for (String line : Files.readAllLines(sharesFile, StandardCharsets.UTF_8)) {
-                    if (line.isBlank() || line.startsWith("#")) continue;
-                    String[] cols = line.split("\t", -1);
-                    if (cols.length < 4) continue;
-                    Member member = members.get(Long.parseLong(cols[0]));
-                    if (member == null) continue;
-                    member.shares.put(dec(cols[1]), new Share(dec(cols[1]), Integer.parseInt(cols[2]), Integer.parseInt(cols[3]), true));
-                }
-            }
-            if (Files.exists(tradesFile)) {
-                for (String line : Files.readAllLines(tradesFile, StandardCharsets.UTF_8)) {
-                    if (line.isBlank() || line.startsWith("#")) continue;
-                    String[] cols = line.split("\t", -1);
-                    if (cols.length < 6) continue;
-                    logs.add(new TradeLog(Long.parseLong(cols[0]), dec(cols[1]), Integer.parseInt(cols[2]), Integer.parseInt(cols[3]), dec(cols[4]), LocalDateTime.parse(cols[5])));
-                }
-            }
+            DatabaseSnapshot snapshot = mySqlDatabase.load(marketStocks);
+            members.putAll(snapshot.members);
+            logs.addAll(snapshot.logs);
+            memberIds.set(Math.max(memberIds.get(), snapshot.maxMemberUid));
+            System.out.println("MySQL DB 로드 완료: members=" + members.size() + ", trades=" + logs.size());
         } catch (Exception ex) {
-            System.err.println("DB 파일 로드 실패: " + ex.getMessage());
+            System.err.println("MySQL DB 로드 실패: " + ex.getMessage());
+            mySqlDatabase = null;
         }
     }
 
     private synchronized void saveDatabase() {
+        if (mySqlDatabase == null) {
+            return;
+        }
         try {
-            Files.createDirectories(databaseDir);
-            List<String> memberLines = new ArrayList<>();
-            memberLines.add("#uid\tname\tid\tpwd\tbalance\tday");
-            members.values().stream().sorted(Comparator.comparingLong(member -> member.uid)).forEach(member ->
-                    memberLines.add(member.uid + "\t" + enc(member.name) + "\t" + enc(member.id) + "\t" + enc(member.pwd) + "\t" + member.balance + "\t" + member.day));
-            Files.write(databaseDir.resolve("members.tsv"), memberLines, StandardCharsets.UTF_8);
-
-            List<String> shareLines = new ArrayList<>();
-            shareLines.add("#memberUid\tstockName\tquantity\tpurchasePrice");
-            members.values().stream().sorted(Comparator.comparingLong(member -> member.uid)).forEach(member ->
-                    member.shares.values().stream().sorted(Comparator.comparing(share -> share.stockName)).forEach(share ->
-                            shareLines.add(member.uid + "\t" + enc(share.stockName) + "\t" + share.quantity + "\t" + share.purchasePrice)));
-            Files.write(databaseDir.resolve("shares.tsv"), shareLines, StandardCharsets.UTF_8);
-
-            List<String> tradeLines = new ArrayList<>();
-            tradeLines.add("#memberUid\tstockName\tquantity\tprice\ttype\ttime");
-            logs.stream().sorted(Comparator.comparing(TradeLog::time)).forEach(log ->
-                    tradeLines.add(log.memberUid + "\t" + enc(log.stockName) + "\t" + log.quantity + "\t" + log.price + "\t" + enc(log.type) + "\t" + log.time));
-            Files.write(databaseDir.resolve("trades.tsv"), tradeLines, StandardCharsets.UTF_8);
+            mySqlDatabase.save(members, logs);
         } catch (Exception ex) {
-            System.err.println("DB 파일 저장 실패: " + ex.getMessage());
+            System.err.println("MySQL DB 저장 실패: " + ex.getMessage());
+            mySqlDatabase = null;
         }
     }
 
@@ -473,11 +462,4 @@ class MiniProject {
         }
     }
 
-    private String enc(String text) {
-        return Base64.getUrlEncoder().encodeToString(text.getBytes(StandardCharsets.UTF_8));
-    }
-
-    private String dec(String text) {
-        return new String(Base64.getUrlDecoder().decode(text), StandardCharsets.UTF_8);
-    }
 }

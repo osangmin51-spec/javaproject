@@ -3,12 +3,16 @@
   "configurations": [
     {
       "type": "java",
-      "name": "Run MockStockApp",
+      "name": "Run MiniProjectApp",
       "request": "launch",
-      "mainClass": "MockStockApp",
+      "mainClass": "MiniProjectApp",
       "args": "8080",
       "cwd": "${workspaceFolder}",
-      "preLaunchTask": "compile"
+      "classPaths": [
+        "${workspaceFolder}/out",
+        "${workspaceFolder}/lib/*"
+      ],
+      "preLaunchTask": "compile MiniProjectApp"
     }
   ]
 }

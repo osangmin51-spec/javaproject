@@ -7,7 +7,3 @@ abstract class CompanyProfile {
         this.sector = sector;
     }
 }
-
-interface NewsKeywordProfile {
-    String keyword();
-}

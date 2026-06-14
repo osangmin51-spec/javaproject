@@ -31,30 +31,45 @@ class MiniDashboardPage {
                     .hero { display:grid; grid-template-columns:1fr; gap:16px; align-items:stretch; max-width:920px; }
                     .auth { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
                     .auth form { display:grid; gap:10px; padding:16px; }
-                    .summary { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; }
+                    .summary { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; }
                     .metric { background:#fff; border:1px solid var(--line); border-radius:8px; padding:14px; min-height:86px; }
                     .labelText { color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
-                    .value { margin-top:8px; font-size:24px; font-weight:850; }
+                    .value { margin-top:8px; font-size:24px; font-weight:850; overflow-wrap:anywhere; }
+                    .value.time { font-size:17px; line-height:1.35; }
                     .layout { display:grid; grid-template-columns:1fr; gap:16px; align-items:start; }
                     .workspace { display:grid; gap:16px; }
-                    .tradeBox { display:grid; grid-template-columns:1fr 110px; gap:10px; padding:16px; align-items:end; }
                     .actions { display:flex; gap:8px; flex-wrap:wrap; }
                     .message { color:var(--muted); padding:0 16px 14px; min-height:22px; }
                     .up { color:var(--green); } .down { color:var(--red); }
+                    .marketRow { cursor:pointer; }
+                    .marketRow:hover { background:#f6f9fd; }
+                    .marketRow.selected { background:#eaf2ff; }
                     .tabs { display:flex; gap:8px; padding:12px 12px 0; flex-wrap:wrap; }
                     .tab { background:#e7edf6; color:#1f2937; }
                     .tab.active { background:var(--blue); color:#fff; }
+                    .marketTools { display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap; padding:12px 16px; border-top:1px solid var(--line); }
+                    .marketFilters { display:grid; grid-template-columns:minmax(220px,1fr) auto; gap:10px; padding:12px 16px; border-bottom:1px solid var(--line); align-items:center; }
+                    .marketFilters input { min-width:0; }
+                    .pageButtons { display:flex; gap:6px; flex-wrap:wrap; }
+                    .pageButtons button { min-width:38px; padding:8px 10px; background:#e7edf6; color:#1f2937; }
+                    .pageButtons button.active { background:var(--blue); color:#fff; }
+                    .favoriteToggle.active { background:#26384d; color:white; }
+                    .favoriteButton { width:34px; height:34px; padding:0; display:inline-grid; place-items:center; background:#e7edf6; color:#667085; border:1px solid #d7deea; }
+                    .favoriteButton.active { background:#fff7d6; color:#a15c00; border-color:#f1c453; }
+                    .stockNameCell { display:flex; align-items:center; gap:8px; min-width:210px; }
                     .tabPanel { display:none; }
                     .tabPanel.active { display:block; }
                     .cards { display:grid; gap:10px; padding:16px; }
                     .card { border:1px solid var(--line); border-radius:8px; padding:12px; background:#fbfcfe; display:grid; gap:8px; }
                     .postHead { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
-                    .postForm { display:grid; grid-template-columns:1fr; gap:10px; padding:16px; border-bottom:1px solid var(--line); }
                     .commentForm { display:grid; grid-template-columns:1fr auto; gap:8px; }
                     .comments { color:var(--muted); font-size:13px; display:grid; gap:4px; }
                     .empty { color:var(--muted); padding:16px; }
                     .detailGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:16px; }
                     .companyInfo { padding:0 16px 16px; color:#344054; line-height:1.55; }
+                    .orderPanel { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding:0 16px 16px; }
+                    .orderCard { border:1px solid var(--line); border-radius:8px; background:#fbfcfe; padding:12px; display:grid; gap:10px; }
+                    .inlineOrder { display:grid; grid-template-columns:minmax(72px,1fr) auto; gap:8px; align-items:center; min-width:190px; }
                     .chartWrap { margin:0 16px 16px; border:1px solid var(--line); border-radius:8px; background:#fbfcfe; padding:12px; }
                     .priceChart { width:100%; height:210px; display:block; }
                     .chartLine { fill:none; stroke:var(--blue); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
@@ -62,18 +77,9 @@ class MiniDashboardPage {
                     .chartGrid { stroke:#dbe4ef; stroke-width:1; }
                     .chartPoint { fill:#fff; stroke:var(--blue); stroke-width:2; }
                     .chartMeta { display:flex; justify-content:space-between; gap:10px; color:var(--muted); font-size:12px; flex-wrap:wrap; }
-                    .newsList { display:grid; gap:10px; padding:0 16px 16px; }
-                    .newsItem { border:1px solid var(--line); border-radius:8px; padding:12px; background:#fbfcfe; display:grid; gap:6px; }
-                    .newsItem a { color:var(--blue); font-weight:850; text-decoration:none; }
-                    .newsItem p { margin:0; color:#344054; line-height:1.45; }
-                    .newsMeta { color:var(--muted); font-size:12px; }
-                    .impactRow { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-                    .impactBadge { border-radius:999px; padding:4px 8px; font-size:12px; font-weight:850; }
-                    .impactGood { background:#e7f7ef; color:var(--green); }
-                    .impactBad { background:#fdeceb; color:var(--red); }
-                    .impactNeutral { background:#edf1f7; color:#405164; }
+                    .subMeta { color:var(--muted); font-size:12px; }
                     @media (max-width: 1100px) { .hero, .layout { grid-template-columns:1fr; } .summary { grid-template-columns:repeat(2,1fr); } }
-                    @media (max-width: 720px) { header { align-items:flex-start; flex-direction:column; } .auth, .summary, .tradeBox, .detailGrid { grid-template-columns:1fr; } main { padding:12px; } }
+                    @media (max-width: 720px) { header { align-items:flex-start; flex-direction:column; } .auth, .summary, .detailGrid, .orderPanel { grid-template-columns:1fr; } main { padding:12px; } }
                   </style>
                 </head>
                 <body>
@@ -107,7 +113,7 @@ class MiniDashboardPage {
                           </form>
                         </div>
                         <div class="message" id="loginMessage"></div>
-                      </section>
+                        </section>
                     </div>
 
                     <div class="summary" id="summary"></div>
@@ -115,56 +121,49 @@ class MiniDashboardPage {
                     <div class="layout">
                       <div class="workspace">
                         <section>
-                          <h2>매매</h2>
-                          <form id="tradeForm" class="tradeBox">
-                            <label>종목 선택<select name="stockName" id="stockSelect"></select></label>
-                            <label>수량<input name="quantity" type="number" min="1" value="1"></label>
-                            <div class="actions">
-                              <button class="buy" name="side" value="buy">구매</button>
-                              <button class="sell" name="side" value="sell">판매</button>
-                              <button type="button" class="ghost" onclick="nextDay()">다음날</button>
-                            </div>
-                          </form>
-                          <div class="message" id="tradeMessage"></div>
+                          <h2>시장 시세</h2>
+                          <div class="marketFilters">
+                            <input id="stockSearch" type="search" placeholder="종목명, 코드, 업종 검색" oninput="setMarketSearch(this.value)">
+                            <button id="favoriteOnlyButton" class="ghost favoriteToggle" type="button" onclick="toggleFavoriteOnly()">즐겨찾기만</button>
+                          </div>
                           <table>
                             <thead><tr><th>종목</th><th>가격</th><th>거래량</th><th>변동폭</th><th>변동률</th></tr></thead>
                             <tbody id="stocks"></tbody>
                           </table>
+                          <div class="marketTools">
+                            <div class="labelText" id="marketPageInfo">1-10 / 0</div>
+                            <div class="pageButtons" id="marketPages"></div>
+                          </div>
                         </section>
 
                         <section>
-                          <h2>종목 상세 / 뉴스</h2>
+                          <h2>종목 상세</h2>
                           <div class="detailGrid" id="stockDetail"></div>
                           <div class="companyInfo" id="companyInfo"></div>
+                          <div class="orderPanel" id="orderPanel"></div>
+                          <div class="message" id="tradeMessage"></div>
                           <div class="chartWrap">
                             <svg class="priceChart" id="priceChart" viewBox="0 0 640 210" role="img" aria-label="종목 가격 변화 추이"></svg>
                             <div class="chartMeta" id="chartMeta"></div>
                           </div>
-                          <div class="newsList" id="newsList"></div>
                         </section>
 
                         <section>
                           <div class="tabs">
                             <button class="tab active" onclick="showTab('portfolio')">보유</button>
+                            <button class="tab" onclick="showTab('favorites')">즐겨찾기</button>
                             <button class="tab" onclick="showTab('logs')">기록</button>
-                            <button class="tab" onclick="showTab('board')">게시판</button>
                           </div>
                           <div class="tabPanel active" id="panel-portfolio">
-                            <table><thead><tr><th>종목</th><th>수량</th><th>평단가</th><th>현재가</th><th>평가금액</th><th>손익</th><th>수익률</th></tr></thead><tbody id="shares"></tbody></table>
+                            <table><thead><tr><th>종목</th><th>수량</th><th>평단가</th><th>현재가</th><th>평가금액</th><th>손익</th><th>수익률</th><th>매도</th></tr></thead><tbody id="shares"></tbody></table>
+                          </div>
+                          <div class="tabPanel" id="panel-favorites">
+                            <table><thead><tr><th>종목</th><th>가격</th><th>거래량</th><th>변동률</th><th>관리</th></tr></thead><tbody id="favorites"></tbody></table>
                           </div>
                           <div class="tabPanel" id="panel-logs">
                             <table><thead><tr><th>시간</th><th>구분</th><th>종목</th><th>수량</th><th>금액</th></tr></thead><tbody id="logs"></tbody></table>
                           </div>
-                          <div class="tabPanel" id="panel-board">
-                            <form id="postForm" class="postForm">
-                              <label>제목<input name="title" placeholder="투자 메모 제목"></label>
-                              <label>내용<input name="content" placeholder="오늘의 전략이나 느낀 점"></label>
-                              <button>게시글 작성</button>
-                            </form>
-                            <div class="cards" id="posts"></div>
-                          </div>
                         </section>
-                        <div class="message" id="dayMessage"></div>
                       </div>
                     </div>
                   </main>
@@ -172,11 +171,18 @@ class MiniDashboardPage {
                   <script>
                     let state = {};
                     let selectedStockName = '';
-                    let selectedNews = null;
                     let refreshing = false;
+                    let marketPage = 1;
+                    let buyQuantityDraft = '1';
+                    let sellQuantityDraft = '1';
+                    let marketSearch = '';
+                    let favoriteOnly = false;
+                    let favoriteStocks = new Set(JSON.parse(localStorage.getItem('favoriteStocks') || '[]'));
+                    const stocksPerPage = 10;
                     const won = n => Number(n || 0).toLocaleString('ko-KR') + '원';
                     const count = n => Number(n || 0).toLocaleString('ko-KR');
                     const html = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+                    const shareByName = name => (state.shares || []).find(share => share.stockName === name);
                     async function api(path, body) {
                       const options = body ? {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)} : {};
                       const res = await fetch(path, options);
@@ -201,41 +207,87 @@ class MiniDashboardPage {
                       const logged = !!state.loggedIn;
                       const member = state.member || {};
                       const portfolio = state.portfolio || {};
+                      const broker = state.broker || {};
                       document.getElementById('authArea').style.display = logged ? 'none' : 'grid';
-                      document.getElementById('loginPill').textContent = logged ? `${member.id} · ${member.day}일차` : '로그인 필요';
+                      document.getElementById('loginPill').textContent = logged ? `${member.id} · ${broker.lastTick || '시세 갱신 대기'}` : '로그인 필요';
                       document.getElementById('summary').innerHTML = [
                         ['보유 현금', logged ? won(portfolio.cash) : '-', ''],
                         ['주식 평가액', logged ? won(portfolio.stockValue) : '-', ''],
                         ['총 자산', logged ? won(portfolio.totalAsset) : '-', ''],
                         ['실시간 손익', logged ? won(portfolio.profit) : '-', Number(portfolio.profit || 0) >= 0 ? 'up' : 'down'],
-                        ['수익률', logged ? `${portfolio.profitRate}%` : '-', Number(portfolio.profit || 0) >= 0 ? 'up' : 'down']
+                        ['수익률', logged ? `${portfolio.profitRate}%` : '-', Number(portfolio.profit || 0) >= 0 ? 'up' : 'down'],
+                        ['시세 기준', broker.lastTick || '시세 갱신 대기', 'time']
                       ].map(([label, value, cls]) => `<div class="metric"><div class="labelText">${label}</div><div class="value ${cls}">${value}</div></div>`).join('');
                       if (!selectedStockName && (state.stocks || []).length) selectedStockName = state.stocks[0].name;
                       renderStocks();
                       renderSelectedStock();
                       renderShares();
+                      renderFavorites();
                       renderLogs();
-                      renderPosts();
                     }
                     function renderStocks() {
-                      document.getElementById('stocks').innerHTML = (state.stocks || []).map(stock => `<tr>
-                        <td><button type="button" class="ghost" onclick="selectStock('${html(stock.name)}')">${html(stock.name)}</button></td>
-                        <td>${won(stock.price)}<div class="newsMeta">${html(stock.quoteSource || '초기 데이터')}</div></td>
+                      const allStocks = filteredMarketStocks();
+                      const totalPages = Math.max(1, Math.ceil(allStocks.length / stocksPerPage));
+                      if (marketPage > totalPages) marketPage = totalPages;
+                      if (marketPage < 1) marketPage = 1;
+                      const start = (marketPage - 1) * stocksPerPage;
+                      const pageStocks = allStocks.slice(start, start + stocksPerPage);
+                      document.getElementById('stockSearch').value = marketSearch;
+                      document.getElementById('favoriteOnlyButton').classList.toggle('active', favoriteOnly);
+                      document.getElementById('stocks').innerHTML = pageStocks.length ? pageStocks.map(stock => `<tr class="marketRow ${stock.name === selectedStockName ? 'selected' : ''}" data-stock="${html(stock.name)}" onclick="selectStock(this.dataset.stock)">
+                        <td><div class="stockNameCell"><button type="button" class="favoriteButton ${favoriteStocks.has(stock.name) ? 'active' : ''}" title="즐겨찾기" aria-label="즐겨찾기" data-stock="${html(stock.name)}" onclick="event.stopPropagation(); toggleFavorite(this.dataset.stock)">${favoriteStocks.has(stock.name) ? '★' : '☆'}</button><button type="button" class="ghost" data-stock="${html(stock.name)}" onclick="event.stopPropagation(); selectStock(this.dataset.stock)">상세/매수</button><span>${html(stock.name)}</span></div></td>
+                        <td>${won(stock.price)}</td>
                         <td>${count(stock.tradingVolume || stock.quantity)}</td>
                         <td class="${stock.priceFluct>=0?'up':'down'}">${won(stock.priceFluct)}</td>
                         <td class="${stock.priceFluct>=0?'up':'down'}">${stock.changeRate}%</td>
-                      </tr>`).join('');
-                      document.getElementById('stockSelect').innerHTML = (state.stocks || []).map(stock => `<option value="${html(stock.name)}">${html(stock.name)} · ${won(stock.price)}</option>`).join('');
-                      if (selectedStockName) document.getElementById('stockSelect').value = selectedStockName;
+                      </tr>`).join('') : '<tr><td colspan="5" class="empty">검색 결과가 없습니다.</td></tr>';
+                      document.getElementById('marketPageInfo').textContent = `${allStocks.length ? start + 1 : 0}-${Math.min(start + stocksPerPage, allStocks.length)} / ${allStocks.length}개`;
+                      document.getElementById('marketPages').innerHTML = Array.from({length:totalPages}, (_, index) => {
+                        const page = index + 1;
+                        return `<button type="button" class="${page === marketPage ? 'active' : ''}" onclick="goMarketPage(${page})">${page}</button>`;
+                      }).join('');
+                    }
+                    function filteredMarketStocks() {
+                      const query = marketSearch.trim().toLowerCase();
+                      return (state.stocks || []).filter(stock => {
+                        if (favoriteOnly && !favoriteStocks.has(stock.name)) return false;
+                        if (!query) return true;
+                        return [stock.name, stock.code, stock.market, stock.sector]
+                          .some(value => String(value || '').toLowerCase().includes(query));
+                      });
+                    }
+                    function setMarketSearch(value) {
+                      marketSearch = value;
+                      marketPage = 1;
+                      renderStocks();
+                    }
+                    function toggleFavoriteOnly() {
+                      favoriteOnly = !favoriteOnly;
+                      marketPage = 1;
+                      renderStocks();
+                    }
+                    function toggleFavorite(name) {
+                      if (favoriteStocks.has(name)) {
+                        favoriteStocks.delete(name);
+                      } else {
+                        favoriteStocks.add(name);
+                      }
+                      localStorage.setItem('favoriteStocks', JSON.stringify([...favoriteStocks]));
+                      renderStocks();
+                      renderFavorites();
+                    }
+                    function goMarketPage(page) {
+                      marketPage = page;
+                      renderStocks();
                     }
                     function renderSelectedStock() {
                       const stock = stockByName(selectedStockName) || (state.stocks || [])[0];
                       if (!stock) {
                         document.getElementById('stockDetail').innerHTML = '<div class="empty">종목이 없습니다.</div>';
                         document.getElementById('companyInfo').innerHTML = '';
+                        document.getElementById('orderPanel').innerHTML = '';
                         document.getElementById('priceChart').innerHTML = '<text x="320" y="105" text-anchor="middle" fill="#667085">가격 데이터가 없습니다.</text>';
                         document.getElementById('chartMeta').innerHTML = '';
-                        document.getElementById('newsList').innerHTML = '';
                         return;
                       }
                       const positive = Number(stock.priceFluct || 0) >= 0;
@@ -248,12 +300,31 @@ class MiniDashboardPage {
                         ['변동폭', won(stock.priceFluct), positive ? 'up' : 'down'],
                         ['변동률', `${stock.changeRate}%`, positive ? 'up' : 'down'],
                         ['거래량', count(stock.tradingVolume || stock.quantity), ''],
-                        ['시세 출처', stock.quoteSource || '초기 데이터', ''],
-                        ['갱신 시각', stock.lastUpdated || 'KIS 갱신 대기', '']
+                        ['갱신 시각', stock.lastUpdated || '갱신 대기', '']
                       ].map(([label, value, cls]) => `<div class="metric"><div class="labelText">${label}</div><div class="value ${cls}">${html(value)}</div></div>`).join('');
                       document.getElementById('companyInfo').innerHTML = html(stock.description || '회사 정보가 없습니다.');
+                      if (!['buyQuantity', 'sellQuantity'].includes(document.activeElement?.id)) {
+                        renderOrderPanel(stock);
+                      }
                       renderPriceChart(stock);
-                      renderNews();
+                    }
+                    function renderOrderPanel(stock) {
+                      const logged = !!state.loggedIn;
+                      const share = shareByName(stock.name);
+                      const canSell = logged && share && Number(share.quantity) > 0;
+                      document.getElementById('orderPanel').innerHTML = `
+                        <div class="orderCard">
+                          <div class="labelText">선택 종목 매수</div>
+                          <strong>${html(stock.name)} · ${won(stock.price)}</strong>
+                          <label>매수 수량<input id="buyQuantity" type="number" min="1" value="${html(buyQuantityDraft)}" oninput="buyQuantityDraft=this.value"></label>
+                          <button class="buy" type="button" onclick="buySelected()">매수</button>
+                        </div>
+                        <div class="orderCard">
+                          <div class="labelText">보유 종목 매도</div>
+                          <strong>${canSell ? `${html(stock.name)} ${count(share.quantity)}주 보유` : '선택 종목 보유 수량 없음'}</strong>
+                          <label>매도 수량<input id="sellQuantity" type="number" min="1" max="${canSell ? share.quantity : 1}" value="${html(sellQuantityDraft)}" oninput="sellQuantityDraft=this.value" ${canSell ? '' : 'disabled'}></label>
+                          <button class="sell" type="button" onclick="sellSelected()" ${canSell ? '' : 'disabled'}>매도</button>
+                        </div>`;
                     }
                     function renderPriceChart(stock) {
                       const svg = document.getElementById('priceChart');
@@ -288,56 +359,71 @@ class MiniDashboardPage {
                       meta.innerHTML = `<span>최근 ${history.length}개 가격 포인트</span><span>최저 ${won(min)} · 최고 ${won(max)}</span><span class="${cls}">${first.time} 대비 ${won(diff)}</span>`;
                     }
                     function renderShares() {
-                      document.getElementById('shares').innerHTML = (state.shares || []).map(share => {
+                      document.getElementById('shares').innerHTML = (state.shares || []).map((share, index) => {
                         const positive = Number(share.profit || 0) >= 0;
-                        return `<tr><td>${html(share.stockName)}</td><td>${share.quantity}</td><td>${won(share.averagePrice)}</td><td>${won(share.currentPrice)}</td><td>${won(share.value)}</td><td class="${positive?'up':'down'}">${won(share.profit)}</td><td class="${positive?'up':'down'}">${share.profitRate}%</td></tr>`;
-                      }).join('') || '<tr><td colspan="7" class="empty">보유 주식이 없습니다.</td></tr>';
+                        const inputId = 'sell-owned-' + index;
+                        return `<tr><td><button type="button" class="ghost" data-stock="${html(share.stockName)}" onclick="selectStock(this.dataset.stock)">${html(share.stockName)}</button></td><td>${share.quantity}</td><td>${won(share.averagePrice)}</td><td>${won(share.currentPrice)}</td><td>${won(share.value)}</td><td class="${positive?'up':'down'}">${won(share.profit)}</td><td class="${positive?'up':'down'}">${share.profitRate}%</td><td><div class="inlineOrder"><input id="${inputId}" type="number" min="1" max="${share.quantity}" value="1"><button type="button" class="sell" data-stock="${html(share.stockName)}" onclick="sellOwned(this.dataset.stock, '${inputId}')">매도</button></div></td></tr>`;
+                      }).join('') || '<tr><td colspan="8" class="empty">보유 주식이 없습니다.</td></tr>';
                     }
                     function renderLogs() {
                       document.getElementById('logs').innerHTML = (state.logs || []).map(log => `<tr><td>${log.time}</td><td>${log.type}</td><td>${html(log.stockName)}</td><td>${log.quantity}</td><td>${won(log.price)}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">거래 기록이 없습니다.</td></tr>';
                     }
-                    function renderNews() {
-                      const box = document.getElementById('newsList');
-                      if (!selectedNews || selectedNews.stockName !== selectedStockName) {
-                        box.innerHTML = '<div class="empty">종목을 클릭하면 관련 뉴스가 표시됩니다.</div>';
-                        return;
-                      }
-                      const items = selectedNews.items || [];
-                      const head = `<div class="message">${html(selectedNews.source)} · ${html(selectedNews.message)}</div>`;
-                      box.innerHTML = head + (items.length ? items.map(item => {
-                        const impact = item.impact || '중립';
-                        const impactClass = impact.includes('호재') ? 'impactGood' : impact.includes('악재') ? 'impactBad' : 'impactNeutral';
-                        return `<article class="newsItem">
-                          <a href="${html(item.link)}" target="_blank" rel="noopener noreferrer">${html(item.title)}</a>
-                          <div class="impactRow"><span class="impactBadge ${impactClass}">${html(impact)}</span><span class="newsMeta">${html(item.impactReason || '')}</span></div>
-                          <p>${html(item.description)}</p>
-                          <div class="newsMeta">${html(item.pubDate)}</div>
-                        </article>`;
-                      }).join('') : '<div class="empty">표시할 뉴스가 없습니다.</div>');
+                    function renderFavorites() {
+                      const rows = (state.stocks || []).filter(stock => favoriteStocks.has(stock.name));
+                      document.getElementById('favorites').innerHTML = rows.length ? rows.map(stock => {
+                        const positive = Number(stock.priceFluct || 0) >= 0;
+                        return `<tr>
+                          <td><button type="button" class="ghost" data-stock="${html(stock.name)}" onclick="selectStock(this.dataset.stock)">${html(stock.name)}</button><div class="subMeta">${html(stock.code)} · ${html(stock.sector)}</div></td>
+                          <td>${won(stock.price)}</td>
+                          <td>${count(stock.tradingVolume || stock.quantity)}</td>
+                          <td class="${positive?'up':'down'}">${stock.changeRate}%</td>
+                          <td><button type="button" class="ghost" data-stock="${html(stock.name)}" onclick="toggleFavorite(this.dataset.stock)">해제</button></td>
+                        </tr>`;
+                      }).join('') : '<tr><td colspan="5" class="empty">시장 시세에서 별표를 누르면 즐겨찾기 종목이 여기에 표시됩니다.</td></tr>';
                     }
                     async function selectStock(name) {
                       selectedStockName = name;
-                      selectedNews = null;
-                      document.getElementById('stockSelect').value = name;
+                      buyQuantityDraft = '1';
+                      sellQuantityDraft = '1';
+                      renderStocks();
                       renderSelectedStock();
+                    }
+                    async function buySelected() {
+                      const qty = Number(document.getElementById('buyQuantity')?.value || 0);
                       try {
-                        selectedNews = await api('/api/news?stockName=' + encodeURIComponent(name));
-                        renderNews();
+                        const result = await api('/api/stock/buy', {stockName:selectedStockName, quantity:String(qty)});
+                        document.getElementById('tradeMessage').textContent = result.message;
+                        buyQuantityDraft = '1';
+                        await refresh();
                       } catch (err) {
-                        selectedNews = {stockName:name, source:'뉴스', message:err.message, items:[]};
-                        renderNews();
+                        document.getElementById('tradeMessage').textContent = err.message;
                       }
                     }
-                    function renderPosts() {
-                      document.getElementById('posts').innerHTML = (state.posts || []).map(post => `<div class="card">
-                        <div class="postHead"><strong>${html(post.title)}</strong><span class="labelText">${html(post.author)} · ${post.createdAt}</span></div>
-                        <div>${html(post.content)}</div>
-                        <div class="comments">${(post.comments || []).map(comment => `<div>${html(comment.author)}: ${html(comment.content)}</div>`).join('')}</div>
-                        <div class="commentForm"><input id="comment-${post.id}" placeholder="댓글 입력"><button onclick="comment(${post.id})">댓글</button></div>
-                      </div>`).join('') || '<div class="empty">게시글이 없습니다.</div>';
+                    async function sellSelected() {
+                      const qty = Number(document.getElementById('sellQuantity')?.value || 0);
+                      try {
+                        const result = await api('/api/stock/sell', {stockName:selectedStockName, quantity:String(qty)});
+                        document.getElementById('tradeMessage').textContent = result.message;
+                        sellQuantityDraft = '1';
+                        await refresh();
+                      } catch (err) {
+                        document.getElementById('tradeMessage').textContent = err.message;
+                      }
+                    }
+                    async function sellOwned(stockName, inputId) {
+                      const qty = Number(document.getElementById(inputId)?.value || 0);
+                      try {
+                        selectedStockName = stockName;
+                        const result = await api('/api/stock/sell', {stockName, quantity:String(qty)});
+                        document.getElementById('tradeMessage').textContent = result.message;
+                        await refresh();
+                        showTab('portfolio');
+                      } catch (err) {
+                        document.getElementById('tradeMessage').textContent = err.message;
+                      }
                     }
                     function showTab(name) {
-                      const labels = {portfolio:'보유', logs:'기록', board:'게시판'};
+                      const labels = {portfolio:'보유', favorites:'즐겨찾기', logs:'기록'};
                       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
                       document.querySelectorAll('.tabPanel').forEach(panel => panel.classList.remove('active'));
                       document.querySelectorAll('.tab').forEach(tab => { if (tab.textContent === labels[name]) tab.classList.add('active'); });
@@ -356,28 +442,7 @@ class MiniDashboardPage {
                       try { const result = await submitForm(e.target, '/api/register'); document.getElementById('loginMessage').textContent = result.message; e.target.reset(); await refresh(); }
                       catch (err) { document.getElementById('loginMessage').textContent = err.message; }
                     });
-                    document.getElementById('tradeForm').addEventListener('submit', async e => {
-                      e.preventDefault();
-                      const payload = Object.fromEntries(new FormData(e.target).entries());
-                      try { const result = await api(e.submitter.value === 'buy' ? '/api/stock/buy' : '/api/stock/sell', payload); document.getElementById('tradeMessage').textContent = result.message; await refresh(); }
-                      catch (err) { document.getElementById('tradeMessage').textContent = err.message; }
-                    });
-                    document.getElementById('stockSelect').addEventListener('change', e => selectStock(e.target.value));
-                    document.getElementById('postForm').addEventListener('submit', async e => {
-                      e.preventDefault();
-                      try { await submitForm(e.target, '/api/board/write'); e.target.reset(); await refresh(); showTab('board'); }
-                      catch (err) { alert(err.message); }
-                    });
                     async function logout() { await api('/api/logout', {}); await refresh(); }
-                    async function nextDay() { try { const result = await api('/api/day/next', {}); document.getElementById('dayMessage').textContent = result.message; await refresh(); } catch (err) { document.getElementById('dayMessage').textContent = err.message; } }
-                    async function comment(postId) {
-                      const input = document.getElementById('comment-' + postId);
-                      if (!input.value.trim()) return;
-                      await api('/api/comment/write', {postId, content:input.value});
-                      input.value = '';
-                      await refresh();
-                      showTab('board');
-                    }
                     refresh();
                     setInterval(refresh, 1000);
                   </script>

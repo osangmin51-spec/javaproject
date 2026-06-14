@@ -14,7 +14,6 @@ class Member {
     final Map<String, Share> shares = new ConcurrentHashMap<>();
     final Map<String, Stock> stocks;
     final Map<String, Integer> items = new ConcurrentHashMap<>();
-    int day = 1;
     int balance = 1_000_000;
 
     Member(long uid, String name, String id, String pwd, Map<String, Stock> stocks) {
@@ -26,7 +25,7 @@ class Member {
     }
 
     String toJson() {
-        return Json.obj("uid", uid, "name", name, "id", id, "day", day, "balance", balance);
+        return Json.obj("uid", uid, "name", name, "id", id, "balance", balance);
     }
 }
 
