@@ -39,7 +39,7 @@ public class MiniProjectApp {
         server.setExecutor(Executors.newCachedThreadPool());
         server.start();
 
-        System.out.println("KH 미니프로젝트 웹앱 실행 중: http://localhost:" + port);
+        System.out.println("Java 프로젝트 모의주식 웹앱 실행 중: http://localhost:" + port);
         new CountDownLatch(1).await();
     }
 

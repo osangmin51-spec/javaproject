@@ -3,6 +3,9 @@ data/
 outputs/
 ~$*
 deliverables/*수정본*
+deliverables/Java_모의주식투자_발표자료.pptx
+deliverables/Java_모의주식투자_발표자료_최신_클래스구조추가.pptx
+deliverables/Java_모의주식투자_개인프로젝트_보고서.docx
 *.class
 server.out.log
 server.err.log
