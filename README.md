@@ -160,6 +160,6 @@ MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니
 
 | 경로 | 내용 |
 | --- | --- |
-| `deliverables/Java_모의주식투자_발표자료.pptx` | 발표용 PPT |
+| `deliverables/Java_모의주식투자_발표자료_최신_클래스구조추가.pptx` | 클래스/라이브러리 구조 설명을 보강한 발표용 PPT |
 | `deliverables/Java_모의주식투자_개인프로젝트_보고서.docx` | 개인 프로젝트 보고서 |
 | `deliverables/mock-stock-website-demo.webm` | 웹사이트 시연 영상 |

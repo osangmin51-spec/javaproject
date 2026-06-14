@@ -272,7 +272,24 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 7, "AI vs 나의 역할"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 7, "클래스/라이브러리 구조 상세"); addFooter(slide);
+  table(slide, [
+    ["계층", "주요 클래스", "사용 라이브러리 / 문법", "역할"],
+    ["실행/서버", "MiniProjectApp, MiniHandler", "HttpServer, HttpExchange, Executors", "서버 시작, URL 라우팅, JSON 응답"],
+    ["핵심 서비스", "MiniProject", "ConcurrentHashMap, ArrayList, Comparator", "매매 처리, 포트폴리오 계산, 시세 상태 관리"],
+    ["도메인 모델", "Member, Stock, Share, TradeLog", "class, record 성격의 데이터 객체", "회원, 종목, 보유 수량, 거래 내역 표현"],
+    ["외부 시세", "KisQuoteClient, KisQuotePoller, KisWebSocketQuoteClient", "HttpClient, HttpRequest, WebSocket", "KIS REST/WebSocket 시세 연동과 실패 시 전환"],
+    ["저장소/보안", "MySqlDatabase, PasswordHasher", "JDBC, DriverManager, SecureRandom, MessageDigest", "MySQL 저장, 비밀번호 해시, 세션 기반 로그인"],
+    ["화면/분류", "WebPages, Json, CompanyProfile, StockCategoryProfile", "HTML/CSS/JS, abstract class, interface", "웹 화면 생성, JSON 처리, 회사/업종 설명 구조화"],
+  ], 0.45, 0.9, 12.45, 5.35, [0.15, 0.27, 0.29, 0.29]);
+  slide.addText("정리해서 말하면 서버, 서비스, 외부 API, DB, 보안, 화면 역할을 나눴고, 제출용 컴파일을 쉽게 하기 위해 현재는 루트 파일 중심으로 유지했다.", {
+    x: 0.8, y: 6.35, w: 11.8, h: 0.35,
+    fontSize: 12.5, bold: true, color: C.blue, margin: 0,
+  });
+}
+
+{
+  const slide = pptx.addSlide(); addHeader(slide, 8, "AI vs 나의 역할"); addFooter(slide);
   table(slide, [
     ["구분", "내가 주도한 부분", "AI를 활용한 부분"],
     ["주제", "모의주식투자 웹사이트 방향 결정", "구현 방식 후보 정리"],
@@ -288,7 +305,7 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 8, "사용자 시나리오와 Use Case"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 9, "사용자 시나리오와 Use Case"); addFooter(slide);
   const steps = ["접속/로그인", "거래량 인기 종목 확인", "검색/즐겨찾기", "종목 클릭", "그래프 확인", "매수", "보유 탭에서 매도", "손익 확인"];
   steps.forEach((text, i) => {
     const x = 0.55 + (i % 4) * 3.15;
@@ -311,7 +328,7 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 9, "사용자 UI / 화면 구성"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 10, "사용자 UI / 화면 구성"); addFooter(slide);
   card(slide, 0.65, 1.0, 3.0, 1.05, "상단 요약", "현금, 평가액, 총자산, 손익, 수익률 표시", C.lightBlue);
   card(slide, 3.85, 1.0, 3.0, 1.05, "시장 시세", "거래량 상위 종목을 10개씩 페이지로 표시", C.white);
   card(slide, 7.05, 1.0, 3.0, 1.05, "종목 상세", "현재가, 그래프, 매수 입력", C.white);
@@ -324,7 +341,7 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 10, "데이터 흐름"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 11, "데이터 흐름"); addFooter(slide);
   table(slide, [
     ["단계", "내용"],
     ["입력", "로그인 정보, 종목 선택, 즐겨찾기, 매수/매도 수량"],
@@ -336,7 +353,7 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 11, "데이터 처리 방식"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 12, "데이터 처리 방식"); addFooter(slide);
   table(slide, [
     ["데이터", "처리 방식"],
     ["주식 시세", "KIS 현재가 REST API 조회"],
@@ -349,7 +366,7 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 12, "한 달간 시행착오"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 13, "한 달간 시행착오"); addFooter(slide);
   const items = [
     ["실제 시세 연동", "내부 모의 가격과 KIS 응답값이 섞이면서 가격이 이상해 보이는 문제를 확인하고 갱신 흐름을 정리"],
     ["전체 종목 처리 범위", "약 2700개 전체 종목을 계속 갱신하는 대신 거래량 상위 종목 중심으로 현실적인 범위를 선택"],
@@ -365,7 +382,7 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 13, "Java 클래스 활용"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 14, "Java 클래스 활용"); addFooter(slide);
   bullets(slide, [
     "HttpServer: 프레임워크 없이 웹 서버 구현",
     "HttpClient: KIS API 호출",
@@ -379,7 +396,7 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 14, "주요 코드 일부"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 15, "주요 코드 일부"); addFooter(slide);
   codeBox(slide, "HTTP 라우팅 - MiniHandler.java", `String sessionId = sessionCookie(exchange);
 if ("GET".equals(method) && "/api/state".equals(path)) {
     send(exchange, 200, "application/json", project.stateJson(sessionId));
@@ -418,7 +435,7 @@ saveDatabase();`, 0.65, 3.55, 5.8, 2.45);
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 15, "보완 상태와 남은 과제"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 16, "보완 상태와 남은 과제"); addFooter(slide);
   card(slide, 0.7, 1.0, 5.75, 1.2, "보안/세션 보완", "비밀번호는 Salt+SHA-256 해시로 저장하고, 로그인 상태는 HttpOnly 쿠키 세션으로 관리", C.lightBlue);
   card(slide, 6.85, 1.0, 5.75, 1.2, "WebSocket 보완", "KIS WebSocket 시작/오류 시 REST 폴링으로 자동 전환되도록 코드 보강", C.white);
   card(slide, 0.7, 2.75, 5.75, 1.2, "남은 검증", "실제 KIS 테스트베드에서 구독 성공 여부와 메시지 필드 순서 확인 필요", C.white);
@@ -428,7 +445,7 @@ saveDatabase();`, 0.65, 3.55, 5.8, 2.45);
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 16, "시연 영상 구성"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 17, "시연 영상 구성"); addFooter(slide);
   table(slide, [
     ["구간", "보여줄 화면", "말할 내용"],
     ["0~10초", "로그인과 상단 요약", "Java 웹앱으로 실행되는 점 설명"],

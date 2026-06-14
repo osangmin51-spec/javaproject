@@ -194,7 +194,21 @@ add_code("""MiniProjectApp
  │                 └─ BrokerClient / BrokerServer ── TCP Socket
  └─ WebPages""")
 
-doc.add_heading("3.2 주요 코드 일부", level=2)
+doc.add_heading("3.2 클래스/라이브러리 구조 상세", level=2)
+paragraph("프로젝트는 현재 과제 제출과 단일 javac 컴파일을 쉽게 하기 위해 루트 디렉터리 중심으로 구성했다. 다만 내부 역할은 서버, 핵심 서비스, 도메인 모델, 외부 시세, 저장소, 보안, 화면 생성으로 나누어 볼 수 있다. 발표에서는 아래 표를 기준으로 어떤 클래스가 어떤 Java 라이브러리를 사용했는지 설명하면 된다.")
+add_table(["계층", "주요 클래스", "사용 라이브러리/문법", "역할"], [
+    ["실행/서버 계층", "MiniProjectApp, MiniHandler", "HttpServer, HttpExchange, Executors", "웹 서버 시작, URL 라우팅, 요청/응답 처리"],
+    ["핵심 서비스 계층", "MiniProject", "ConcurrentHashMap, ArrayList, Comparator, LocalDateTime", "매수/매도 처리, 포트폴리오 계산, 시세 상태 관리"],
+    ["도메인 모델 계층", "Member, Stock, Share, TradeLog, PricePoint", "Java class, 컬렉션 객체", "회원, 종목, 보유 수량, 거래 기록, 가격 이력 표현"],
+    ["외부 시세 계층", "KisQuoteClient, KisQuotePoller, KisWebSocketQuoteClient", "HttpClient, HttpRequest, WebSocket", "KIS REST 현재가 조회, 거래량 상위 종목 갱신, WebSocket 연동 시도"],
+    ["저장소 계층", "MySqlDatabase, DatabaseSnapshot", "JDBC, DriverManager, PreparedStatement, ResultSet", "회원/보유 종목/거래 기록을 MySQL 테이블로 저장하고 다시 읽기"],
+    ["보안/세션 계층", "PasswordHasher, MiniHandler", "SecureRandom, MessageDigest, Base64, Cookie", "비밀번호 Salt 해시, 세션 쿠키 발급, 로그인 상태 관리"],
+    ["화면/직렬화 계층", "WebPages, Json", "HTML/CSS/JavaScript 문자열, JSON 생성/파싱", "브라우저 화면 렌더링과 API 응답 데이터 구성"],
+    ["분류/상속 계층", "CompanyProfile, CompanyProfiles, StockCategoryProfile", "abstract class, interface, 구현 클래스", "회사 설명과 업종/위험 설명을 공통 규칙으로 정리"],
+], widths=[1.35, 2.1, 2.2, 2.3])
+paragraph("나중에 유지보수를 더 쉽게 하려면 controller, service, domain, repository, security, ui 패키지로 물리적인 파일 위치까지 분리할 수 있다. 현재 보고서에서는 실제 코드가 루트 중심이라는 점과, 논리적으로는 위 계층으로 나뉜다는 점을 구분해서 설명한다.")
+
+doc.add_heading("3.3 주요 코드 일부", level=2)
 paragraph("아래 코드는 발표 때 보여주기 위한 핵심 부분만 줄인 것이다. 전체 코드를 모두 설명하기보다 HTTP 요청이 들어오고, 외부 시세를 조회하고, 매수 결과를 저장하는 흐름을 중심으로 정리했다.")
 add_code("""// MiniHandler.java - 세션 쿠키를 읽고 HTTP 요청을 기능별 메서드로 연결
 String sessionId = sessionCookie(exchange);
@@ -232,7 +246,7 @@ try (Connection con = DriverManager.getConnection(url, user, password)) {
     con.commit();
 }""")
 
-doc.add_heading("3.3 상속과 인터페이스 사용 이유", level=2)
+doc.add_heading("3.4 상속과 인터페이스 사용 이유", level=2)
 paragraph("과제 조건상 클래스와 인터페이스 수가 많아야 했기 때문에 단순히 빈 클래스를 늘리기보다 종목 회사 설명과 업종 분류 구조를 분리했다. CompanyProfile은 회사명과 업종처럼 공통 속성을 갖는 추상 클래스이고, StockCategoryProfile은 업종명과 위험 설명을 제공하는 인터페이스다.")
 add_table(["구분", "설계", "이유"], [
     ["추상 클래스", "CompanyProfile", "종목별 회사 설명 구조를 통일"],
@@ -241,7 +255,7 @@ add_table(["구분", "설계", "이유"], [
     ["구현 클래스", "업종·테마별 Category 클래스", "종목을 업종과 테마 기준으로 설명할 수 있게 구성"],
 ], widths=[1.2, 2.5, 3.5])
 
-doc.add_heading("3.4 AI vs 나의 역할", level=2)
+doc.add_heading("3.5 AI vs 나의 역할", level=2)
 add_table(["영역", "내가 한 결정", "AI 활용"], [
     ["주제 방향", "모의주식투자 웹사이트로 확정", "구현 방식 후보 정리"],
     ["데이터 선택", "한국투자증권 KIS Open API 사용 결정", "API 호출 구조와 Java 코드 작성 보조"],
