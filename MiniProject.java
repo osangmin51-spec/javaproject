@@ -6,12 +6,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 class MiniProject {
     private final Map<Long, Member> members = new ConcurrentHashMap<>();
+    private final Map<String, Long> sessions = new ConcurrentHashMap<>();
     private final Map<String, Stock> marketStocks = new ConcurrentHashMap<>();
     private final List<BoardPost> posts = new ArrayList<>();
     private final List<TradeLog> logs = new ArrayList<>();
@@ -22,7 +24,6 @@ class MiniProject {
     private MySqlDatabase mySqlDatabase;
     private volatile String brokerSource = "내장 모의 증권사 소켓 서버";
     private volatile LocalDateTime lastBrokerTick;
-    private Member currentMember;
 
     MiniProject() {
         seedStocks();
@@ -30,7 +31,6 @@ class MiniProject {
         if (members.isEmpty()) {
             register(Map.of("name", "테스트회원", "id", "test1", "pwd", "1234"));
         }
-        currentMember = null;
         writeSeedPost("test1", "안녕하세요", "반갑습니다. 자유게시판 테스트 글입니다.");
         writeSeedPost("broker", "실시간 구독 안내", "모의 증권사 서버가 소켓으로 가격을 전송하고 웹 서버가 이를 구독합니다.");
     }
@@ -45,7 +45,7 @@ class MiniProject {
         if (findById(id) != null) {
             return Json.obj("ok", false, "error", "이미 존재하는 아이디입니다.");
         }
-        Member member = new Member(memberIds.incrementAndGet(), name, id, pwd, copyStocks(marketStocks));
+        Member member = new Member(memberIds.incrementAndGet(), name, id, PasswordHasher.hash(pwd), copyStocks(marketStocks));
         members.put(member.uid, member);
         saveDatabase();
         return Json.obj("ok", true, "message", "회원가입이 완료되었습니다.");
@@ -53,76 +53,85 @@ class MiniProject {
 
     String login(Map<String, String> body) {
         Member member = findById(text(body, "id"));
-        if (member == null || !member.pwd.equals(text(body, "pwd"))) {
+        String rawPassword = text(body, "pwd");
+        if (member == null || !PasswordHasher.matches(rawPassword, member.pwd)) {
             return Json.obj("ok", false, "error", "없는 아이디이거나 비밀번호가 틀렸습니다.");
         }
-        currentMember = member;
-        return Json.obj("ok", true, "message", member.id + "님 환영합니다.");
+        if (PasswordHasher.needsUpgrade(member.pwd)) {
+            member.pwd = PasswordHasher.hash(rawPassword);
+            saveDatabase();
+        }
+        String sessionId = UUID.randomUUID().toString();
+        sessions.put(sessionId, member.uid);
+        return Json.obj("ok", true, "message", member.id + "님 환영합니다.", "session", sessionId);
     }
 
-    String logout() {
-        currentMember = null;
+    String logout(String sessionId) {
+        if (sessionId != null) sessions.remove(sessionId);
         return Json.obj("ok", true, "message", "로그아웃했습니다.");
     }
 
-    String stateJson() {
+    String stateJson(String sessionId) {
+        Member member = member(sessionId);
         return Json.obj(
                 "ok", true,
-                "loggedIn", currentMember != null,
-                "member", currentMember == null ? "{}" : currentMember.toJson(),
+                "loggedIn", member != null,
+                "member", member == null ? "{}" : member.toJson(),
                 "broker", brokerJson(),
-                "portfolio", portfolioJson(),
-                "stocks", Json.array(stocks().stream().map(Stock::toJson).toList()),
-                "shares", Json.array(currentMember == null ? List.of() : currentMember.shares.values().stream().map(this::shareJson).toList()),
+                "portfolio", portfolioJson(member),
+                "stocks", Json.array(stocks(member).stream().map(Stock::toJson).toList()),
+                "shares", Json.array(member == null ? List.of() : member.shares.values().stream().map(share -> shareJson(member, share)).toList()),
                 "posts", Json.array(posts.stream().sorted(Comparator.comparing(BoardPost::id).reversed()).map(BoardPost::toJson).toList()),
-                "logs", Json.array(logs.stream().filter(log -> currentMember != null && log.memberUid == currentMember.uid).sorted(Comparator.comparing(TradeLog::time).reversed()).map(TradeLog::toJson).toList())
+                "logs", Json.array(logs.stream().filter(log -> member != null && log.memberUid == member.uid).sorted(Comparator.comparing(TradeLog::time).reversed()).map(TradeLog::toJson).toList())
         );
     }
 
-    String buyStock(Map<String, String> body) {
-        if (currentMember == null) return Json.obj("ok", false, "error", "로그인이 필요합니다.");
+    String buyStock(Map<String, String> body, String sessionId) {
+        Member member = member(sessionId);
+        if (member == null) return Json.obj("ok", false, "error", "로그인이 필요합니다.");
         String stockName = text(body, "stockName");
         int quantity = number(body, "quantity");
-        Stock stock = currentMember.stocks.get(stockName);
+        Stock stock = member.stocks.get(stockName);
         if (stock == null || quantity <= 0 || stock.quantity < quantity) {
             return Json.obj("ok", false, "error", "잘못된 수량 주문입니다.");
         }
         int total = stock.price * quantity;
-        if (currentMember.balance < total) {
+        if (member.balance < total) {
             return Json.obj("ok", false, "error", "잔액이 부족합니다.");
         }
-        currentMember.balance -= total;
+        member.balance -= total;
         stock.quantity -= quantity;
-        currentMember.shares.compute(stockName, (key, share) -> share == null
+        member.shares.compute(stockName, (key, share) -> share == null
                 ? new Share(stockName, quantity, stock.price)
                 : share.buy(quantity, total));
-        logs.add(new TradeLog(currentMember.uid, stockName, quantity, total, "구매"));
+        logs.add(new TradeLog(member.uid, stockName, quantity, total, "구매"));
         saveDatabase();
         return Json.obj("ok", true, "message", stockName + " " + quantity + "주를 구매했습니다.");
     }
 
-    String sellStock(Map<String, String> body) {
-        if (currentMember == null) return Json.obj("ok", false, "error", "로그인이 필요합니다.");
+    String sellStock(Map<String, String> body, String sessionId) {
+        Member member = member(sessionId);
+        if (member == null) return Json.obj("ok", false, "error", "로그인이 필요합니다.");
         String stockName = text(body, "stockName");
         int quantity = number(body, "quantity");
-        Stock stock = currentMember.stocks.get(stockName);
-        Share share = currentMember.shares.get(stockName);
+        Stock stock = member.stocks.get(stockName);
+        Share share = member.shares.get(stockName);
         if (stock == null || share == null || quantity <= 0 || share.quantity < quantity) {
             return Json.obj("ok", false, "error", "보유 수량이 부족합니다.");
         }
         int total = stock.price * quantity;
-        currentMember.balance += total;
+        member.balance += total;
         stock.quantity += quantity;
         share.quantity -= quantity;
-        if (share.quantity == 0) currentMember.shares.remove(stockName);
-        logs.add(new TradeLog(currentMember.uid, stockName, quantity, total, "판매"));
+        if (share.quantity == 0) member.shares.remove(stockName);
+        logs.add(new TradeLog(member.uid, stockName, quantity, total, "판매"));
         saveDatabase();
         return Json.obj("ok", true, "message", stockName + " " + quantity + "주를 판매했습니다.");
     }
 
     Map<String, Integer> quoteSeeds() {
         Map<String, Integer> seeds = new LinkedHashMap<>();
-        stocks().forEach(stock -> seeds.put(stock.name, stock.price));
+        stocks(null).forEach(stock -> seeds.put(stock.name, stock.price));
         return seeds;
     }
 
@@ -133,7 +142,7 @@ class MiniProject {
             Stock stock = marketStocks.get(name);
             if (stock != null) targets.put(stock.name, new KisQuoteTarget(stock.name, stock.code));
         });
-        stocks().forEach(stock -> targets.putIfAbsent(stock.name, new KisQuoteTarget(stock.name, stock.code)));
+        stocks(null).forEach(stock -> targets.putIfAbsent(stock.name, new KisQuoteTarget(stock.name, stock.code)));
         return targets;
     }
 
@@ -199,36 +208,40 @@ class MiniProject {
     }
 
 
-    String writePost(Map<String, String> body) {
-        if (currentMember == null) return Json.obj("ok", false, "error", "로그인이 필요합니다.");
+    String writePost(Map<String, String> body, String sessionId) {
+        Member member = member(sessionId);
+        if (member == null) return Json.obj("ok", false, "error", "로그인이 필요합니다.");
         String title = text(body, "title");
         String content = text(body, "content");
         if (title.isBlank() || content.isBlank()) return Json.obj("ok", false, "error", "제목과 내용을 입력하세요.");
-        posts.add(new BoardPost(postIds.getAndIncrement(), currentMember.id, title, content));
+        posts.add(new BoardPost(postIds.getAndIncrement(), member.id, title, content));
         return Json.obj("ok", true, "message", "게시글을 작성했습니다.");
     }
 
-    String deletePost(Map<String, String> body) {
+    String deletePost(Map<String, String> body, String sessionId) {
+        Member member = member(sessionId);
         int id = number(body, "id");
-        posts.removeIf(post -> post.id == id && currentMember != null && post.author.equals(currentMember.id));
+        posts.removeIf(post -> post.id == id && member != null && post.author.equals(member.id));
         return Json.obj("ok", true, "message", "게시글 삭제를 처리했습니다.");
     }
 
-    String writeComment(Map<String, String> body) {
-        if (currentMember == null) return Json.obj("ok", false, "error", "로그인이 필요합니다.");
+    String writeComment(Map<String, String> body, String sessionId) {
+        Member member = member(sessionId);
+        if (member == null) return Json.obj("ok", false, "error", "로그인이 필요합니다.");
         int postId = number(body, "postId");
         String content = text(body, "content");
         BoardPost post = posts.stream().filter(p -> p.id == postId).findFirst().orElse(null);
         if (post == null || content.isBlank()) return Json.obj("ok", false, "error", "댓글을 작성할 수 없습니다.");
-        post.comments.add(new Comment(commentIds.getAndIncrement(), currentMember.id, content));
+        post.comments.add(new Comment(commentIds.getAndIncrement(), member.id, content));
         return Json.obj("ok", true, "message", "댓글을 작성했습니다.");
     }
 
-    String deleteComment(Map<String, String> body) {
+    String deleteComment(Map<String, String> body, String sessionId) {
+        Member member = member(sessionId);
         int postId = number(body, "postId");
         int commentId = number(body, "commentId");
         posts.stream().filter(post -> post.id == postId).findFirst()
-                .ifPresent(post -> post.comments.removeIf(comment -> comment.id == commentId && currentMember != null && comment.author.equals(currentMember.id)));
+                .ifPresent(post -> post.comments.removeIf(comment -> comment.id == commentId && member != null && comment.author.equals(member.id)));
         return Json.obj("ok", true, "message", "댓글 삭제를 처리했습니다.");
     }
 
@@ -370,34 +383,34 @@ class MiniProject {
         return "TCP SOCKET SUB ALL";
     }
 
-    private String portfolioJson() {
-        if (currentMember == null) {
+    private String portfolioJson(Member member) {
+        if (member == null) {
             return Json.obj("cash", 0, "stockValue", 0, "totalAsset", 0, "purchase", 0, "profit", 0, "profitRate", "0.00");
         }
-        int stockValue = currentMember.shares.values().stream().mapToInt(share -> currentPrice(share.stockName) * share.quantity).sum();
-        int purchase = currentMember.shares.values().stream().mapToInt(share -> share.purchasePrice).sum();
+        int stockValue = member.shares.values().stream().mapToInt(share -> currentPrice(member, share.stockName) * share.quantity).sum();
+        int purchase = member.shares.values().stream().mapToInt(share -> share.purchasePrice).sum();
         int profit = stockValue - purchase;
         double rate = purchase == 0 ? 0.0 : profit * 100.0 / purchase;
         return Json.obj(
-                "cash", currentMember.balance,
+                "cash", member.balance,
                 "stockValue", stockValue,
-                "totalAsset", currentMember.balance + stockValue,
+                "totalAsset", member.balance + stockValue,
                 "purchase", purchase,
                 "profit", profit,
                 "profitRate", String.format(Locale.US, "%.2f", rate)
         );
     }
 
-    private String shareJson(Share share) {
-        int currentPrice = currentPrice(share.stockName);
+    private String shareJson(Member member, Share share) {
+        int currentPrice = currentPrice(member, share.stockName);
         int value = currentPrice * share.quantity;
         int profit = value - share.purchasePrice;
         double rate = share.purchasePrice == 0 ? 0.0 : profit * 100.0 / share.purchasePrice;
         return share.toJson(currentPrice, value, profit, rate);
     }
 
-    private int currentPrice(String stockName) {
-        Stock stock = currentMember == null ? marketStocks.get(stockName) : currentMember.stocks.get(stockName);
+    private int currentPrice(Member member, String stockName) {
+        Stock stock = member == null ? marketStocks.get(stockName) : member.stocks.get(stockName);
         return stock == null ? 0 : stock.price;
     }
 
@@ -431,17 +444,23 @@ class MiniProject {
         }
     }
 
+    private Member member(String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) return null;
+        Long uid = sessions.get(sessionId);
+        return uid == null ? null : members.get(uid);
+    }
+
     private Member findById(String id) {
         return members.values().stream().filter(member -> member.id.equals(id)).findFirst().orElse(null);
     }
 
-    private List<Stock> stocks() {
+    private List<Stock> stocks(Member member) {
         Comparator<Stock> popularFirst = Comparator
                 .comparingLong((Stock stock) -> stock.tradingVolume)
                 .reversed()
                 .thenComparing(stock -> stock.name);
-        if (currentMember == null) return marketStocks.values().stream().sorted(popularFirst).toList();
-        return currentMember.stocks.values().stream().sorted(popularFirst).toList();
+        if (member == null) return marketStocks.values().stream().sorted(popularFirst).toList();
+        return member.stocks.values().stream().sorted(popularFirst).toList();
     }
 
     private Map<String, Stock> copyStocks(Map<String, Stock> source) {

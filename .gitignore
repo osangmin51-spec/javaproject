@@ -1,6 +1,8 @@
 out/
 data/
 outputs/
+~$*
+deliverables/*수정본*
 *.class
 server.out.log
 server.err.log

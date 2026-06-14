@@ -10,21 +10,27 @@ public class MiniProjectApp {
         int port = args.length > 0 ? Integer.parseInt(args[0]) : 8080;
         MiniProject project = new MiniProject();
         AtomicBoolean mockBrokerStarted = new AtomicBoolean(false);
+        AtomicBoolean restPollerStarted = new AtomicBoolean(false);
         Runnable mockFallback = () -> startMockBroker(project, mockBrokerStarted, "KIS 연결이 불가능해 내장 모의 증권사 소켓으로 전환합니다.");
 
         KisConfig kisConfig = KisConfig.fromEnv();
         if (kisConfig == null) {
             startMockBroker(project, mockBrokerStarted, "KIS 환경변수가 없어 내장 모의 증권사 소켓을 사용합니다.");
         } else {
+            Runnable restFallback = () -> {
+                if (restPollerStarted.compareAndSet(false, true)) {
+                    startRestPoller(kisConfig, project, mockFallback);
+                }
+            };
             if (kisConfig.webSocketEnabled) {
-                KisWebSocketQuoteClient webSocketClient = new KisWebSocketQuoteClient(kisConfig, project.kisQuoteTargets(), project::applyKisWebSocketQuote, project::applyKisVolumeRank);
+                KisWebSocketQuoteClient webSocketClient = new KisWebSocketQuoteClient(kisConfig, project.kisQuoteTargets(), project::applyKisWebSocketQuote, project::applyKisVolumeRank, restFallback);
                 if (webSocketClient.start()) {
                     System.out.println("한국투자증권 KIS WebSocket 실시간 체결 구독 모드");
                 } else {
-                    startRestPoller(kisConfig, project, mockFallback);
+                    restFallback.run();
                 }
             } else {
-                startRestPoller(kisConfig, project, mockFallback);
+                restFallback.run();
             }
         }
 

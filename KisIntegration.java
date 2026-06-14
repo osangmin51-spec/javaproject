@@ -333,6 +333,7 @@ class KisWebSocketQuoteClient implements WebSocket.Listener {
     private final Map<String, KisQuoteTarget> targets;
     private final Consumer<BrokerTick> consumer;
     private final Consumer<List<KisVolumeRankItem>> volumeRankConsumer;
+    private final Runnable unavailableCallback;
     private final CountDownLatch openLatch = new CountDownLatch(1);
     private final StringBuilder buffer = new StringBuilder();
     private volatile WebSocket webSocket;
@@ -342,10 +343,15 @@ class KisWebSocketQuoteClient implements WebSocket.Listener {
     }
 
     KisWebSocketQuoteClient(KisConfig config, Map<String, KisQuoteTarget> targets, Consumer<BrokerTick> consumer, Consumer<List<KisVolumeRankItem>> volumeRankConsumer) {
+        this(config, targets, consumer, volumeRankConsumer, () -> {});
+    }
+
+    KisWebSocketQuoteClient(KisConfig config, Map<String, KisQuoteTarget> targets, Consumer<BrokerTick> consumer, Consumer<List<KisVolumeRankItem>> volumeRankConsumer, Runnable unavailableCallback) {
         this.config = config;
         this.targets = new LinkedHashMap<>(targets);
         this.consumer = consumer;
         this.volumeRankConsumer = volumeRankConsumer;
+        this.unavailableCallback = unavailableCallback;
         this.quoteClient = new KisQuoteClient(config);
     }
 
@@ -427,6 +433,7 @@ class KisWebSocketQuoteClient implements WebSocket.Listener {
     @Override
     public void onError(WebSocket webSocket, Throwable error) {
         System.err.println("KIS WebSocket 오류: " + error.getMessage());
+        unavailableCallback.run();
     }
 
     private void handleMessage(String message) {

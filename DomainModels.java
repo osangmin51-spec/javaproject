@@ -10,7 +10,7 @@ class Member {
     final long uid;
     final String name;
     final String id;
-    final String pwd;
+    String pwd;
     final Map<String, Share> shares = new ConcurrentHashMap<>();
     final Map<String, Stock> stocks;
     final Map<String, Integer> items = new ConcurrentHashMap<>();
