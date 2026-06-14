@@ -193,7 +193,43 @@ add_code("""MiniProjectApp
  │                 └─ BrokerClient / BrokerServer ── TCP Socket
  └─ WebPages""")
 
-doc.add_heading("3.2 상속과 인터페이스 사용 이유", level=2)
+doc.add_heading("3.2 주요 코드 일부", level=2)
+paragraph("아래 코드는 발표 때 보여주기 위한 핵심 부분만 줄인 것이다. 전체 코드를 모두 설명하기보다 HTTP 요청이 들어오고, 외부 시세를 조회하고, 매수 결과를 저장하는 흐름을 중심으로 정리했다.")
+add_code("""// MiniHandler.java - HTTP 요청을 기능별 메서드로 연결
+if ("GET".equals(method) && "/api/state".equals(path)) {
+    send(exchange, 200, "application/json", project.stateJson());
+}
+String json = switch (path) {
+    case "/api/stock/buy" -> project.buyStock(body);
+    case "/api/stock/sell" -> project.sellStock(body);
+    default -> Json.obj("ok", false, "error", "없는 API");
+};""")
+add_code("""// KisIntegration.java - KIS 현재가 REST API 호출
+HttpRequest request = HttpRequest.newBuilder(uri)
+    .header("authorization", "Bearer " + token)
+    .header("appkey", config.appKey)
+    .header("tr_id", "FHKST01010100")
+    .GET()
+    .build();
+HttpResponse<String> response = client.send(request, BodyHandlers.ofString());""")
+add_code("""// MiniProject.java - 매수 처리와 거래 기록 저장
+Stock stock = findStock(stockName);
+long total = (long) stock.price * quantity;
+if (currentMember.balance < total) return Json.obj("ok", false);
+currentMember.balance -= total;
+currentMember.shares.put(stockName, share.buy(quantity, total));
+logs.add(new TradeLog(currentMember.uid, stockName, quantity, total, "구매"));
+saveDatabase();""")
+add_code("""// DatabaseIntegration.java - MySQL 트랜잭션 저장
+try (Connection con = DriverManager.getConnection(url, user, password)) {
+    con.setAutoCommit(false);
+    insertMembers(con, members);
+    insertShares(con, members);
+    insertTradeLogs(con, logs);
+    con.commit();
+}""")
+
+doc.add_heading("3.3 상속과 인터페이스 사용 이유", level=2)
 paragraph("과제 조건상 클래스와 인터페이스 수가 많아야 했기 때문에 단순히 빈 클래스를 늘리기보다 종목 회사 설명과 업종 분류 구조를 분리했다. CompanyProfile은 회사명과 업종처럼 공통 속성을 갖는 추상 클래스이고, StockCategoryProfile은 업종명과 위험 설명을 제공하는 인터페이스다.")
 add_table(["구분", "설계", "이유"], [
     ["추상 클래스", "CompanyProfile", "종목별 회사 설명 구조를 통일"],
@@ -202,7 +238,7 @@ add_table(["구분", "설계", "이유"], [
     ["구현 클래스", "업종·테마별 Category 클래스", "종목을 업종과 테마 기준으로 설명할 수 있게 구성"],
 ], widths=[1.2, 2.5, 3.5])
 
-doc.add_heading("3.3 AI vs 나의 역할", level=2)
+doc.add_heading("3.4 AI vs 나의 역할", level=2)
 add_table(["영역", "내가 한 결정", "AI 활용"], [
     ["주제 방향", "모의주식투자 웹사이트로 확정", "구현 방식 후보 정리"],
     ["데이터 선택", "한국투자증권 KIS Open API 사용 결정", "API 호출 구조와 Java 코드 작성 보조"],

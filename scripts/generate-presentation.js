@@ -138,6 +138,23 @@ function bullets(slide, items, x, y, w, h, fontSize = 13.5) {
   });
 }
 
+function codeBox(slide, title, code, x, y, w, h) {
+  slide.addText(title, {
+    x, y, w, h: 0.24,
+    fontFace: "Malgun Gothic", fontSize: 10.5, bold: true, color: C.blue,
+    margin: 0,
+  });
+  slide.addShape(pptx.ShapeType.roundRect, {
+    x, y: y + 0.32, w, h: h - 0.32, rectRadius: 0.04,
+    fill: { color: "111827" }, line: { color: "334155", width: 0.8 },
+  });
+  slide.addText(code, {
+    x: x + 0.15, y: y + 0.46, w: w - 0.3, h: h - 0.58,
+    fontFace: "Consolas", fontSize: 6.9, color: "E5E7EB",
+    fit: "shrink", breakLine: false, margin: 0,
+  });
+}
+
 function table(slide, rows, x, y, w, h, colW) {
   const rowH = h / rows.length;
   rows.forEach((row, r) => {
@@ -361,7 +378,44 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 14, "시연 영상 구성"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 14, "주요 코드 일부"); addFooter(slide);
+  codeBox(slide, "HTTP 라우팅 - MiniHandler.java", `if ("GET".equals(method) && "/api/state".equals(path)) {
+    send(exchange, 200, "application/json", project.stateJson());
+}
+String json = switch (path) {
+    case "/api/stock/buy" -> project.buyStock(body);
+    case "/api/stock/sell" -> project.sellStock(body);
+    default -> Json.obj("ok", false, "error", "없는 API");
+};`, 0.65, 0.95, 5.8, 2.2);
+  codeBox(slide, "KIS 현재가 조회 - KisIntegration.java", `HttpRequest request = HttpRequest.newBuilder(uri)
+    .header("authorization", "Bearer " + token)
+    .header("appkey", config.appKey)
+    .header("tr_id", "FHKST01010100")
+    .GET()
+    .build();
+HttpResponse<String> response = client.send(request, BodyHandlers.ofString());`, 6.8, 0.95, 5.85, 2.2);
+  codeBox(slide, "매수 처리 - MiniProject.java", `Stock stock = findStock(stockName);
+long total = (long) stock.price * quantity;
+if (currentMember.balance < total) return Json.obj("ok", false);
+currentMember.balance -= total;
+currentMember.shares.put(stockName, share.buy(quantity, total));
+logs.add(new TradeLog(currentMember.uid, stockName, quantity, total, "구매"));
+saveDatabase();`, 0.65, 3.55, 5.8, 2.45);
+  codeBox(slide, "MySQL 저장 - DatabaseIntegration.java", `try (Connection con = DriverManager.getConnection(url, user, password)) {
+    con.setAutoCommit(false);
+    insertMembers(con, members);
+    insertShares(con, members);
+    insertTradeLogs(con, logs);
+    con.commit();
+}`, 6.8, 3.55, 5.85, 2.45);
+  slide.addText("발표에서는 전체 코드를 읽기보다 요청 처리, 외부 API, 거래 처리, 저장 흐름이 실제로 연결되어 있다는 점을 보여준다.", {
+    x: 0.75, y: 6.3, w: 11.9, h: 0.3,
+    fontSize: 12.5, bold: true, color: C.ink, margin: 0,
+  });
+}
+
+{
+  const slide = pptx.addSlide(); addHeader(slide, 15, "시연 영상 구성"); addFooter(slide);
   table(slide, [
     ["구간", "보여줄 화면", "말할 내용"],
     ["0~10초", "로그인과 상단 요약", "Java 웹앱으로 실행되는 점 설명"],
