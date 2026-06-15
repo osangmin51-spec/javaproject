@@ -133,19 +133,280 @@ public class MiniDashboardPage {
                     .subMeta { color:var(--muted); font-size:12px; }
                     @media (max-width: 1100px) { .workspace { grid-template-columns:1fr; grid-template-areas:"market" "detail" "lower"; } .summary { grid-template-columns:repeat(2,1fr); } .metric { border-right:0; border-bottom:1px solid #e4e9f0; } }
                     @media (max-width: 720px) { header { align-items:flex-start; flex-direction:column; } .summary, .detailGrid, .orderPanel { grid-template-columns:1fr; } main { padding:12px; } }
+
+                    body {
+                      color:#17202d;
+                      background:#f3f6fb;
+                      background-image:
+                        linear-gradient(180deg,#ffffff 0,#f3f6fb 340px);
+                    }
+                    header {
+                      color:#17202d;
+                      background:rgba(255,255,255,.94);
+                      border-bottom:1px solid #dfe6f0;
+                      box-shadow:0 1px 0 rgba(15,23,42,.04);
+                      padding:14px 24px;
+                    }
+                    h1 { font-size:21px; font-weight:850; color:#101828; }
+                    h2 {
+                      color:#101828;
+                      background:#ffffff;
+                      border-bottom:1px solid #e5eaf2;
+                      padding:13px 16px;
+                      font-size:15px;
+                      font-weight:850;
+                    }
+                    h2::before {
+                      width:4px;
+                      height:16px;
+                      border-radius:2px;
+                      background:#246beb;
+                      box-shadow:none;
+                    }
+                    main { max-width:1440px; padding:18px; gap:16px; }
+                    section {
+                      background:#ffffff;
+                      color:#17202d;
+                      border:1px solid #e0e7f1;
+                      border-radius:8px;
+                      box-shadow:0 8px 22px rgba(15,23,42,.06);
+                    }
+                    button {
+                      border:1px solid #cfd9e6;
+                      border-radius:7px;
+                      background:#ffffff;
+                      color:#26364d;
+                      font-weight:750;
+                      padding:8px 12px;
+                    }
+                    button:hover { border-color:#246beb; background:#f5f8ff; }
+                    button.buy {
+                      background:#ef3340;
+                      border-color:#ef3340;
+                      color:#ffffff;
+                    }
+                    button.sell {
+                      background:#2563eb;
+                      border-color:#2563eb;
+                      color:#ffffff;
+                    }
+                    button.ghost {
+                      background:#f7f9fc;
+                      color:#26364d;
+                      border-color:#d9e2ee;
+                    }
+                    input, select {
+                      border:1px solid #ccd6e3;
+                      border-radius:7px;
+                      background:#ffffff;
+                      color:#17202d;
+                      padding:9px 11px;
+                    }
+                    input:focus {
+                      border-color:#246beb;
+                      box-shadow:0 0 0 3px rgba(36,107,235,.12);
+                    }
+                    label { color:#667085; font-size:12px; text-transform:none; }
+                    table { font-size:13px; }
+                    th, td {
+                      border-bottom:1px solid #edf1f6;
+                      padding:11px 13px;
+                    }
+                    th {
+                      color:#667085;
+                      background:#f8fafc;
+                      font-weight:800;
+                    }
+                    .brandBlock { gap:11px; }
+                    .brandMark {
+                      width:38px;
+                      height:38px;
+                      border-radius:10px;
+                      border:0;
+                      background:#246beb;
+                      box-shadow:none;
+                      display:grid;
+                      place-items:center;
+                      color:#ffffff;
+                      font-size:14px;
+                      font-weight:900;
+                      letter-spacing:0;
+                    }
+                    .brandCopy { gap:1px; }
+                    .brandCopy .labelText {
+                      color:#667085;
+                      font-size:12px;
+                      font-weight:650;
+                    }
+                    .pill {
+                      border-color:#d7e2f0;
+                      color:#344054;
+                      background:#f8fafc;
+                      padding:7px 11px;
+                    }
+                    .summary {
+                      grid-template-columns:repeat(6,minmax(0,1fr));
+                      gap:10px;
+                      border:0;
+                      background:transparent;
+                      border-radius:0;
+                      box-shadow:none;
+                    }
+                    .metric {
+                      background:#ffffff;
+                      color:#17202d;
+                      border:1px solid #e0e7f1;
+                      border-radius:8px;
+                      min-height:78px;
+                      padding:13px 14px;
+                      box-shadow:0 8px 18px rgba(15,23,42,.05);
+                    }
+                    .metric::after { display:none; }
+                    .labelText {
+                      color:#667085;
+                      font-size:12px;
+                      text-transform:none;
+                      letter-spacing:0;
+                    }
+                    .value {
+                      color:#101828;
+                      font-size:21px;
+                      font-weight:850;
+                    }
+                    .value.time { color:#475467; font-size:15px; }
+                    .workspace {
+                      grid-template-columns:minmax(390px,.9fr) minmax(0,1.35fr);
+                      gap:16px;
+                    }
+                    .marketFilters {
+                      background:#ffffff;
+                      border-top:0;
+                      border-bottom:1px solid #e7edf5;
+                      padding:13px 16px;
+                    }
+                    .marketTools {
+                      border-top:1px solid #e7edf5;
+                      background:#fbfcfe;
+                    }
+                    .marketRow:hover { background:#f6f9ff; }
+                    .marketRow.selected {
+                      background:#eef5ff;
+                      box-shadow:inset 3px 0 0 #246beb;
+                    }
+                    .up { color:#ef3340; }
+                    .down { color:#2563eb; }
+                    .pageButtons button {
+                      min-width:32px;
+                      background:#ffffff;
+                      color:#344054;
+                      border-color:#d9e2ee;
+                      border-radius:6px;
+                    }
+                    .pageButtons button.active {
+                      background:#246beb;
+                      color:#ffffff;
+                      border-color:#246beb;
+                    }
+                    .favoriteToggle.active {
+                      background:#eef5ff;
+                      color:#246beb;
+                      border-color:#9dc0ff;
+                    }
+                    .favoriteButton {
+                      border-radius:7px;
+                      color:#98a2b3;
+                      background:#ffffff;
+                    }
+                    .favoriteButton.active {
+                      color:#f59e0b;
+                      background:#fff7ed;
+                      border-color:#fed7aa;
+                    }
+                    .stockTitle strong { font-size:14px; color:#17202d; }
+                    .stockTitle span { color:#667085; font-size:12px; }
+                    .quoteButton {
+                      background:#ffffff;
+                      color:#246beb;
+                      border-color:#c7d7f8;
+                    }
+                    .tabs {
+                      background:#ffffff;
+                      border-bottom:1px solid #e7edf5;
+                      padding:10px 12px 0;
+                    }
+                    .tab {
+                      background:#ffffff;
+                      color:#667085;
+                      border:0;
+                      border-radius:0;
+                      border-bottom:2px solid transparent;
+                      padding:10px 12px;
+                    }
+                    .tab.active {
+                      background:#ffffff;
+                      color:#246beb;
+                      border-bottom-color:#246beb;
+                    }
+                    .cards { padding:14px; }
+                    .card {
+                      border-color:#e0e7f1;
+                      border-radius:8px;
+                      background:#ffffff;
+                    }
+                    .detailGrid {
+                      grid-template-columns:repeat(3,minmax(0,1fr));
+                      gap:10px;
+                      padding:14px 16px;
+                    }
+                    .detailGrid .metric {
+                      border-radius:8px;
+                      box-shadow:none;
+                      min-height:76px;
+                    }
+                    .companyInfo {
+                      color:#475467;
+                      border-top:1px solid #edf1f6;
+                      padding:14px 16px;
+                    }
+                    .orderPanel {
+                      grid-template-columns:repeat(2,minmax(0,1fr));
+                      gap:12px;
+                      padding:0 16px 16px;
+                    }
+                    .orderCard {
+                      border-color:#e0e7f1;
+                      border-radius:8px;
+                      background:#fbfcfe;
+                      box-shadow:none;
+                    }
+                    .chartWrap {
+                      border-color:#e0e7f1;
+                      border-radius:8px;
+                      background:#ffffff;
+                      margin:0 16px 16px;
+                    }
+                    .chartLine { stroke:#246beb; stroke-width:2.5; }
+                    .chartArea { fill:rgba(36,107,235,.08); }
+                    .chartGrid { stroke:#eef2f7; }
+                    .chartPoint { stroke:#246beb; }
+                    .chartMeta { color:#667085; }
+                    .empty { color:#98a2b3; }
+                    @media (max-width: 1100px) {
+                      .summary { grid-template-columns:repeat(2,1fr); }
+                      .workspace { grid-template-columns:1fr; grid-template-areas:"market" "detail" "lower"; }
+                    }
+                    @media (max-width: 720px) {
+                      header { align-items:flex-start; flex-direction:column; padding:13px 14px; }
+                      main { padding:12px; }
+                      .summary, .detailGrid, .orderPanel { grid-template-columns:1fr; }
+                      .marketFilters { grid-template-columns:1fr; }
+                    }
                   </style>
                 </head>
                 <body>
                   <header>
                     <div class="brandBlock">
-                      <svg class="brandMark" viewBox="0 0 64 64" role="img" aria-label="market signal">
-                        <rect x="0" y="0" width="64" height="64" rx="16" fill="#0d1b2c"></rect>
-                        <path d="M12 44 L21 34 L30 38 L43 20 L52 26" fill="none" stroke="#34d5ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
-                        <path d="M12 49 H54" stroke="#9be15d" stroke-width="3" stroke-linecap="round"></path>
-                        <rect x="18" y="18" width="4" height="18" rx="2" fill="#9be15d"></rect>
-                        <rect x="34" y="14" width="4" height="28" rx="2" fill="#f6bd4b"></rect>
-                        <rect x="48" y="31" width="4" height="13" rx="2" fill="#f05b5b"></rect>
-                      </svg>
+                      <div class="brandMark" aria-hidden="true">JP</div>
                       <div class="brandCopy">
                         <h1>Java 프로젝트 모의주식</h1>
                         <div class="labelText">시장 목록에서 종목을 고르고 바로 매수·매도하는 모의투자 터미널</div>
