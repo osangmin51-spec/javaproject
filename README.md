@@ -168,10 +168,3 @@ src/main/java
 - `MiniProject`가 아직 매매, 포트폴리오, 시장 상태를 함께 관리하므로 더 큰 프로젝트라면 `TradingService`, `PortfolioService`, `MarketService`로 한 번 더 나눌 수 있습니다.
 - 테스트 코드, 업종별 위험 등급 UI 표시, 개인화 관심종목 추천은 향후 개선 항목입니다.
 
-## 발표/보고서 자료
-
-| 경로 | 내용 |
-| --- | --- |
-| `deliverables/Java_모의주식투자_발표자료_최종정합본.pptx` | 코드와 문서 불일치를 정리한 최종 발표용 PPT |
-| `deliverables/Java_모의주식투자_개인프로젝트_보고서_최종정합본.docx` | 코드와 문서 불일치를 정리한 최종 개인 프로젝트 보고서 |
-| `deliverables/mock-stock-website-demo.webm` | 웹사이트 시연 영상 |
