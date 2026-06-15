@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -15,7 +16,7 @@ class MiniProject {
     private final List<TradeLog> logs = new ArrayList<>();
     private final AtomicLong memberIds = new AtomicLong(1000);
     private final AtomicLong brokerTicks = new AtomicLong();
-    private MySqlDatabase mySqlDatabase;
+    private ProjectDatabase database;
     private volatile String brokerSource = "내장 모의 증권사 소켓 서버";
     private volatile LocalDateTime lastBrokerTick;
 
@@ -338,22 +339,32 @@ class MiniProject {
 
     private synchronized void loadDatabase() {
         try {
-            mySqlDatabase = MySqlDatabase.fromEnv();
-            DatabaseSnapshot snapshot = mySqlDatabase.load(marketStocks);
+            database = MySqlDatabase.fromEnv();
+            DatabaseSnapshot snapshot = database.load(marketStocks);
             members.putAll(snapshot.members);
             logs.addAll(snapshot.logs);
             memberIds.set(Math.max(memberIds.get(), snapshot.maxMemberUid));
-            System.out.println("MySQL DB 로드 완료: members=" + members.size() + ", trades=" + logs.size());
+            System.out.println(database.name() + " 로드 완료: members=" + members.size() + ", trades=" + logs.size());
         } catch (Exception ex) {
-            throw new IllegalStateException("MySQL DB 초기화에 실패했습니다. MYSQL_URL, MYSQL_USER, MYSQL_PASSWORD와 MySQL 서버 상태를 확인하세요: " + ex.getMessage(), ex);
+            System.err.println("MySQL DB 초기화 실패, 로컬 파일 저장소로 전환합니다: " + ex.getMessage());
+            try {
+                database = new LocalFileDatabase(Path.of("data", "local-database.tsv"));
+                DatabaseSnapshot snapshot = database.load(marketStocks);
+                members.putAll(snapshot.members);
+                logs.addAll(snapshot.logs);
+                memberIds.set(Math.max(memberIds.get(), snapshot.maxMemberUid));
+                System.out.println(database.name() + " 로드 완료: members=" + members.size() + ", trades=" + logs.size());
+            } catch (Exception fallbackEx) {
+                throw new IllegalStateException("로컬 파일 저장소 초기화에 실패했습니다: " + fallbackEx.getMessage(), fallbackEx);
+            }
         }
     }
 
     private synchronized void saveDatabase() {
         try {
-            mySqlDatabase.save(members, logs);
+            database.save(members, logs);
         } catch (Exception ex) {
-            throw new IllegalStateException("MySQL DB 저장에 실패했습니다: " + ex.getMessage(), ex);
+            throw new IllegalStateException(database.name() + " 저장에 실패했습니다: " + ex.getMessage(), ex);
         }
     }
 

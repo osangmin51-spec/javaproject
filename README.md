@@ -98,9 +98,9 @@ WebSocket 모드에서도 시작 직전에 거래량 상위 종목을 조회해 
 
 이 프로젝트는 실제 서비스 배포용 회원 시스템보다 모의투자 기능 설명에 초점을 둡니다. 따라서 로그인/회원가입 화면을 없애고, 서버가 MySQL에 저장된 첫 번째 투자자 또는 자동 생성된 `과제용 투자자`를 사용합니다. 발표에서는 종목 조회, 그래프 확인, 매수/매도, 손익 계산 흐름에 바로 집중할 수 있습니다.
 
-## MySQL 저장소
+## 저장소
 
-회원, 보유 종목, 거래 기록은 MySQL 테이블에 저장합니다. 이 프로젝트는 DB 저장을 기본 전제로 하므로 `MYSQL_URL`, `MYSQL_USER` 환경변수가 없거나 MySQL 연결에 실패하면 서버가 시작되지 않습니다.
+회원, 보유 종목, 거래 기록은 먼저 MySQL 저장을 시도합니다. 로컬 과제 실행 환경에서 MySQL 비밀번호나 계정 설정이 맞지 않으면 서버가 멈추지 않고 `data/local-database.tsv` 로컬 파일 저장소로 자동 전환됩니다.
 
 ```powershell
 $env:MYSQL_URL="jdbc:mysql://localhost:3306/mock_stock?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul"
@@ -109,7 +109,7 @@ $env:MYSQL_PASSWORD="비밀번호"
 java -cp "out;lib/*" MiniProjectApp 8080
 ```
 
-MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니다.
+MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니다. MySQL 연결이 성공하면 MySQL 테이블을 사용하고, 실패하면 로컬 파일 저장소를 사용합니다.
 
 저장 테이블:
 
