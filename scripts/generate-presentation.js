@@ -260,7 +260,7 @@ titleSlide();
 {
   const slide = pptx.addSlide(); addHeader(slide, 6, "클래스/인터페이스 설계"); addFooter(slide);
   card(slide, 0.8, 1.0, 3.4, 1.2, "서버 계층", "app.MiniProjectApp → controller.MiniHandler → service.MiniProject\n요청을 받고 핵심 로직으로 전달", C.lightBlue);
-  card(slide, 4.95, 1.0, 3.4, 1.2, "도메인 계층", "Member, Stock, Share, TradeLog\n회원/종목/거래 상태 관리", C.white);
+  card(slide, 4.95, 1.0, 3.4, 1.2, "도메인 계층", "Member, Stock, Share, TradeLog\n모의 계좌/종목/거래 상태 관리", C.white);
   card(slide, 9.05, 1.0, 3.4, 1.2, "외부 연동", "KisQuoteClient, MockBrokerServer\nREST API와 소켓 흐름 처리", C.white);
   card(slide, 0.8, 3.1, 5.5, 1.45, "상속", "CompanyProfile 추상 클래스를 두고 종목별 회사 프로필 클래스가 공통 구조를 상속", C.white);
   card(slide, 6.9, 3.1, 5.5, 1.45, "인터페이스", "StockCategoryProfile 인터페이스로 업종별 분류와 위험 설명 규칙을 통일", C.white);
@@ -276,7 +276,7 @@ titleSlide();
     ["계층", "주요 클래스", "사용 라이브러리 / 문법", "역할"],
     ["실행/서버", "app.MiniProjectApp, controller.MiniHandler", "HttpServer, HttpExchange, Executors", "서버 시작, URL 라우팅, JSON 응답"],
     ["핵심 서비스", "MiniProject", "ConcurrentHashMap, ArrayList, Comparator", "매매 처리, 포트폴리오 계산, 시세 상태 관리"],
-    ["도메인 모델", "Member, Stock, Share, TradeLog", "class, record 성격의 데이터 객체", "회원, 종목, 보유 수량, 거래 내역 표현"],
+    ["도메인 모델", "Member, Stock, Share, TradeLog", "class, record 성격의 데이터 객체", "모의 계좌, 종목, 보유 수량, 거래 내역 표현"],
     ["외부 시세", "KisQuoteClient, KisQuotePoller, KisWebSocketQuoteClient", "HttpClient, HttpRequest, WebSocket", "KIS REST/WebSocket 시세 연동과 실패 시 전환"],
     ["저장소", "MySqlDatabase, DatabaseSnapshot", "JDBC, DriverManager", "MySQL 테이블 생성, 데이터 로드/저장"],
     ["화면/분류", "view.MiniDashboardPage, util.Json, CompanyProfile, StockCategoryProfile", "HTML/CSS/JS, abstract class, interface", "웹 화면 생성, JSON 처리, 회사/업종 설명 구조화"],
@@ -392,7 +392,7 @@ titleSlide();
     "HttpServer: 프레임워크 없이 웹 서버 구현",
     "HttpClient: KIS API 호출",
     "Thread: 백그라운드 시세 갱신",
-    "ConcurrentHashMap: 회원/종목 상태 동시 접근 처리",
+    "ConcurrentHashMap: 모의 계좌/종목 상태 동시 접근 처리",
     "ArrayList, LinkedHashMap, List: 거래 기록, 가격 히스토리, 조회 순서 관리",
     "JDBC DriverManager: MySQL 저장소 연결과 SQL 실행",
     "LocalDateTime, DateTimeFormatter: 거래 시간과 시세 갱신 시각 표시",

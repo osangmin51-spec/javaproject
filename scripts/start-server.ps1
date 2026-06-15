@@ -17,6 +17,15 @@ if ($listenerLine) {
     exit 0
 }
 
+$requiredMysqlEnv = @("MYSQL_URL", "MYSQL_USER", "MYSQL_PASSWORD")
+$missingMysqlEnv = $requiredMysqlEnv | Where-Object {
+    [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($_))
+}
+if ($missingMysqlEnv) {
+    Write-Error "Missing required MySQL environment variables: $($missingMysqlEnv -join ', ')"
+    exit 1
+}
+
 if (-not (Test-Path out)) {
     New-Item -ItemType Directory -Force out | Out-Null
 }

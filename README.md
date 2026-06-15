@@ -22,6 +22,10 @@ Java 21 이상을 권장합니다.
 ```powershell
 $sources = Get-ChildItem -Path src\main\java -Recurse -Filter *.java | ForEach-Object { $_.FullName }
 javac -encoding UTF-8 -d out $sources
+
+$env:MYSQL_URL="jdbc:mysql://localhost:3306/mock_stock?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul"
+$env:MYSQL_USER="root"
+$env:MYSQL_PASSWORD="비밀번호"
 java -cp "out;lib/*" app.MiniProjectApp 8080
 ```
 
@@ -36,6 +40,7 @@ http://localhost:8080/
 ## KIS Open API 설정
 
 프로젝트의 시세 데이터는 한국투자증권 KIS Open API 연동을 기준으로 설계했습니다. 실행 전에 발급받은 값을 환경변수로 넣습니다.
+MySQL 환경변수는 저장소 설정이므로 함께 유지해야 합니다.
 
 ```powershell
 $env:KIS_APP_KEY="발급받은_APP_KEY"
@@ -71,6 +76,7 @@ KIS 관련 환경변수:
 ## WebSocket 시세 구독
 
 REST 방식은 일정 주기마다 서버가 API를 다시 호출하는 구조라 완전한 실시간 체결 전송에는 한계가 있습니다. 그래서 `KIS_USE_WEBSOCKET=true`일 때는 KIS WebSocket 승인키를 발급받고 국내주식 체결 구독을 먼저 시도합니다.
+이 경우에도 MySQL 환경변수는 필수입니다.
 
 ```powershell
 $env:KIS_USE_WEBSOCKET="true"
@@ -101,7 +107,7 @@ WebSocket 모드에서도 시작 직전에 거래량 상위 종목을 조회해 
 
 ## 저장소
 
-회원, 보유 종목, 거래 기록은 MySQL에만 저장합니다. `MYSQL_URL`, `MYSQL_USER`, `MYSQL_PASSWORD` 설정이 없거나 MySQL 서버에 연결할 수 없으면 서버 실행이 중단됩니다. 따라서 실행 전에 MySQL 서버와 `mock_stock` 데이터베이스를 준비해야 합니다.
+모의 계좌, 보유 종목, 거래 기록은 MySQL에만 저장합니다. `MYSQL_URL`, `MYSQL_USER`, `MYSQL_PASSWORD` 설정이 없거나 MySQL 서버에 연결할 수 없으면 서버 실행이 중단됩니다. 따라서 실행 전에 MySQL 서버와 `mock_stock` 데이터베이스를 준비해야 합니다.
 
 ```powershell
 $env:MYSQL_URL="jdbc:mysql://localhost:3306/mock_stock?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul"
@@ -127,7 +133,7 @@ MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니
 | `app` | `MiniProjectApp.java` | 서버 시작, KIS REST/WebSocket 시세 스레드 시작 |
 | `controller` | `MiniHandler.java` | HTTP 라우팅, API 요청 처리 |
 | `service` | `MiniProject.java` | 모의 계좌, 매매, 포트폴리오, 저장 흐름 관리 |
-| `domain` | `Member.java`, `Stock.java`, `Share.java`, `TradeLog.java` | 회원, 종목, 보유 주식, 거래 기록 모델 |
+| `domain` | `Member.java`, `Stock.java`, `Share.java`, `TradeLog.java` | 모의 계좌, 종목, 보유 주식, 거래 기록 모델 |
 | `repository` | `ProjectDatabase.java`, `MySqlDatabase.java` | MySQL 저장소, 데이터 로드/저장 |
 | `external` | `KisQuotePoller.java`, `KisWebSocketQuoteClient.java`, `MockBrokerServer.java` | KIS API, WebSocket 시도, 모의 증권사 소켓 |
 | `view` | `MiniDashboardPage.java` | HTML, CSS, JavaScript 화면 렌더링 |

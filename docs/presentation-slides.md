@@ -42,7 +42,7 @@ flowchart LR
 | --- | --- |
 | `MiniProjectApp.java` | 서버 시작, KIS/DB/소켓 초기화 |
 | `MiniHandler.java` | HTTP 요청 라우팅과 JSON 응답 |
-| `MiniProject.java` | 회원, 매매, 포트폴리오, 시세 상태 관리 |
+| `MiniProject.java` | 모의 계좌, 매매, 포트폴리오, 시세 상태 관리 |
 | `repository/MySqlDatabase.java` | MySQL 연결과 저장/로드 |
 | `external/KisQuotePoller.java` | KIS 토큰, 거래량 순위, 현재가 조회 |
 | `external/MockBrokerServer.java` | 소켓 기반 가격 Tick 구독 구조 |
@@ -117,7 +117,7 @@ flowchart LR
 - `HttpServer`: 웹 서버
 - `HttpClient`: KIS API 호출
 - `Thread`: 백그라운드 시세 갱신
-- `ConcurrentHashMap`: 회원/종목 상태 관리
+- `ConcurrentHashMap`: 모의 계좌/종목 상태 관리
 - `ArrayList`, `LinkedHashMap`, `List`: 거래 기록, 가격 히스토리, 조회 순서 관리
 - `JDBC DriverManager`: MySQL 연결
 - `LocalDateTime`: 거래 시간과 시세 갱신 시각
@@ -127,7 +127,7 @@ flowchart LR
 - `HttpServer`: 웹 서버
 - `HttpClient`: KIS API 호출
 - `Thread`: 백그라운드 시세 갱신
-- `ConcurrentHashMap`: 회원/종목 상태 관리
+- `ConcurrentHashMap`: 모의 계좌/종목 상태 관리
 - `ArrayList`, `LinkedHashMap`, `List`: 거래 기록, 가격 히스토리, 조회 순서 관리
 - `JDBC DriverManager`: MySQL 연결
 - `LocalDateTime`: 거래 시간과 시세 갱신 시각

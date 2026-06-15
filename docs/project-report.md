@@ -84,7 +84,7 @@ classDiagram
 | 입력 | 종목 선택, 즐겨찾기, 매수/매도 수량 |
 | 외부 입력 | KIS 현재가, 전일대비, 등락률, 누적 거래량 |
 | 처리 | 잔액 확인, 보유 수량 확인, 매매 체결, 손익 계산 |
-| 저장 | 회원 정보, 보유 주식, 거래 기록을 MySQL 테이블에 저장 |
+| 저장 | 모의 계좌 정보, 보유 주식, 거래 기록을 MySQL 테이블에 저장 |
 | 출력 | 시장 시세, 종목 상세, 가격 그래프, 포트폴리오, 거래 기록 |
 
 ## 5. 사용자 UI / 화면
@@ -116,13 +116,12 @@ classDiagram
 | `HttpServer` | 별도 프레임워크 없이 웹 서버 구현 |
 | `HttpClient` | KIS API 호출 |
 | `Thread` | 백그라운드 시세 갱신과 소켓 서버 흐름 처리 |
-| `ConcurrentHashMap` | 회원, 종목, 보유 주식 상태 동시 접근 처리 |
+| `ConcurrentHashMap` | 모의 계좌, 종목, 보유 주식 상태 동시 접근 처리 |
 | `ArrayList` / `List` | 거래 기록, 가격 히스토리, 종목 목록 처리 |
 | `LinkedHashMap` | 조회 순서와 JSON 응답 순서 유지 |
 | `JDBC DriverManager` | MySQL 연결과 SQL 실행 |
-| `Files` / `Path` | 실행 스크립트와 문서 산출물 관리 |
 | `LocalDateTime` | 거래 시간, 시세 갱신 시각 표시 |
-| `AtomicLong` / `AtomicInteger` | 회원 번호, 로그 번호 등 식별자 생성 |
+| `AtomicLong` | 모의 계좌 번호와 시세 Tick 카운트 관리 |
 
 ## 8. 데이터 처리
 
