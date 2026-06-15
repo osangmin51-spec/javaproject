@@ -20,7 +20,7 @@ class Member {
     }
 
     String toJson() {
-        return Json.obj("uid", uid, "name", name, "balance", balance);
+        return Json.obj("uid", uid, "balance", balance);
     }
 }
 

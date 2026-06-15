@@ -29,7 +29,7 @@ class MiniProject {
     }
 
     private void createDefaultMember() {
-        Member member = new Member(memberIds.incrementAndGet(), "과제용 투자자", copyStocks(marketStocks));
+        Member member = new Member(memberIds.incrementAndGet(), "default", copyStocks(marketStocks));
         members.put(member.uid, member);
         saveDatabase();
     }
@@ -370,7 +370,7 @@ class MiniProject {
 
     private Member defaultMember() {
         return members.values().stream().min(Comparator.comparingLong(member -> member.uid))
-                .orElseThrow(() -> new IllegalStateException("기본 투자자 데이터가 없습니다."));
+                .orElseThrow(() -> new IllegalStateException("기본 계좌 데이터가 없습니다."));
     }
 
     private List<Stock> stocks(Member member) {

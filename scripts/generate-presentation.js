@@ -249,7 +249,7 @@ titleSlide();
     ["파일", "역할"],
     ["MiniProjectApp.java", "서버 시작점, KIS/DB/소켓 초기화"],
     ["MiniHandler.java", "HTTP 요청 라우팅과 API 응답 처리"],
-    ["MiniProject.java", "과제용 투자자, 매매, 포트폴리오, 시세 상태 핵심 로직"],
+    ["MiniProject.java", "모의 계좌, 매매, 포트폴리오, 시세 상태 핵심 로직"],
     ["DatabaseIntegration.java", "MySQL 우선 연결, 로컬 파일 저장 전환"],
     ["KisIntegration.java", "KIS 토큰 발급, 거래량 순위, 현재가 조회"],
     ["StockCategoryProfiles.java", "업종·테마별 위험 설명 타입"],
@@ -436,7 +436,7 @@ saveDatabase();`, 0.65, 3.55, 5.8, 2.45);
 
 {
   const slide = pptx.addSlide(); addHeader(slide, 16, "보완 상태와 남은 과제"); addFooter(slide);
-  card(slide, 0.7, 1.0, 5.75, 1.2, "로그인 제거", "과제용 프로젝트라 회원 인증보다 종목 조회와 매매 흐름에 집중하도록 단일 투자자 구조로 단순화", C.lightBlue);
+  card(slide, 0.7, 1.0, 5.75, 1.2, "로그인 제거", "과제용 프로젝트라 회원 인증보다 종목 조회와 매매 흐름에 집중하도록 단일 모의 계좌 구조로 단순화", C.lightBlue);
   card(slide, 6.85, 1.0, 5.75, 1.2, "WebSocket 보완", "KIS WebSocket 시작/오류 시 REST 폴링으로 자동 전환되도록 코드 보강", C.white);
   card(slide, 0.7, 2.75, 5.75, 1.2, "남은 검증", "실제 KIS 테스트베드에서 구독 성공 여부와 메시지 필드 순서 확인 필요", C.white);
   card(slide, 6.85, 2.75, 5.75, 1.2, "구조 개선 계획", "현재는 루트 파일 중심, 이후 controller/service/repository/model 패키지 분리 예정", C.white);

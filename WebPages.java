@@ -177,10 +177,9 @@ class MiniDashboardPage {
                       return (state.stocks || []).find(stock => stock.name === name);
                     }
                     function render() {
-                      const member = state.member || {};
                       const portfolio = state.portfolio || {};
                       const broker = state.broker || {};
-                      document.getElementById('statusPill').textContent = `${member.name || '과제용 투자자'} · ${broker.lastTick || '시세 갱신 대기'}`;
+                      document.getElementById('statusPill').textContent = broker.lastTick || '시세 갱신 대기';
                       document.getElementById('summary').innerHTML = [
                         ['보유 현금', won(portfolio.cash), ''],
                         ['주식 평가액', won(portfolio.stockValue), ''],

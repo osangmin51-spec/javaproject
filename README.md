@@ -30,7 +30,7 @@ java -cp "out;lib/*" MiniProjectApp 8080
 http://localhost:8080/
 ```
 
-실행하면 `과제용 투자자` 데이터가 자동으로 만들어지고, 별도 로그인 없이 바로 종목 조회와 모의 매매를 진행합니다.
+실행하면 `모의 계좌` 데이터가 자동으로 만들어지고, 별도 로그인 없이 바로 종목 조회와 모의 매매를 진행합니다.
 
 ## KIS Open API 설정
 
@@ -94,9 +94,9 @@ WebSocket 모드에서도 시작 직전에 거래량 상위 종목을 조회해 
 
 다만 실제 구독 성공 여부, 구독 가능 종목 수, 메시지 필드 순서, 운영/모의 환경 주소는 KIS 개발자센터의 WebSocket 문서와 테스트베드 기준으로 별도 확인이 필요합니다.
 
-## 과제용 사용자 흐름
+## 모의 계좌 흐름
 
-이 프로젝트는 실제 서비스 배포용 회원 시스템보다 모의투자 기능 설명에 초점을 둡니다. 따라서 로그인/회원가입 화면을 없애고, 서버가 MySQL에 저장된 첫 번째 투자자 또는 자동 생성된 `과제용 투자자`를 사용합니다. 발표에서는 종목 조회, 그래프 확인, 매수/매도, 손익 계산 흐름에 바로 집중할 수 있습니다.
+이 프로젝트는 실제 서비스 배포용 회원 시스템보다 모의투자 기능 설명에 초점을 둡니다. 따라서 로그인/회원가입 화면을 없애고, 서버가 MySQL에 저장된 첫 번째 계좌 또는 자동 생성된 `모의 계좌`를 사용합니다. 발표에서는 종목 조회, 그래프 확인, 매수/매도, 손익 계산 흐름에 바로 집중할 수 있습니다.
 
 ## 저장소
 
@@ -115,7 +115,7 @@ MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니
 
 | 테이블 | 내용 |
 | --- | --- |
-| `members(uid, name, balance)` | 과제용 투자자 번호, 이름, 현금 |
+| `members(uid, name, balance)` | 모의 계좌 번호, 이름, 현금 |
 | `shares(member_uid, stock_name, quantity, purchase_price)` | 회원별 보유 종목, 수량, 총 매입금액 |
 | `trade_logs(id, member_uid, stock_name, quantity, price, trade_type, traded_at)` | 회원별 매수/매도 기록 |
 
@@ -125,7 +125,7 @@ MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니
 | --- | --- |
 | `MiniProjectApp.java` | 서버 시작, KIS REST/WebSocket 시세 스레드 시작 |
 | `MiniHandler.java` | HTTP 라우팅, API 요청 처리 |
-| `MiniProject.java` | 과제용 투자자, 매매, 포트폴리오, 저장 흐름 관리 |
+| `MiniProject.java` | 모의 계좌, 매매, 포트폴리오, 저장 흐름 관리 |
 | `DomainModels.java` | 회원, 종목, 보유 주식, 거래 기록 모델 |
 | `KisIntegration.java` | KIS 토큰, 현재가 REST, 거래량 순위, WebSocket 구독 |
 | `DatabaseIntegration.java` | MySQL 저장소, 스키마 생성, 데이터 로드/저장 |
