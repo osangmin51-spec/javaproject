@@ -204,7 +204,23 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 3, "프로젝트 목적"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 3, "제안 단계 vs 최종 구현"); addFooter(slide);
+  table(slide, [
+    ["구분", "제안 단계", "최종 구현"],
+    ["주제", "Java 미니프로젝트 기능 구현", "KIS API 기반 모의주식투자 웹앱"],
+    ["가격 데이터", "내부 샘플/모의 가격", "한국투자증권 KIS 현재가와 거래량"],
+    ["저장", "메모리 중심 구상", "MySQL 테이블 필수 저장"],
+    ["화면", "기본 목록과 입력 화면", "종목 상세, 그래프, 포트폴리오"],
+    ["매매 흐름", "드롭다운 선택 후 주문", "종목 클릭 후 상세 확인과 매매"],
+  ], 0.75, 1.0, 11.85, 4.75, [0.2, 0.38, 0.42]);
+  slide.addText("처음에는 기능 구현 중심이었지만, 최종본은 실제 시세와 저장 구조를 갖춘 모의투자 흐름으로 바뀌었다.", {
+    x: 0.95, y: 6.05, w: 11.1, h: 0.35,
+    fontSize: 13.3, bold: true, color: C.blue, margin: 0,
+  });
+}
+
+{
+  const slide = pptx.addSlide(); addHeader(slide, 4, "프로젝트 목적"); addFooter(slide);
   card(slide, 0.65, 1.0, 3.9, 1.25, "실제 시세 기반", "KIS Open API에서 현재가, 등락률, 거래량을 받아와 모의투자 화면에 반영", C.lightBlue);
   card(slide, 4.75, 1.0, 3.9, 1.25, "사용자 매매 흐름", "시장 시세에서 종목 클릭 → 상세 확인 → 매수 / 보유 탭에서 매도", C.white);
   card(slide, 8.85, 1.0, 3.8, 1.25, "포트폴리오 손익", "보유 주식 평가금액, 실시간 손익, 수익률을 자동 계산", C.white);
@@ -216,12 +232,12 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 4, "전체 시스템 구조"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 5, "전체 시스템 구조"); addFooter(slide);
   const boxes = [
     ["웹 UI", 0.8, 1.3], ["MiniHandler", 3.0, 1.3], ["MiniProject", 5.3, 1.3],
     ["MySqlDatabase", 7.75, 1.3], ["KisQuotePoller", 3.0, 3.6], ["KisQuoteClient", 5.3, 3.6],
-    ["KIS Open API", 7.75, 3.6], ["Broker Socket", 5.3, 5.3], ["실시간 Tick", 7.75, 5.3],
-    ["Broker Socket", 10.0, 3.6],
+    ["KIS Open API", 7.75, 3.6], ["MockBrokerServer", 5.3, 5.3], ["가격 Tick", 7.75, 5.3],
+    ["BrokerFeedClient", 10.0, 3.6],
   ];
   boxes.forEach(([text, x, y]) => {
     slide.addShape(pptx.ShapeType.roundRect, {
@@ -244,21 +260,23 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 5, "코드 구조"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 6, "코드 구조"); addFooter(slide);
   table(slide, [
-    ["파일", "역할"],
-    ["app/MiniProjectApp.java", "서버 시작점, KIS/DB/소켓 초기화"],
-    ["MiniHandler.java", "HTTP 요청 라우팅과 API 응답 처리"],
-    ["MiniProject.java", "모의 계좌, 매매, 포트폴리오, 시세 상태 핵심 로직"],
-    ["repository/MySqlDatabase.java", "MySQL 연결, 테이블 생성, 데이터 저장/로드"],
-    ["external/KisQuotePoller.java", "KIS 토큰 발급, 거래량 순위, 현재가 조회"],
-    ["domain/StockCategories.java", "업종·테마별 위험 설명 타입"],
-    ["view/MiniDashboardPage.java", "HTML/CSS/JavaScript 화면 렌더링"],
-  ], 0.7, 0.95, 12.0, 5.6, [0.34, 0.66]);
+    ["묶음", "주요 파일", "역할"],
+    ["실행/요청", "MiniProjectApp, MiniHandler", "서버 시작과 API 라우팅"],
+    ["핵심 로직", "MiniProject", "모의 계좌, 매매, 포트폴리오, 시세 상태 관리"],
+    ["저장소", "ProjectDatabase, MySqlDatabase", "MySQL 필수 저장과 데이터 로드/저장"],
+    ["외부 시세", "KisQuoteClient, KisQuotePoller, KisWebSocketQuoteClient, MockBrokerServer", "KIS REST/WebSocket 시세와 모의 소켓 Tick"],
+    ["화면/도메인", "MiniDashboardPage, Member, Stock, Share, TradeLog, StockCategories", "웹 UI와 종목/거래 데이터 모델"],
+  ], 0.55, 1.0, 12.2, 4.85, [0.19, 0.42, 0.39]);
+  slide.addText("현재 최종본에서는 예비 저장소를 제거하고 MySQL 저장소만 사용한다.", {
+    x: 0.85, y: 6.05, w: 11.0, h: 0.3,
+    fontSize: 12.5, bold: true, color: C.blue, margin: 0,
+  });
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 6, "클래스/인터페이스 설계"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 7, "클래스/인터페이스 설계"); addFooter(slide);
   card(slide, 0.8, 1.0, 3.4, 1.2, "서버 계층", "app.MiniProjectApp → controller.MiniHandler → service.MiniProject\n요청을 받고 핵심 로직으로 전달", C.lightBlue);
   card(slide, 4.95, 1.0, 3.4, 1.2, "도메인 계층", "Member, Stock, Share, TradeLog\n모의 계좌/종목/거래 상태 관리", C.white);
   card(slide, 9.05, 1.0, 3.4, 1.2, "외부 연동", "KisQuoteClient, MockBrokerServer\nREST API와 소켓 흐름 처리", C.white);
@@ -271,16 +289,15 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 7, "클래스/라이브러리 구조 상세"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 8, "클래스/라이브러리 구조 상세"); addFooter(slide);
   table(slide, [
     ["계층", "주요 클래스", "사용 라이브러리 / 문법", "역할"],
-    ["실행/서버", "app.MiniProjectApp, controller.MiniHandler", "HttpServer, HttpExchange, Executors", "서버 시작, URL 라우팅, JSON 응답"],
-    ["핵심 서비스", "MiniProject", "ConcurrentHashMap, ArrayList, Comparator", "매매 처리, 포트폴리오 계산, 시세 상태 관리"],
-    ["도메인 모델", "Member, Stock, Share, TradeLog", "class, record 성격의 데이터 객체", "모의 계좌, 종목, 보유 수량, 거래 내역 표현"],
-    ["외부 시세", "KisQuoteClient, KisQuotePoller, KisWebSocketQuoteClient", "HttpClient, HttpRequest, WebSocket", "KIS REST/WebSocket 시세 연동과 실패 시 전환"],
-    ["저장소", "MySqlDatabase, DatabaseSnapshot", "JDBC, DriverManager", "MySQL 테이블 생성, 데이터 로드/저장"],
-    ["화면/분류", "view.MiniDashboardPage, util.Json, CompanyProfile, StockCategoryProfile", "HTML/CSS/JS, abstract class, interface", "웹 화면 생성, JSON 처리, 회사/업종 설명 구조화"],
-  ], 0.45, 0.9, 12.45, 5.35, [0.15, 0.27, 0.29, 0.29]);
+    ["실행/서버", "MiniProjectApp, MiniHandler", "HttpServer, HttpExchange", "서버 시작, URL 라우팅"],
+    ["서비스", "MiniProject", "ConcurrentHashMap, ArrayList", "매매, 포트폴리오, 시세 상태 관리"],
+    ["도메인", "Member, Stock, Share, TradeLog", "class, interface", "모의 계좌, 종목, 거래 데이터 표현"],
+    ["외부 API", "KisQuoteClient, KisQuotePoller, KisWebSocketQuoteClient", "HttpClient, WebSocket", "KIS REST/WebSocket 시세 연동"],
+    ["저장소/화면", "MySqlDatabase, MiniDashboardPage, Json", "JDBC, HTML/CSS/JS", "MySQL 저장과 웹 화면 렌더링"],
+  ], 0.5, 1.0, 12.3, 4.8, [0.17, 0.3, 0.27, 0.26]);
   slide.addText("정리해서 말하면 서버, 서비스, 외부 API, DB, 화면 역할을 실제 패키지로 나눴고, 제출용 컴파일도 src/main/java 전체를 기준으로 검증한다.", {
     x: 0.8, y: 6.35, w: 11.8, h: 0.35,
     fontSize: 12.5, bold: true, color: C.blue, margin: 0,
@@ -288,7 +305,7 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 8, "AI vs 나의 역할"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 9, "AI vs 나의 역할"); addFooter(slide);
   table(slide, [
     ["구분", "내가 주도한 부분", "AI를 활용한 부분"],
     ["주제", "모의주식투자 웹사이트 방향 결정", "구현 방식 후보 정리"],
@@ -304,7 +321,7 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 9, "사용자 시나리오와 Use Case"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 10, "사용자 시나리오와 Use Case"); addFooter(slide);
   const steps = ["웹사이트 접속", "거래량 인기 종목 확인", "검색/즐겨찾기", "종목 클릭", "그래프 확인", "매수", "보유 탭에서 매도", "손익 확인"];
   steps.forEach((text, i) => {
     const x = 0.55 + (i % 4) * 3.15;
@@ -327,7 +344,7 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 10, "사용자 UI / 화면 구성"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 11, "사용자 UI / 화면 구성"); addFooter(slide);
   card(slide, 0.65, 1.0, 3.0, 1.05, "상단 요약", "현금, 평가액, 총자산, 손익, 수익률 표시", C.lightBlue);
   card(slide, 3.85, 1.0, 3.0, 1.05, "시장 시세", "거래량 상위 종목을 10개씩 페이지로 표시", C.white);
   card(slide, 7.05, 1.0, 3.0, 1.05, "종목 상세", "현재가, 그래프, 매수 입력", C.white);
@@ -344,7 +361,7 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 11, "데이터 흐름"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 12, "데이터 흐름"); addFooter(slide);
   table(slide, [
     ["단계", "내용"],
     ["입력", "종목 선택, 즐겨찾기, 매수/매도 수량"],
@@ -357,7 +374,7 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 12, "데이터 처리 방식"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 13, "데이터 처리 방식"); addFooter(slide);
   table(slide, [
     ["데이터", "처리 방식"],
     ["주식 시세", "KIS 현재가 REST API 조회"],
@@ -371,7 +388,7 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 13, "한 달간 시행착오"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 14, "한 달간 시행착오"); addFooter(slide);
   const items = [
     ["실제 시세 연동", "내부 모의 가격과 KIS 응답값이 섞이면서 가격이 이상해 보이는 문제를 확인하고 갱신 흐름을 정리"],
     ["전체 종목 처리 범위", "약 2700개 전체 종목을 계속 갱신하는 대신 거래량 상위 종목 중심으로 현실적인 범위를 선택"],
@@ -387,7 +404,7 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 14, "Java 클래스 활용"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 15, "Java 클래스 활용"); addFooter(slide);
   bullets(slide, [
     "HttpServer: 프레임워크 없이 웹 서버 구현",
     "HttpClient: KIS API 호출",
@@ -400,7 +417,7 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 15, "주요 코드 흐름"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 16, "주요 코드 흐름"); addFooter(slide);
   const steps = [
     ["1. 브라우저 요청", "GET /api/state\nPOST /api/stock/buy\nPOST /api/stock/sell"],
     ["2. MiniHandler", "URL을 확인하고\nMiniProject 메서드 호출"],
@@ -428,23 +445,23 @@ saveDatabase();`, 6.85, 3.35, 5.65, 1.3);
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 16, "보완 상태와 남은 과제"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 17, "보완 상태와 남은 과제"); addFooter(slide);
   card(slide, 0.7, 1.0, 5.75, 1.2, "로그인 제거", "과제용 프로젝트라 회원 인증보다 종목 조회와 매매 흐름에 집중하도록 단일 모의 계좌 구조로 단순화", C.lightBlue);
   card(slide, 6.85, 1.0, 5.75, 1.2, "WebSocket 보완", "KIS WebSocket 시작/오류 시 REST 폴링으로 자동 전환되도록 코드 보강", C.white);
   card(slide, 0.7, 2.75, 5.75, 1.2, "남은 검증", "실제 KIS 테스트베드에서 구독 성공 여부와 메시지 필드 순서 확인 필요", C.white);
   card(slide, 6.85, 2.75, 5.75, 1.2, "구조 정리 완료", "src/main/java 아래 app/controller/service/domain/repository/external/view/util 패키지로 물리적 분리", C.white);
   card(slide, 0.7, 4.5, 5.75, 1.2, "추가 아이디어", "업종별 위험 등급 표시, 개인화 관심종목 추천, 테스트 코드 보강", C.white);
-  card(slide, 6.85, 4.5, 5.75, 1.2, "문서 정합성 완료", "PPT, 보고서, README가 실제 코드 구조와 같은 용어를 쓰도록 최종 정리", C.lightBlue);
+  card(slide, 6.85, 4.5, 5.75, 1.2, "남은 개선", "테스트 코드 보강, 서비스 세분화, WebSocket 실환경 검증 결과 문서화", C.lightBlue);
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 17, "시연 영상 구성"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 18, "시연 영상 구성"); addFooter(slide);
   table(slide, [
     ["구간", "보여줄 화면", "말할 내용"],
-    ["0~4초", "상단 요약", "로그인 없이 바로 모의투자 화면이 열리는 점 설명"],
-    ["4~8초", "시장 시세와 검색", "거래량 상위 종목과 검색/즐겨찾기"],
-    ["8~12초", "종목 상세/그래프", "현재가, 등락률, 그래프가 한 화면에 연결됨"],
-    ["12~16초", "매수 후 보유 탭", "종목을 클릭해 매수하고 손익을 확인"],
+    ["0~7초", "상단 요약", "로그인 없이 바로 모의투자 화면이 열리는 점 설명"],
+    ["7~14초", "시장 시세와 검색", "거래량 상위 종목과 검색/즐겨찾기"],
+    ["14~23초", "종목 상세/그래프", "현재가, 등락률, 그래프가 한 화면에 연결됨"],
+    ["23~31초", "매수 후 보유 탭", "종목을 클릭해 매수하고 손익을 확인"],
   ], 0.65, 0.95, 7.0, 3.2, [0.18, 0.36, 0.46]);
   if (fs.existsSync(PREVIEW)) {
     slide.addImage({ path: PREVIEW, x: 8.0, y: 1.0, w: 4.7, h: 2.65 });
