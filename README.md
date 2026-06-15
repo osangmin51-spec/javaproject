@@ -4,9 +4,7 @@ Java 표준 라이브러리 중심으로 만든 모의주식투자 웹앱입니�
 
 ## 주요 기능
 
-- 회원가입, 로그인, 로그아웃
-- Salt 기반 SHA-256 비밀번호 해시 저장
-- HttpOnly 쿠키 기반 로그인 세션 관리
+- 로그인 없이 바로 사용하는 과제용 단일 투자자 흐름
 - 한국투자증권 KIS Open API 기반 국내주식 현재가 조회 구조
 - 거래량 상위 종목 중심의 시장 시세 목록
 - 시장 시세 종목 10개 단위 페이지 표시
@@ -22,7 +20,7 @@ Java 표준 라이브러리 중심으로 만든 모의주식투자 웹앱입니�
 Java 21 이상을 권장합니다.
 
 ```powershell
-$sources = Get-ChildItem -Filter *.java | Where-Object { $_.Name -ne "MockStockApp.java" } | ForEach-Object { $_.FullName }
+$sources = Get-ChildItem -Filter *.java | ForEach-Object { $_.FullName }
 javac -encoding UTF-8 -d out $sources
 java -cp "out;lib/*" MiniProjectApp 8080
 ```
@@ -33,11 +31,7 @@ java -cp "out;lib/*" MiniProjectApp 8080
 http://localhost:8080/
 ```
 
-기본 테스트 계정:
-
-| 아이디 | 비밀번호 |
-| --- | --- |
-| `test1` | `1234` |
+실행하면 `과제용 투자자` 데이터가 자동으로 만들어지고, 별도 로그인 없이 바로 종목 조회와 모의 매매를 진행합니다.
 
 ## KIS Open API 설정
 
@@ -101,13 +95,9 @@ WebSocket 모드에서도 시작 직전에 거래량 상위 종목을 조회해 
 
 다만 실제 구독 성공 여부, 구독 가능 종목 수, 메시지 필드 순서, 운영/모의 환경 주소는 KIS 개발자센터의 WebSocket 문서와 테스트베드 기준으로 별도 확인이 필요합니다.
 
-## 보안과 세션
+## 과제용 사용자 흐름
 
-로그인 성공 시 서버가 `MSTOCK_SESSION` 세션 토큰을 발급하고 브라우저에는 `HttpOnly` 쿠키로 저장합니다. API 요청은 이 쿠키를 기준으로 회원을 찾습니다.
-
-비밀번호는 회원가입 시 평문으로 저장하지 않고 `Salt + SHA-256` 형식으로 저장합니다. 이전 실행 데이터에 평문 비밀번호가 남아 있더라도 로그인에 성공하면 해시 형식으로 자동 업그레이드합니다.
-
-아직 실제 배포 수준의 보안까지 완성된 것은 아닙니다. HTTPS, 세션 만료 시간, CSRF 방어는 향후 배포 단계에서 추가해야 합니다.
+이 프로젝트는 실제 서비스 배포용 회원 시스템보다 모의투자 기능 설명에 초점을 둡니다. 따라서 로그인/회원가입 화면을 없애고, 서버가 MySQL에 저장된 첫 번째 투자자 또는 자동 생성된 `과제용 투자자`를 사용합니다. 발표에서는 종목 조회, 그래프 확인, 매수/매도, 손익 계산 흐름에 바로 집중할 수 있습니다.
 
 ## MySQL 저장소
 
@@ -126,7 +116,7 @@ MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니
 
 | 테이블 | 내용 |
 | --- | --- |
-| `members(uid, name, login_id, pwd, balance)` | 회원 번호, 이름, 아이디, 비밀번호 해시, 현금 |
+| `members(uid, name, balance)` | 과제용 투자자 번호, 이름, 현금 |
 | `shares(member_uid, stock_name, quantity, purchase_price)` | 회원별 보유 종목, 수량, 총 매입금액 |
 | `trade_logs(id, member_uid, stock_name, quantity, price, trade_type, traded_at)` | 회원별 매수/매도 기록 |
 
@@ -135,12 +125,11 @@ MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니
 | 파일 | 역할 |
 | --- | --- |
 | `MiniProjectApp.java` | 서버 시작, KIS REST/WebSocket 시세 스레드 시작 |
-| `MiniHandler.java` | HTTP 라우팅, API 요청 처리, 세션 쿠키 처리 |
-| `MiniProject.java` | 회원, 세션, 매매, 포트폴리오, 저장 흐름 관리 |
+| `MiniHandler.java` | HTTP 라우팅, API 요청 처리 |
+| `MiniProject.java` | 과제용 투자자, 매매, 포트폴리오, 저장 흐름 관리 |
 | `DomainModels.java` | 회원, 종목, 보유 주식, 거래 기록 모델 |
 | `KisIntegration.java` | KIS 토큰, 현재가 REST, 거래량 순위, WebSocket 구독 |
 | `DatabaseIntegration.java` | MySQL 저장소, 스키마 생성, 데이터 로드/저장 |
-| `PasswordHasher.java` | 비밀번호 Salt 생성, SHA-256 해시, 검증 |
 | `BrokerIntegration.java` | 모의 증권사 소켓 서버와 시세 Tick 구독 |
 | `CompanyProfile.java` | 회사 프로필 추상 클래스 |
 | `CompanyProfiles.java` | 종목별 회사 설명 클래스와 설명 조회 레지스트리 |
@@ -154,9 +143,6 @@ MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니
 | --- | --- | --- |
 | `GET` | `/` | 메인 화면 |
 | `GET` | `/api/state` | 전체 화면 상태 |
-| `POST` | `/api/register` | 회원가입 |
-| `POST` | `/api/login` | 로그인 |
-| `POST` | `/api/logout` | 로그아웃 |
 | `POST` | `/api/stock/buy` | 주식 매수 |
 | `POST` | `/api/stock/sell` | 주식 매도 |
 
@@ -164,7 +150,7 @@ MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니
 
 - KIS WebSocket은 승인키 발급, 구독 메시지 전송, 체결 메시지 파싱, REST fallback까지 구현했지만 실제 테스트베드 구독 성공 여부는 별도 환경에서 확인해야 합니다.
 - 현재 소스는 과제 제출과 컴파일 검증을 쉽게 하기 위해 루트 디렉터리 중심으로 유지했습니다. 이후에는 `controller`, `service`, `repository`, `model` 패키지로 분리하는 것이 좋습니다.
-- HTTPS, 세션 만료 시간, CSRF 방어, 테스트 코드, 업종별 위험 등급 UI 표시, 개인화 관심종목 추천은 향후 개선 항목입니다.
+- 테스트 코드, 업종별 위험 등급 UI 표시, 개인화 관심종목 추천은 향후 개선 항목입니다.
 
 ## 발표/보고서 자료
 

@@ -66,10 +66,10 @@ class MySqlDatabase {
             long maxUid = 1000;
 
             try (Statement statement = connection.createStatement();
-                 ResultSet rs = statement.executeQuery("select uid, name, login_id, pwd, balance from members")) {
+                 ResultSet rs = statement.executeQuery("select uid, name, balance from members")) {
                 while (rs.next()) {
                     long uid = rs.getLong("uid");
-                    Member member = new Member(uid, rs.getString("name"), rs.getString("login_id"), rs.getString("pwd"), copyStocks(marketStocks));
+                    Member member = new Member(uid, rs.getString("name"), copyStocks(marketStocks));
                     member.balance = rs.getInt("balance");
                     members.put(uid, member);
                     maxUid = Math.max(maxUid, uid);
@@ -110,13 +110,11 @@ class MySqlDatabase {
             connection.setAutoCommit(false);
             try {
                 clearTables(connection);
-                try (PreparedStatement ps = connection.prepareStatement("insert into members(uid, name, login_id, pwd, balance) values(?, ?, ?, ?, ?)")) {
+                try (PreparedStatement ps = connection.prepareStatement("insert into members(uid, name, balance) values(?, ?, ?)")) {
                     for (Member member : members.values().stream().sorted(Comparator.comparingLong(member -> member.uid)).toList()) {
                         ps.setLong(1, member.uid);
                         ps.setString(2, member.name);
-                        ps.setString(3, member.id);
-                        ps.setString(4, member.pwd);
-                        ps.setInt(5, member.balance);
+                        ps.setInt(3, member.balance);
                         ps.addBatch();
                     }
                     ps.executeBatch();
@@ -165,11 +163,11 @@ class MySqlDatabase {
                     create table if not exists members (
                         uid bigint primary key,
                         name varchar(100) not null,
-                        login_id varchar(100) not null unique,
-                        pwd varchar(255) not null,
                         balance int not null
                     )
                     """);
+            dropColumnIfPresent(connection, "members", "login_id");
+            dropColumnIfPresent(connection, "members", "pwd");
             statement.executeUpdate("""
                     create table if not exists shares (
                         member_uid bigint not null,
@@ -205,6 +203,15 @@ class MySqlDatabase {
             statement.executeUpdate("delete from trade_logs");
             statement.executeUpdate("delete from shares");
             statement.executeUpdate("delete from members");
+        }
+    }
+
+    private void dropColumnIfPresent(Connection connection, String tableName, String columnName) throws Exception {
+        try (ResultSet rs = connection.getMetaData().getColumns(null, null, tableName, columnName)) {
+            if (!rs.next()) return;
+        }
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate("alter table " + tableName + " drop column " + columnName);
         }
     }
 

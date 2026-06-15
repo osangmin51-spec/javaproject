@@ -6,13 +6,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 class MiniProject {
     private final Map<Long, Member> members = new ConcurrentHashMap<>();
-    private final Map<String, Long> sessions = new ConcurrentHashMap<>();
     private final Map<String, Stock> marketStocks = new ConcurrentHashMap<>();
     private final List<TradeLog> logs = new ArrayList<>();
     private final AtomicLong memberIds = new AtomicLong(1000);
@@ -25,63 +23,31 @@ class MiniProject {
         seedStocks();
         loadDatabase();
         if (members.isEmpty()) {
-            register(Map.of("name", "테스트회원", "id", "test1", "pwd", "1234"));
+            createDefaultMember();
         }
     }
 
-    String register(Map<String, String> body) {
-        String name = text(body, "name");
-        String id = text(body, "id");
-        String pwd = text(body, "pwd");
-        if (name.isBlank() || id.isBlank() || pwd.isBlank()) {
-            return Json.obj("ok", false, "error", "이름, 아이디, 비밀번호를 입력하세요.");
-        }
-        if (findById(id) != null) {
-            return Json.obj("ok", false, "error", "이미 존재하는 아이디입니다.");
-        }
-        Member member = new Member(memberIds.incrementAndGet(), name, id, PasswordHasher.hash(pwd), copyStocks(marketStocks));
+    private void createDefaultMember() {
+        Member member = new Member(memberIds.incrementAndGet(), "과제용 투자자", copyStocks(marketStocks));
         members.put(member.uid, member);
         saveDatabase();
-        return Json.obj("ok", true, "message", "회원가입이 완료되었습니다.");
     }
 
-    String login(Map<String, String> body) {
-        Member member = findById(text(body, "id"));
-        String rawPassword = text(body, "pwd");
-        if (member == null || !PasswordHasher.matches(rawPassword, member.pwd)) {
-            return Json.obj("ok", false, "error", "없는 아이디이거나 비밀번호가 틀렸습니다.");
-        }
-        if (PasswordHasher.needsUpgrade(member.pwd)) {
-            member.pwd = PasswordHasher.hash(rawPassword);
-            saveDatabase();
-        }
-        String sessionId = UUID.randomUUID().toString();
-        sessions.put(sessionId, member.uid);
-        return Json.obj("ok", true, "message", member.id + "님 환영합니다.", "session", sessionId);
-    }
-
-    String logout(String sessionId) {
-        if (sessionId != null) sessions.remove(sessionId);
-        return Json.obj("ok", true, "message", "로그아웃했습니다.");
-    }
-
-    String stateJson(String sessionId) {
-        Member member = member(sessionId);
+    String stateJson() {
+        Member member = defaultMember();
         return Json.obj(
                 "ok", true,
-                "loggedIn", member != null,
-                "member", member == null ? "{}" : member.toJson(),
+                "member", member.toJson(),
                 "broker", brokerJson(),
                 "portfolio", portfolioJson(member),
                 "stocks", Json.array(stocks(member).stream().map(Stock::toJson).toList()),
-                "shares", Json.array(member == null ? List.of() : member.shares.values().stream().map(share -> shareJson(member, share)).toList()),
-                "logs", Json.array(logs.stream().filter(log -> member != null && log.memberUid == member.uid).sorted(Comparator.comparing(TradeLog::time).reversed()).map(TradeLog::toJson).toList())
+                "shares", Json.array(member.shares.values().stream().map(share -> shareJson(member, share)).toList()),
+                "logs", Json.array(logs.stream().filter(log -> log.memberUid == member.uid).sorted(Comparator.comparing(TradeLog::time).reversed()).map(TradeLog::toJson).toList())
         );
     }
 
-    String buyStock(Map<String, String> body, String sessionId) {
-        Member member = member(sessionId);
-        if (member == null) return Json.obj("ok", false, "error", "로그인이 필요합니다.");
+    String buyStock(Map<String, String> body) {
+        Member member = defaultMember();
         String stockName = text(body, "stockName");
         int quantity = number(body, "quantity");
         Stock stock = member.stocks.get(stockName);
@@ -102,9 +68,8 @@ class MiniProject {
         return Json.obj("ok", true, "message", stockName + " " + quantity + "주를 구매했습니다.");
     }
 
-    String sellStock(Map<String, String> body, String sessionId) {
-        Member member = member(sessionId);
-        if (member == null) return Json.obj("ok", false, "error", "로그인이 필요합니다.");
+    String sellStock(Map<String, String> body) {
+        Member member = defaultMember();
         String stockName = text(body, "stockName");
         int quantity = number(body, "quantity");
         Stock stock = member.stocks.get(stockName);
@@ -392,14 +357,9 @@ class MiniProject {
         }
     }
 
-    private Member member(String sessionId) {
-        if (sessionId == null || sessionId.isBlank()) return null;
-        Long uid = sessions.get(sessionId);
-        return uid == null ? null : members.get(uid);
-    }
-
-    private Member findById(String id) {
-        return members.values().stream().filter(member -> member.id.equals(id)).findFirst().orElse(null);
+    private Member defaultMember() {
+        return members.values().stream().min(Comparator.comparingLong(member -> member.uid))
+                .orElseThrow(() -> new IllegalStateException("기본 투자자 데이터가 없습니다."));
     }
 
     private List<Stock> stocks(Member member) {

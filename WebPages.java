@@ -28,9 +28,6 @@ class MiniDashboardPage {
                     section { background:var(--panel); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
                     .topbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
                     .pill { border:1px solid rgba(255,255,255,.22); border-radius:999px; padding:7px 10px; color:#dbe4ef; font-size:13px; }
-                    .hero { display:grid; grid-template-columns:1fr; gap:16px; align-items:stretch; max-width:920px; }
-                    .auth { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-                    .auth form { display:grid; gap:10px; padding:16px; }
                     .summary { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; }
                     .metric { background:#fff; border:1px solid var(--line); border-radius:8px; padding:14px; min-height:86px; }
                     .labelText { color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
@@ -75,8 +72,8 @@ class MiniDashboardPage {
                     .chartPoint { fill:#fff; stroke:var(--blue); stroke-width:2; }
                     .chartMeta { display:flex; justify-content:space-between; gap:10px; color:var(--muted); font-size:12px; flex-wrap:wrap; }
                     .subMeta { color:var(--muted); font-size:12px; }
-                    @media (max-width: 1100px) { .hero, .layout { grid-template-columns:1fr; } .summary { grid-template-columns:repeat(2,1fr); } }
-                    @media (max-width: 720px) { header { align-items:flex-start; flex-direction:column; } .auth, .summary, .detailGrid, .orderPanel { grid-template-columns:1fr; } main { padding:12px; } }
+                    @media (max-width: 1100px) { .layout { grid-template-columns:1fr; } .summary { grid-template-columns:repeat(2,1fr); } }
+                    @media (max-width: 720px) { header { align-items:flex-start; flex-direction:column; } .summary, .detailGrid, .orderPanel { grid-template-columns:1fr; } main { padding:12px; } }
                   </style>
                 </head>
                 <body>
@@ -86,33 +83,12 @@ class MiniDashboardPage {
                       <div class="labelText">실시간 가격 구독과 포트폴리오 손익을 확인하는 Java 웹앱</div>
                     </div>
                     <div class="topbar">
-                      <span class="pill" id="loginPill">로그인 필요</span>
+                      <span class="pill" id="statusPill">시세 갱신 대기</span>
                       <button onclick="refresh()">새로고침</button>
-                      <button class="secondary" onclick="logout()">로그아웃</button>
                     </div>
                   </header>
 
                   <main>
-                    <div class="hero" id="authArea">
-                      <section>
-                        <h2>로그인 / 회원가입</h2>
-                        <div class="auth">
-                          <form id="loginForm">
-                            <label>아이디<input name="id" value="test1"></label>
-                            <label>비밀번호<input name="pwd" type="password" value="1234"></label>
-                            <button>로그인</button>
-                          </form>
-                          <form id="registerForm">
-                            <label>이름<input name="name" placeholder="홍길동"></label>
-                            <label>아이디<input name="id" placeholder="새 아이디"></label>
-                            <label>비밀번호<input name="pwd" type="password"></label>
-                            <button class="secondary">회원가입</button>
-                          </form>
-                        </div>
-                        <div class="message" id="loginMessage"></div>
-                        </section>
-                    </div>
-
                     <div class="summary" id="summary"></div>
 
                     <div class="layout">
@@ -201,18 +177,16 @@ class MiniDashboardPage {
                       return (state.stocks || []).find(stock => stock.name === name);
                     }
                     function render() {
-                      const logged = !!state.loggedIn;
                       const member = state.member || {};
                       const portfolio = state.portfolio || {};
                       const broker = state.broker || {};
-                      document.getElementById('authArea').style.display = logged ? 'none' : 'grid';
-                      document.getElementById('loginPill').textContent = logged ? `${member.id} · ${broker.lastTick || '시세 갱신 대기'}` : '로그인 필요';
+                      document.getElementById('statusPill').textContent = `${member.name || '과제용 투자자'} · ${broker.lastTick || '시세 갱신 대기'}`;
                       document.getElementById('summary').innerHTML = [
-                        ['보유 현금', logged ? won(portfolio.cash) : '-', ''],
-                        ['주식 평가액', logged ? won(portfolio.stockValue) : '-', ''],
-                        ['총 자산', logged ? won(portfolio.totalAsset) : '-', ''],
-                        ['실시간 손익', logged ? won(portfolio.profit) : '-', Number(portfolio.profit || 0) >= 0 ? 'up' : 'down'],
-                        ['수익률', logged ? `${portfolio.profitRate}%` : '-', Number(portfolio.profit || 0) >= 0 ? 'up' : 'down'],
+                        ['보유 현금', won(portfolio.cash), ''],
+                        ['주식 평가액', won(portfolio.stockValue), ''],
+                        ['총 자산', won(portfolio.totalAsset), ''],
+                        ['실시간 손익', won(portfolio.profit), Number(portfolio.profit || 0) >= 0 ? 'up' : 'down'],
+                        ['수익률', `${portfolio.profitRate}%`, Number(portfolio.profit || 0) >= 0 ? 'up' : 'down'],
                         ['시세 기준', broker.lastTick || '시세 갱신 대기', 'time']
                       ].map(([label, value, cls]) => `<div class="metric"><div class="labelText">${label}</div><div class="value ${cls}">${value}</div></div>`).join('');
                       if (!selectedStockName && (state.stocks || []).length) selectedStockName = state.stocks[0].name;
@@ -306,9 +280,8 @@ class MiniDashboardPage {
                       renderPriceChart(stock);
                     }
                     function renderOrderPanel(stock) {
-                      const logged = !!state.loggedIn;
                       const share = shareByName(stock.name);
-                      const canSell = logged && share && Number(share.quantity) > 0;
+                      const canSell = share && Number(share.quantity) > 0;
                       document.getElementById('orderPanel').innerHTML = `
                         <div class="orderCard">
                           <div class="labelText">선택 종목 매수</div>
@@ -426,20 +399,6 @@ class MiniDashboardPage {
                       document.querySelectorAll('.tab').forEach(tab => { if (tab.textContent === labels[name]) tab.classList.add('active'); });
                       document.getElementById('panel-' + name).classList.add('active');
                     }
-                    async function submitForm(form, path) {
-                      return api(path, Object.fromEntries(new FormData(form).entries()));
-                    }
-                    document.getElementById('loginForm').addEventListener('submit', async e => {
-                      e.preventDefault();
-                      try { const result = await submitForm(e.target, '/api/login'); document.getElementById('loginMessage').textContent = result.message; await refresh(); }
-                      catch (err) { document.getElementById('loginMessage').textContent = err.message; }
-                    });
-                    document.getElementById('registerForm').addEventListener('submit', async e => {
-                      e.preventDefault();
-                      try { const result = await submitForm(e.target, '/api/register'); document.getElementById('loginMessage').textContent = result.message; e.target.reset(); await refresh(); }
-                      catch (err) { document.getElementById('loginMessage').textContent = err.message; }
-                    });
-                    async function logout() { await api('/api/logout', {}); await refresh(); }
                     refresh();
                     setInterval(refresh, 1000);
                   </script>

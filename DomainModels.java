@@ -9,22 +9,18 @@ import java.util.concurrent.ConcurrentHashMap;
 class Member {
     final long uid;
     final String name;
-    final String id;
-    String pwd;
     final Map<String, Share> shares = new ConcurrentHashMap<>();
     final Map<String, Stock> stocks;
     int balance = 1_000_000;
 
-    Member(long uid, String name, String id, String pwd, Map<String, Stock> stocks) {
+    Member(long uid, String name, Map<String, Stock> stocks) {
         this.uid = uid;
         this.name = name;
-        this.id = id;
-        this.pwd = pwd;
         this.stocks = stocks;
     }
 
     String toJson() {
-        return Json.obj("uid", uid, "name", name, "id", id, "balance", balance);
+        return Json.obj("uid", uid, "name", name, "balance", balance);
     }
 }
 
