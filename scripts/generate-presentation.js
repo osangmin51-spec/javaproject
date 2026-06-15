@@ -6,6 +6,9 @@ const ROOT = process.cwd();
 const OUT = path.join(ROOT, "deliverables");
 const VIDEO = path.join(OUT, "mock-stock-website-demo.webm");
 const PREVIEW = path.join(OUT, "mock-stock-website-demo-preview.png");
+const UI_MARKET = path.join(OUT, "ui-screenshots", "ui-crop-01-market.png");
+const UI_DETAIL = path.join(OUT, "ui-screenshots", "ui-crop-02-detail-order.png");
+const UI_PORTFOLIO = path.join(OUT, "ui-screenshots", "ui-crop-03-portfolio.png");
 fs.mkdirSync(OUT, { recursive: true });
 
 const pptx = new PptxGenJS();
@@ -342,19 +345,34 @@ saveDatabase();`, 6.85, 4.65, 5.7, 1.35);
 
 {
   const slide = pptx.addSlide(); addHeader(slide, 11, "사용자 UI / 화면 구성"); addFooter(slide);
-  card(slide, 0.65, 1.0, 3.0, 1.05, "상단 요약", "현금, 평가액, 총자산, 손익, 수익률 표시", C.lightBlue);
-  card(slide, 3.85, 1.0, 3.0, 1.05, "시장 시세", "거래량 상위 종목을 10개씩 페이지로 표시", C.white);
-  card(slide, 7.05, 1.0, 3.0, 1.05, "종목 상세", "현재가, 그래프, 매수 입력", C.white);
-  card(slide, 10.25, 1.0, 2.4, 1.05, "보유 탭", "보유 종목별 매도 수량 입력", C.white);
-  slide.addShape(pptx.ShapeType.rect, { x: 0.7, y: 2.65, w: 11.9, h: 3.3, fill: { color: C.pale }, line: { color: C.line } });
-  slide.addText("시장 시세", { x: 1.0, y: 2.95, w: 2.0, h: 0.3, fontSize: 13, bold: true, color: C.ink, margin: 0 });
-  slide.addText("검색창 · 즐겨찾기 · 10개 단위 페이지 · 상세/매수 버튼", { x: 1.0, y: 3.45, w: 5.4, h: 0.25, fontSize: 11, color: C.gray, margin: 0 });
-  slide.addText("종목 상세", { x: 7.0, y: 2.95, w: 2.4, h: 0.3, fontSize: 13, bold: true, color: C.ink, margin: 0 });
-  slide.addText("현재가 · 등락률 · 가격 변화 그래프\n매수 수량 입력 → 매수", { x: 7.0, y: 3.45, w: 4.3, h: 0.65, fontSize: 11, color: C.gray, margin: 0 });
-  slide.addText("최종 화면은 실제 증권 웹앱처럼 흰 배경, 표 중심 구성, 상승 빨강/하락 파랑 색상 체계를 적용했다.", {
-    x: 1.0, y: 5.55, w: 11.0, h: 0.35,
-    fontSize: 12.5, bold: true, color: C.blue, margin: 0,
-  });
+  if (fs.existsSync(UI_MARKET) && fs.existsSync(UI_DETAIL) && fs.existsSync(UI_PORTFOLIO)) {
+    slide.addShape(pptx.ShapeType.roundRect, { x: 0.55, y: 0.92, w: 3.55, h: 5.8, rectRadius: 0.04, fill: { color: C.white }, line: { color: C.line } });
+    slide.addImage({ path: UI_MARKET, x: 0.62, y: 1.05, w: 3.4, h: 5.56 });
+    slide.addText("시장 시세 / 검색 / 페이지", { x: 0.7, y: 6.7, w: 3.25, h: 0.24, fontSize: 9.2, bold: true, color: C.blue, align: "center", margin: 0 });
+
+    slide.addShape(pptx.ShapeType.roundRect, { x: 4.35, y: 0.92, w: 8.35, h: 3.75, rectRadius: 0.04, fill: { color: C.white }, line: { color: C.line } });
+    slide.addImage({ path: UI_DETAIL, x: 4.48, y: 1.05, w: 5.45, h: 3.7 });
+    slide.addText("종목 상세 / 매수·매도 입력", { x: 4.55, y: 4.72, w: 5.25, h: 0.24, fontSize: 9.2, bold: true, color: C.blue, align: "center", margin: 0 });
+    slide.addText("검색 결과에서 종목을 누르면\n상세 정보와 주문 입력이\n같은 화면에서 이어진다.", {
+      x: 10.2, y: 1.35, w: 2.1, h: 1.05,
+      fontSize: 11.3, bold: true, color: C.ink, margin: 0.02,
+      fit: "shrink",
+    });
+    slide.addText("시세 확인 → 수량 입력 → 매수\n보유 종목 기준 매도", {
+      x: 10.2, y: 2.72, w: 2.05, h: 0.8,
+      fontSize: 10.2, color: C.gray, margin: 0.02,
+      fit: "shrink",
+    });
+
+    slide.addShape(pptx.ShapeType.roundRect, { x: 4.35, y: 5.15, w: 8.35, h: 1.08, rectRadius: 0.04, fill: { color: C.white }, line: { color: C.line } });
+    slide.addImage({ path: UI_PORTFOLIO, x: 4.48, y: 5.28, w: 8.08, h: 0.9 });
+    slide.addText("보유 종목 / 평가금액 / 손익률", { x: 4.55, y: 6.32, w: 7.95, h: 0.24, fontSize: 9.2, bold: true, color: C.blue, align: "center", margin: 0 });
+  } else {
+    card(slide, 0.65, 1.0, 3.0, 1.05, "상단 요약", "현금, 평가액, 총자산, 손익, 수익률 표시", C.lightBlue);
+    card(slide, 3.85, 1.0, 3.0, 1.05, "시장 시세", "거래량 상위 종목을 10개씩 페이지로 표시", C.white);
+    card(slide, 7.05, 1.0, 3.0, 1.05, "종목 상세", "현재가, 그래프, 매수 입력", C.white);
+    card(slide, 10.25, 1.0, 2.4, 1.05, "보유 탭", "보유 종목별 매도 수량 입력", C.white);
+  }
 }
 
 {

@@ -14,6 +14,11 @@ OUT = ROOT / "deliverables"
 OUT.mkdir(exist_ok=True)
 PREVIEW = OUT / "mock-stock-website-demo-preview.png"
 VIDEO = OUT / "mock-stock-website-demo.webm"
+UI_SCREENSHOTS = [
+    (OUT / "ui-screenshots" / "ui-crop-01-market.png", "화면 1. 시장 시세: 거래량 상위 종목, 검색창, 즐겨찾기, 페이지 이동"),
+    (OUT / "ui-screenshots" / "ui-crop-02-detail-order.png", "화면 2. 종목 상세: 현재가, 등락률, 거래량, 회사 설명, 매수/매도 입력"),
+    (OUT / "ui-screenshots" / "ui-crop-03-portfolio.png", "화면 3. 보유 탭: 보유 수량, 평가금액, 손익, 수익률, 매도 입력"),
+]
 
 
 doc = Document()
@@ -294,15 +299,17 @@ add_bullets([
     "기록 탭: 매수/매도 시간, 종목, 수량, 금액 확인",
     "최종 UI: 실제 증권 웹앱을 참고한 흰 배경, 표 중심, 상승 빨강/하락 파랑 색상 체계",
 ])
-if PREVIEW.exists():
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = p.add_run()
-    r.add_picture(str(PREVIEW), width=Inches(6.4))
-    caption = doc.add_paragraph("시연 영상 미리보기: 종목 상세, 매수 완료 메시지, 가격 그래프, 보유 종목 손익 화면")
-    caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    caption.runs[0].font.size = Pt(8.5)
-    caption.runs[0].font.color.rgb = RGBColor(102, 112, 133)
+for image_path, caption_text in UI_SCREENSHOTS:
+    if image_path.exists():
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r = p.add_run()
+        width = Inches(3.4) if "market" in image_path.name else Inches(6.4)
+        r.add_picture(str(image_path), width=width)
+        caption = doc.add_paragraph(caption_text)
+        caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        caption.runs[0].font.size = Pt(8.5)
+        caption.runs[0].font.color.rgb = RGBColor(102, 112, 133)
 
 
 doc.add_heading("6. 한 달간의 시행착오와 문제 해결", level=1)
