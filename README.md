@@ -64,6 +64,16 @@ java -cp "out;lib/*" MiniProjectApp 8080
 
 전체 종목을 계속 갱신하면 API 호출, JSON 응답 크기, 브라우저 필터링이 모두 커집니다. 그래서 화면 표시 범위는 거래량 상위 종목 중심으로 제한하고, 화면 렌더링은 페이지당 10개만 처리합니다.
 
+KIS 관련 환경변수:
+
+| 환경변수 | 기본값 | 역할 |
+| --- | --- | --- |
+| `KIS_APP_KEY` | 없음 | KIS Open API 앱 키 |
+| `KIS_APP_SECRET` | 없음 | KIS Open API 앱 시크릿 |
+| `KIS_BASE_URL` | `https://openapi.koreainvestment.com:9443` | KIS REST API 주소 |
+| `KIS_MARKET_LIMIT` | `200` | 거래량 순위 조회 범위, 코드에서 100~300개로 제한 |
+| `KIS_POLL_LIMIT` | `100` | REST 폴링 갱신 대상 수, `KIS_MARKET_LIMIT` 이하로 제한 |
+
 ## WebSocket 시세 구독
 
 REST 방식은 일정 주기마다 서버가 API를 다시 호출하는 구조라 완전한 실시간 체결 전송에는 한계가 있습니다. 그래서 `KIS_USE_WEBSOCKET=true`일 때는 KIS WebSocket 승인키를 발급받고 국내주식 체결 구독을 먼저 시도합니다.
@@ -116,9 +126,9 @@ MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니
 
 | 테이블 | 내용 |
 | --- | --- |
-| `members` | 회원 번호, 이름, 아이디, 비밀번호 해시, 현금 |
-| `shares` | 회원별 보유 종목, 수량, 총 매입금액 |
-| `trade_logs` | 회원별 매수/매도 기록 |
+| `members(uid, name, login_id, pwd, balance)` | 회원 번호, 이름, 아이디, 비밀번호 해시, 현금 |
+| `shares(member_uid, stock_name, quantity, purchase_price)` | 회원별 보유 종목, 수량, 총 매입금액 |
+| `trade_logs(id, member_uid, stock_name, quantity, price, trade_type, traded_at)` | 회원별 매수/매도 기록 |
 
 ## 코드 구조
 
@@ -127,7 +137,7 @@ MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니
 | `MiniProjectApp.java` | 서버 시작, KIS REST/WebSocket 시세 스레드 시작 |
 | `MiniHandler.java` | HTTP 라우팅, API 요청 처리, 세션 쿠키 처리 |
 | `MiniProject.java` | 회원, 세션, 매매, 포트폴리오, 저장 흐름 관리 |
-| `DomainModels.java` | 회원, 종목, 보유 주식, 거래 기록, 게시글 모델 |
+| `DomainModels.java` | 회원, 종목, 보유 주식, 거래 기록 모델 |
 | `KisIntegration.java` | KIS 토큰, 현재가 REST, 거래량 순위, WebSocket 구독 |
 | `DatabaseIntegration.java` | MySQL 저장소, 스키마 생성, 데이터 로드/저장 |
 | `PasswordHasher.java` | 비밀번호 Salt 생성, SHA-256 해시, 검증 |
@@ -160,6 +170,6 @@ MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니
 
 | 경로 | 내용 |
 | --- | --- |
-| `deliverables/Java_모의주식투자_발표자료_최종검토반영.pptx` | 클래스/라이브러리 구조와 최종 명칭을 맞춘 발표용 PPT |
-| `deliverables/Java_모의주식투자_개인프로젝트_보고서_최종검토반영.docx` | 클래스/라이브러리 구조와 최종 명칭을 맞춘 개인 프로젝트 보고서 |
+| `deliverables/Java_모의주식투자_발표자료_최종정합본.pptx` | 코드와 문서 불일치를 정리한 최종 발표용 PPT |
+| `deliverables/Java_모의주식투자_개인프로젝트_보고서_최종정합본.docx` | 코드와 문서 불일치를 정리한 최종 개인 프로젝트 보고서 |
 | `deliverables/mock-stock-website-demo.webm` | 웹사이트 시연 영상 |

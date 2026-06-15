@@ -61,9 +61,6 @@ class MiniDashboardPage {
                     .tabPanel.active { display:block; }
                     .cards { display:grid; gap:10px; padding:16px; }
                     .card { border:1px solid var(--line); border-radius:8px; padding:12px; background:#fbfcfe; display:grid; gap:8px; }
-                    .postHead { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
-                    .commentForm { display:grid; grid-template-columns:1fr auto; gap:8px; }
-                    .comments { color:var(--muted); font-size:13px; display:grid; gap:4px; }
                     .empty { color:var(--muted); padding:16px; }
                     .detailGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:16px; }
                     .companyInfo { padding:0 16px 16px; color:#344054; line-height:1.55; }

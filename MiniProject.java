@@ -8,18 +8,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 class MiniProject {
     private final Map<Long, Member> members = new ConcurrentHashMap<>();
     private final Map<String, Long> sessions = new ConcurrentHashMap<>();
     private final Map<String, Stock> marketStocks = new ConcurrentHashMap<>();
-    private final List<BoardPost> posts = new ArrayList<>();
     private final List<TradeLog> logs = new ArrayList<>();
     private final AtomicLong memberIds = new AtomicLong(1000);
-    private final AtomicInteger postIds = new AtomicInteger(1);
-    private final AtomicInteger commentIds = new AtomicInteger(1);
     private final AtomicLong brokerTicks = new AtomicLong();
     private MySqlDatabase mySqlDatabase;
     private volatile String brokerSource = "내장 모의 증권사 소켓 서버";
@@ -31,8 +27,6 @@ class MiniProject {
         if (members.isEmpty()) {
             register(Map.of("name", "테스트회원", "id", "test1", "pwd", "1234"));
         }
-        writeSeedPost("test1", "안녕하세요", "반갑습니다. 자유게시판 테스트 글입니다.");
-        writeSeedPost("broker", "실시간 구독 안내", "모의 증권사 서버가 소켓으로 가격을 전송하고 웹 서버가 이를 구독합니다.");
     }
 
     String register(Map<String, String> body) {
@@ -81,7 +75,6 @@ class MiniProject {
                 "portfolio", portfolioJson(member),
                 "stocks", Json.array(stocks(member).stream().map(Stock::toJson).toList()),
                 "shares", Json.array(member == null ? List.of() : member.shares.values().stream().map(share -> shareJson(member, share)).toList()),
-                "posts", Json.array(posts.stream().sorted(Comparator.comparing(BoardPost::id).reversed()).map(BoardPost::toJson).toList()),
                 "logs", Json.array(logs.stream().filter(log -> member != null && log.memberUid == member.uid).sorted(Comparator.comparing(TradeLog::time).reversed()).map(TradeLog::toJson).toList())
         );
     }
@@ -207,44 +200,6 @@ class MiniProject {
         members.values().forEach(member -> updateExternalStock(member.stocks.get(tick.symbol), tick));
     }
 
-
-    String writePost(Map<String, String> body, String sessionId) {
-        Member member = member(sessionId);
-        if (member == null) return Json.obj("ok", false, "error", "로그인이 필요합니다.");
-        String title = text(body, "title");
-        String content = text(body, "content");
-        if (title.isBlank() || content.isBlank()) return Json.obj("ok", false, "error", "제목과 내용을 입력하세요.");
-        posts.add(new BoardPost(postIds.getAndIncrement(), member.id, title, content));
-        return Json.obj("ok", true, "message", "게시글을 작성했습니다.");
-    }
-
-    String deletePost(Map<String, String> body, String sessionId) {
-        Member member = member(sessionId);
-        int id = number(body, "id");
-        posts.removeIf(post -> post.id == id && member != null && post.author.equals(member.id));
-        return Json.obj("ok", true, "message", "게시글 삭제를 처리했습니다.");
-    }
-
-    String writeComment(Map<String, String> body, String sessionId) {
-        Member member = member(sessionId);
-        if (member == null) return Json.obj("ok", false, "error", "로그인이 필요합니다.");
-        int postId = number(body, "postId");
-        String content = text(body, "content");
-        BoardPost post = posts.stream().filter(p -> p.id == postId).findFirst().orElse(null);
-        if (post == null || content.isBlank()) return Json.obj("ok", false, "error", "댓글을 작성할 수 없습니다.");
-        post.comments.add(new Comment(commentIds.getAndIncrement(), member.id, content));
-        return Json.obj("ok", true, "message", "댓글을 작성했습니다.");
-    }
-
-    String deleteComment(Map<String, String> body, String sessionId) {
-        Member member = member(sessionId);
-        int postId = number(body, "postId");
-        int commentId = number(body, "commentId");
-        posts.stream().filter(post -> post.id == postId).findFirst()
-                .ifPresent(post -> post.comments.removeIf(comment -> comment.id == commentId && member != null && comment.author.equals(member.id)));
-        return Json.obj("ok", true, "message", "댓글 삭제를 처리했습니다.");
-    }
-
     private void seedStocks() {
         addStock("005930", "삼성전자", "KOSPI", "반도체", "메모리 반도체, 스마트폰, 가전 사업을 운영하는 국내 대표 IT 기업입니다.", 72000, 1000, 2000, 1.05);
         addStock("000660", "SK하이닉스", "KOSPI", "반도체", "DRAM과 NAND 중심의 글로벌 메모리 반도체 기업입니다.", 213000, 700, 3500, 1.04);
@@ -350,10 +305,6 @@ class MiniProject {
 
     private void addStock(String code, String name, String market, String sector, String description, int price, int quantity, int priceFluct, double nextFluct) {
         marketStocks.put(name, new Stock(code, name, market, sector, description, price, quantity, priceFluct, nextFluct));
-    }
-
-    private void writeSeedPost(String author, String title, String content) {
-        posts.add(new BoardPost(postIds.getAndIncrement(), author, title, content));
     }
 
     private void updateStock(Stock stock, BrokerTick tick) {

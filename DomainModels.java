@@ -13,7 +13,6 @@ class Member {
     String pwd;
     final Map<String, Share> shares = new ConcurrentHashMap<>();
     final Map<String, Stock> stocks;
-    final Map<String, Integer> items = new ConcurrentHashMap<>();
     int balance = 1_000_000;
 
     Member(long uid, String name, String id, String pwd, Map<String, Stock> stocks) {
@@ -187,68 +186,6 @@ class Share {
                 "profit", profit,
                 "profitRate", String.format(Locale.US, "%.2f", profitRate)
         );
-    }
-}
-
-class Item {
-    final String code;
-    final String name;
-    final int price;
-    final String description;
-
-    Item(String code, String name, int price, String description) {
-        this.code = code;
-        this.name = name;
-        this.price = price;
-        this.description = description;
-    }
-
-    String toJson(int owned) {
-        return Json.obj("code", code, "name", name, "price", price, "description", description, "owned", owned);
-    }
-}
-
-class BoardPost {
-    final int id;
-    final String author;
-    String title;
-    String content;
-    int views;
-    final LocalDateTime createdAt = LocalDateTime.now();
-    final List<Comment> comments = new ArrayList<>();
-
-    BoardPost(int id, String author, String title, String content) {
-        this.id = id;
-        this.author = author;
-        this.title = title;
-        this.content = content;
-    }
-
-    int id() {
-        return id;
-    }
-
-    String toJson() {
-        return Json.obj("id", id, "author", author, "title", title, "content", content, "views", views,
-                "createdAt", createdAt.format(DateTimeFormatter.ofPattern("HH:mm:ss")),
-                "comments", Json.array(comments.stream().map(Comment::toJson).toList()));
-    }
-}
-
-class Comment {
-    final int id;
-    final String author;
-    String content;
-    final LocalDateTime createdAt = LocalDateTime.now();
-
-    Comment(int id, String author, String content) {
-        this.id = id;
-        this.author = author;
-        this.content = content;
-    }
-
-    String toJson() {
-        return Json.obj("id", id, "author", author, "content", content, "createdAt", createdAt.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
     }
 }
 

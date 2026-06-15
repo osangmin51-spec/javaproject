@@ -37,10 +37,6 @@ class MiniHandler implements HttpHandler {
                     case "/api/logout" -> project.logout(sessionId);
                     case "/api/stock/buy" -> project.buyStock(body, sessionId);
                     case "/api/stock/sell" -> project.sellStock(body, sessionId);
-                    case "/api/board/write" -> project.writePost(body, sessionId);
-                    case "/api/board/delete" -> project.deletePost(body, sessionId);
-                    case "/api/comment/write" -> project.writeComment(body, sessionId);
-                    case "/api/comment/delete" -> project.deleteComment(body, sessionId);
                     default -> Json.obj("ok", false, "error", "없는 API입니다.");
                 };
                 if ("/api/login".equals(path) && json.contains("\"ok\":true")) {

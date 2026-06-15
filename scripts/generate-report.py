@@ -139,7 +139,7 @@ add_table(["항목", "내용"], [
     ["프로젝트명", "Java 프로젝트 모의주식"],
     ["주요 기술", "Java HttpServer, HttpClient, Thread, Collection, JDBC, MySQL, 쿠키 세션, SHA-256 비밀번호 해시"],
     ["외부 데이터", "한국투자증권 KIS Open API"],
-    ["저장 방식", "MySQL 테이블 기반 회원/보유/거래 기록 저장"],
+    ["저장 방식", "MySQL 설정 시 테이블 저장, 미설정 시 메모리 모드"],
     ["실행 주소", "http://localhost:8080/"],
     ["시연 영상", "deliverables/mock-stock-website-demo.webm"],
 ], widths=[1.7, 5.7])
@@ -151,7 +151,7 @@ paragraph("핵심 목표는 단순한 주문 연습이 아니라 실제 시세, 
 add_bullets([
     "실제 외부 증권 API를 활용한 Java 웹 프로젝트 구현",
     "사용자 매수/매도 흐름과 포트폴리오 손익 계산 구현",
-    "MySQL 저장을 통한 회원/보유/거래 기록 유지",
+    "MySQL 설정 시 회원/보유/거래 기록 유지",
     "쓰레드 기반 시세 갱신과 소켓 구독 구조 실험",
     "검색, 즐겨찾기, 종목 상세, 가격 그래프 UI 구현",
     "다수 클래스/인터페이스 구조와 실제 실행 가능한 웹 UI 구현",
@@ -165,13 +165,13 @@ add_table(["구분", "제안발표 단계", "최종 구현"], [
     ["가격 데이터", "내부 샘플/모의 가격", "한국투자증권 KIS 현재가"],
     ["종목 수", "소수 종목", "거래량 상위 종목 중심"],
     ["화면", "기본 입력/출력 중심", "검색, 즐겨찾기, 상세 그래프, 포트폴리오"],
-    ["저장", "메모리 중심", "MySQL 테이블 기반 저장"],
+    ["저장", "메모리 중심", "MySQL 설정 시 테이블 저장"],
     ["목적", "기능 구현 연습", "실제 데이터 기반 투자 흐름 구현"],
 ], widths=[1.3, 2.6, 3.3])
 
 
 doc.add_heading("3. 자바 기반 프로그램 설계", level=1)
-paragraph("프로젝트는 Spring이나 React 없이 Java 표준 기능을 중심으로 구성했다. HttpServer로 웹 서버를 열고, HttpClient로 외부 API를 호출하며, HTML/CSS/JavaScript는 Java 문자열 템플릿에서 렌더링한다. 저장은 MySQL JDBC를 사용한다.")
+paragraph("프로젝트는 Spring이나 React 없이 Java 표준 기능을 중심으로 구성했다. HttpServer로 웹 서버를 열고, HttpClient로 외부 API를 호출하며, HTML/CSS/JavaScript는 Java 문자열 템플릿에서 렌더링한다. 저장은 MySQL JDBC 구조를 사용하되, MySQL 환경변수가 없으면 테스트용 메모리 모드로 실행된다.")
 add_table(["파일", "역할"], [
     ["MiniProjectApp.java", "서버 시작, 포트 설정, KIS/API/DB 초기화"],
     ["MiniHandler.java", "URL별 HTTP 요청 라우팅과 JSON 응답 처리"],
@@ -201,7 +201,7 @@ add_table(["계층", "주요 클래스", "사용 라이브러리/문법", "역�
     ["핵심 서비스 계층", "MiniProject", "ConcurrentHashMap, ArrayList, Comparator, LocalDateTime", "매수/매도 처리, 포트폴리오 계산, 시세 상태 관리"],
     ["도메인 모델 계층", "Member, Stock, Share, TradeLog, PricePoint", "Java class, 컬렉션 객체", "회원, 종목, 보유 수량, 거래 기록, 가격 이력 표현"],
     ["외부 시세 계층", "KisQuoteClient, KisQuotePoller, KisWebSocketQuoteClient", "HttpClient, HttpRequest, WebSocket", "KIS REST 현재가 조회, 거래량 상위 종목 갱신, WebSocket 연동 시도"],
-    ["저장소 계층", "MySqlDatabase, DatabaseSnapshot", "JDBC, DriverManager, PreparedStatement, ResultSet", "회원/보유 종목/거래 기록을 MySQL 테이블로 저장하고 다시 읽기"],
+    ["저장소 계층", "MySqlDatabase, DatabaseSnapshot", "JDBC, DriverManager, PreparedStatement, ResultSet", "MySQL 설정 시 회원/보유 종목/거래 기록 저장, 미설정 시 메모리 모드"],
     ["보안/세션 계층", "PasswordHasher, MiniHandler", "SecureRandom, MessageDigest, Base64, Cookie", "비밀번호 Salt 해시, 세션 쿠키 발급, 로그인 상태 관리"],
     ["화면/직렬화 계층", "WebPages, Json", "HTML/CSS/JavaScript 문자열, JSON 생성/파싱", "브라우저 화면 렌더링과 API 응답 데이터 구성"],
     ["분류/상속 계층", "CompanyProfile, CompanyProfiles, StockCategoryProfile", "abstract class, interface, 구현 클래스", "회사 설명과 업종/위험 설명을 공통 규칙으로 정리"],
@@ -279,7 +279,7 @@ add_table(["단계", "내용"], [
     ["입력", "로그인 정보, 종목 선택, 즐겨찾기, 매수/매도 수량"],
     ["외부 입력", "KIS 현재가, 전일대비, 등락률, 누적 거래량"],
     ["처리", "잔액 확인, 보유 수량 확인, 매매 체결, 손익 계산"],
-    ["저장", "회원 정보, 보유 주식, 거래 기록을 MySQL 테이블에 저장"],
+    ["저장", "MySQL 설정 시 회원 정보, 보유 주식, 거래 기록을 테이블에 저장"],
     ["출력", "시장 시세, 종목 상세, 그래프, 포트폴리오, 거래 기록"],
 ], widths=[1.4, 5.8])
 
@@ -338,14 +338,27 @@ add_table(["데이터", "처리 방식"], [
     ["종목 선별", "거래량 기준 상위 종목 중심으로 자동 갱신"],
     ["실시간성", "전체 종목 매초 조회 대신 상위 목록 중심 갱신과 소켓 구독 구조 실험"],
     ["소켓", "모의 증권사 서버의 가격 Tick 구독 구조"],
-    ["사용자 데이터", "MySQL members, shares, trade_logs 테이블 저장"],
+    ["사용자 데이터", "MySQL 설정 시 members, shares, trade_logs 테이블 저장 / 미설정 시 메모리 모드"],
     ["가격 그래프", "서버가 보관한 최근 가격 히스토리 표시"],
 ], widths=[2.0, 5.2])
 
 doc.add_heading("8.1 MySQL 테이블 구상", level=2)
-add_code("""members(uid, id, password, name, balance)
-shares(member_uid, stock_name, quantity, average_price)
-trade_logs(id, member_uid, type, stock_name, quantity, price, created_at)""")
+add_code("""members(uid, name, login_id, pwd, balance)
+shares(member_uid, stock_name, quantity, purchase_price)
+trade_logs(id, member_uid, stock_name, quantity, price, trade_type, traded_at)""")
+
+doc.add_heading("8.2 주요 환경변수", level=2)
+add_table(["환경변수", "기본값", "역할"], [
+    ["KIS_APP_KEY", "없음", "KIS Open API 앱 키"],
+    ["KIS_APP_SECRET", "없음", "KIS Open API 앱 시크릿"],
+    ["KIS_BASE_URL", "https://openapi.koreainvestment.com:9443", "KIS REST API 주소"],
+    ["KIS_MARKET_LIMIT", "200", "거래량 순위 조회 범위, 코드에서 100~300개로 제한"],
+    ["KIS_POLL_LIMIT", "100", "REST 폴링 갱신 대상 수, KIS_MARKET_LIMIT 이하로 제한"],
+    ["KIS_USE_WEBSOCKET", "false", "true이면 KIS WebSocket 구독을 먼저 시도"],
+    ["KIS_WS_URL", "ws://ops.koreainvestment.com:21000", "KIS WebSocket 주소"],
+    ["KIS_WS_MAX_SUBSCRIPTIONS", "100", "WebSocket 구독 대상 최대 수"],
+    ["MYSQL_URL / MYSQL_USER / MYSQL_PASSWORD", "없음", "설정 시 MySQL 저장, 미설정 시 메모리 모드"],
+], widths=[2.2, 2.2, 3.0])
 
 
 doc.add_heading("9. 소켓 서버 구조", level=1)
@@ -378,7 +391,7 @@ add_table(["기능", "현재 구현 상태"], [
     ["매수", "선택 종목 상세 화면에서 수량 입력 후 매수"],
     ["매도", "보유 탭에서 보유 수량 기준으로 매도"],
     ["포트폴리오", "현금, 평가금액, 총자산, 손익, 수익률 계산"],
-    ["거래 기록", "매수/매도 기록을 MySQL에 저장"],
+    ["거래 기록", "매수/매도 기록을 MySQL 설정 시 저장"],
 ], widths=[1.9, 5.3])
 
 
@@ -405,7 +418,7 @@ add_bullets([
 
 
 doc.add_heading("13. 마무리와 향후 개선", level=1)
-paragraph("최종 결과물은 Java로 직접 만든 모의주식투자 웹앱이다. 한국투자증권 KIS API로 시세와 거래량을 가져오고, MySQL에 회원·보유주식·거래기록을 저장한다. 사용자는 종목을 검색하거나 즐겨찾기하고, 상세 화면에서 가격 그래프를 확인한 뒤 매수/매도를 진행할 수 있다.")
+paragraph("최종 결과물은 Java로 직접 만든 모의주식투자 웹앱이다. 한국투자증권 KIS API로 시세와 거래량을 가져오고, MySQL 환경이 설정된 경우 회원·보유주식·거래기록을 DB에 저장한다. 사용자는 종목을 검색하거나 즐겨찾기하고, 상세 화면에서 가격 그래프를 확인한 뒤 매수/매도를 진행할 수 있다.")
 paragraph("향후 개선한다면 실제 KIS 테스트베드에서 WebSocket 구독 성공 여부를 확인하고, controller, service, repository, model 패키지로 소스 구조를 분리하는 작업이 우선이다. 현재는 과제 제출과 컴파일 검증을 쉽게 하기 위해 루트 디렉터리 중심 구조를 유지했다. 이후에는 테스트 코드 추가, HTTPS 배포 환경 적용, 세션 만료 시간과 CSRF 방어, 업종별 위험 등급 UI 표시, 개인화 관심종목 추천 같은 기능을 확장할 수 있다.")
 
 

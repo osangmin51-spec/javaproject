@@ -193,7 +193,7 @@ titleSlide();
     ["구분", "제안발표 단계", "최종 구현"],
     ["주제", "기본 Java 기능 구현", "실제 증권 API 기반 모의주식투자"],
     ["데이터", "초기 샘플/내부 데이터", "KIS 현재가, 등락률, 누적 거래량"],
-    ["저장", "메모리 중심 구상", "MySQL 테이블 저장"],
+    ["저장", "메모리 중심 구상", "MySQL 설정 시 테이블 저장"],
     ["화면", "기본 목록과 입력 화면", "종목 상세, 그래프, 포트폴리오"],
     ["흐름", "드롭다운 선택 후 주문", "종목 클릭 → 상세 확인 → 매수/매도"],
   ], 0.65, 1.05, 12.0, 4.55, [0.18, 0.36, 0.46]);
@@ -209,7 +209,7 @@ titleSlide();
   card(slide, 4.75, 1.0, 3.9, 1.25, "사용자 매매 흐름", "시장 시세에서 종목 클릭 → 상세 확인 → 매수 / 보유 탭에서 매도", C.white);
   card(slide, 8.85, 1.0, 3.8, 1.25, "포트폴리오 손익", "보유 주식 평가금액, 실시간 손익, 수익률을 자동 계산", C.white);
   bullets(slide, [
-    "외부 API, MySQL 저장, 소켓 통신, 컬렉션을 하나의 Java 프로젝트 안에서 연결",
+    "외부 API, MySQL 저장 구조, 소켓 통신, 컬렉션을 하나의 Java 프로젝트 안에서 연결",
     "거래량 상위 종목을 중심으로 사용자가 볼 만한 종목을 먼저 노출",
     "가격 그래프로 단순 매매 입력보다 실제 투자 화면에 가까운 흐름 구현",
   ], 1.0, 3.05, 11.4, 2.0, 15);
@@ -279,7 +279,7 @@ titleSlide();
     ["핵심 서비스", "MiniProject", "ConcurrentHashMap, ArrayList, Comparator", "매매 처리, 포트폴리오 계산, 시세 상태 관리"],
     ["도메인 모델", "Member, Stock, Share, TradeLog", "class, record 성격의 데이터 객체", "회원, 종목, 보유 수량, 거래 내역 표현"],
     ["외부 시세", "KisQuoteClient, KisQuotePoller, KisWebSocketQuoteClient", "HttpClient, HttpRequest, WebSocket", "KIS REST/WebSocket 시세 연동과 실패 시 전환"],
-    ["저장소/보안", "MySqlDatabase, PasswordHasher", "JDBC, DriverManager, SecureRandom, MessageDigest", "MySQL 저장, 비밀번호 해시, 세션 기반 로그인"],
+    ["저장소/보안", "MySqlDatabase, PasswordHasher", "JDBC, DriverManager, SecureRandom, MessageDigest", "MySQL 설정 시 저장, 비밀번호 해시, 세션 기반 로그인"],
     ["화면/분류", "WebPages, Json, CompanyProfile, StockCategoryProfile", "HTML/CSS/JS, abstract class, interface", "웹 화면 생성, JSON 처리, 회사/업종 설명 구조화"],
   ], 0.45, 0.9, 12.45, 5.35, [0.15, 0.27, 0.29, 0.29]);
   slide.addText("정리해서 말하면 서버, 서비스, 외부 API, DB, 보안, 화면 역할을 나눴고, 제출용 컴파일을 쉽게 하기 위해 현재는 루트 파일 중심으로 유지했다.", {
@@ -347,7 +347,7 @@ titleSlide();
     ["입력", "로그인 정보, 종목 선택, 즐겨찾기, 매수/매도 수량"],
     ["외부 입력", "KIS 현재가/등락률/거래량"],
     ["처리", "잔액 확인, 보유 수량 확인, 매매 체결, 손익 계산"],
-    ["저장", "members, shares, trade_logs MySQL 테이블"],
+    ["저장", "MySQL 설정 시 members, shares, trade_logs 테이블"],
     ["출력", "시장 시세, 종목 상세, 그래프, 포트폴리오, 거래 기록"],
   ], 1.0, 1.1, 11.3, 4.7, [0.22, 0.78]);
 }
@@ -360,7 +360,7 @@ titleSlide();
     ["종목 선별", "거래량 기준 상위 종목을 선별해 자동 갱신"],
     ["실시간성", "전체 종목 매초 조회 대신 상위 목록 중심 갱신 + 소켓 구독 구조 실험"],
     ["소켓", "모의 증권사 서버의 가격 Tick 구독 구조"],
-    ["사용자 데이터", "MySQL 테이블 저장"],
+    ["사용자 데이터", "MySQL 설정 시 테이블 저장, 미설정 시 메모리 모드"],
     ["가격 그래프", "서버가 보관한 최근 가격 히스토리 표시"],
   ], 0.85, 1.0, 11.7, 5.05, [0.25, 0.75]);
 }
