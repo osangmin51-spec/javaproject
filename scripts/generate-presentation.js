@@ -401,40 +401,30 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 15, "주요 코드 일부"); addFooter(slide);
-  codeBox(slide, "HTTP 라우팅 - MiniHandler.java", `if ("GET".equals(method) && "/api/state".equals(path)) {
-    send(exchange, 200, "application/json", project.stateJson());
-}
-String json = switch (path) {
-    case "/api/stock/buy" -> project.buyStock(body);
-    case "/api/stock/sell" -> project.sellStock(body);
-    default -> Json.obj("ok", false, "error", "없는 API");
-};`, 0.65, 0.95, 5.8, 2.2);
-  codeBox(slide, "KIS 현재가 조회 - external/KisQuotePoller.java", `HttpRequest request = HttpRequest.newBuilder(uri)
-    .header("authorization", "Bearer " + token)
-    .header("appkey", config.appKey)
-    .header("tr_id", "FHKST01010100")
-    .GET()
-    .build();
-HttpResponse<String> response = client.send(request, BodyHandlers.ofString());`, 6.8, 0.95, 5.85, 2.2);
-  codeBox(slide, "매수 처리 - MiniProject.java", `Member member = defaultMember();
-Stock stock = member.stocks.get(stockName);
-long total = (long) stock.price * quantity;
-if (member.balance < total) return Json.obj("ok", false);
-member.balance -= total;
-member.shares.put(stockName, share.buy(quantity, total));
+  const slide = pptx.addSlide(); addHeader(slide, 15, "주요 코드 흐름"); addFooter(slide);
+  const steps = [
+    ["1. 브라우저 요청", "GET /api/state\nPOST /api/stock/buy\nPOST /api/stock/sell"],
+    ["2. MiniHandler", "URL을 확인하고\nMiniProject 메서드 호출"],
+    ["3. MiniProject", "잔액 확인 → 수량 확인\n보유 주식 갱신 → 거래 기록 추가"],
+    ["4. 저장소", "MySQL 저장 시도\n실패 시 로컬 파일 저장소 사용"],
+  ];
+  steps.forEach((step, i) => {
+    const x = 0.65 + i * 3.08;
+    card(slide, x, 1.0, 2.75, 1.45, step[0], step[1], i === 2 ? C.lightBlue : C.white);
+    if (i < steps.length - 1) connector(slide, x + 2.75, 1.72, x + 3.04, 1.72);
+  });
+  codeBox(slide, "라우팅 핵심 - MiniHandler.java", `case "/api/stock/buy" -> project.buyStock(body);
+case "/api/stock/sell" -> project.sellStock(body);`, 0.9, 3.35, 5.65, 1.3);
+  codeBox(slide, "매수/저장 핵심 - MiniProject.java", `member.shares.compute(stockName, (key, share) -> ...);
 logs.add(new TradeLog(member.uid, stockName, quantity, total, "구매"));
-saveDatabase();`, 0.65, 3.55, 5.8, 2.45);
-  codeBox(slide, "MySQL 저장 - repository/MySqlDatabase.java", `try (Connection con = DriverManager.getConnection(url, user, password)) {
-    con.setAutoCommit(false);
-    insertMembers(con, members);
-    insertShares(con, members);
-    insertTradeLogs(con, logs);
-    con.commit();
-}`, 6.8, 3.55, 5.85, 2.45);
-  slide.addText("발표에서는 전체 코드를 읽기보다 요청 처리, 외부 API, 거래 처리, 저장 흐름이 실제로 연결되어 있다는 점을 보여준다.", {
-    x: 0.75, y: 6.3, w: 11.9, h: 0.3,
-    fontSize: 12.5, bold: true, color: C.ink, margin: 0,
+saveDatabase();`, 6.85, 3.35, 5.65, 1.3);
+  slide.addText("발표에서는 코드 전체를 읽기보다, 웹 요청이 서비스 로직을 거쳐 저장소까지 이어지는 흐름을 설명한다.", {
+    x: 0.9, y: 5.35, w: 11.5, h: 0.35,
+    fontSize: 13.5, bold: true, color: C.blue, margin: 0,
+  });
+  slide.addText("실제 상세 구현은 GitHub의 MiniHandler.java, MiniProject.java, repository/MySqlDatabase.java에서 확인할 수 있다.", {
+    x: 0.9, y: 5.9, w: 11.5, h: 0.3,
+    fontSize: 11.8, color: C.gray, margin: 0,
   });
 }
 
@@ -443,19 +433,19 @@ saveDatabase();`, 0.65, 3.55, 5.8, 2.45);
   card(slide, 0.7, 1.0, 5.75, 1.2, "로그인 제거", "과제용 프로젝트라 회원 인증보다 종목 조회와 매매 흐름에 집중하도록 단일 모의 계좌 구조로 단순화", C.lightBlue);
   card(slide, 6.85, 1.0, 5.75, 1.2, "WebSocket 보완", "KIS WebSocket 시작/오류 시 REST 폴링으로 자동 전환되도록 코드 보강", C.white);
   card(slide, 0.7, 2.75, 5.75, 1.2, "남은 검증", "실제 KIS 테스트베드에서 구독 성공 여부와 메시지 필드 순서 확인 필요", C.white);
-  card(slide, 6.85, 2.75, 5.75, 1.2, "구조 개선", "src/main/java 아래 app/controller/service/domain/repository/external/view/util 패키지로 분리", C.white);
+  card(slide, 6.85, 2.75, 5.75, 1.2, "구조 정리 완료", "src/main/java 아래 app/controller/service/domain/repository/external/view/util 패키지로 물리적 분리", C.white);
   card(slide, 0.7, 4.5, 5.75, 1.2, "추가 아이디어", "업종별 위험 등급 표시, 개인화 관심종목 추천, 테스트 코드 보강", C.white);
-  card(slide, 6.85, 4.5, 5.75, 1.2, "문서 정합성", "PPT, 보고서, README가 실제 코드 구조와 같은 용어를 쓰도록 정리", C.lightBlue);
+  card(slide, 6.85, 4.5, 5.75, 1.2, "문서 정합성 완료", "PPT, 보고서, README가 실제 코드 구조와 같은 용어를 쓰도록 최종 정리", C.lightBlue);
 }
 
 {
   const slide = pptx.addSlide(); addHeader(slide, 17, "시연 영상 구성"); addFooter(slide);
   table(slide, [
     ["구간", "보여줄 화면", "말할 내용"],
-    ["0~10초", "상단 요약", "로그인 없이 바로 모의투자 화면이 열리는 점 설명"],
-    ["10~25초", "시장 시세와 검색", "거래량 상위 종목과 검색/즐겨찾기"],
-    ["25~40초", "종목 상세/그래프", "현재가, 등락률, 그래프가 한 화면에 연결됨"],
-    ["40~55초", "매수 후 보유 탭", "종목을 클릭해 매수하고 손익을 확인"],
+    ["0~4초", "상단 요약", "로그인 없이 바로 모의투자 화면이 열리는 점 설명"],
+    ["4~8초", "시장 시세와 검색", "거래량 상위 종목과 검색/즐겨찾기"],
+    ["8~12초", "종목 상세/그래프", "현재가, 등락률, 그래프가 한 화면에 연결됨"],
+    ["12~16초", "매수 후 보유 탭", "종목을 클릭해 매수하고 손익을 확인"],
   ], 0.65, 0.95, 7.0, 3.2, [0.18, 0.36, 0.46]);
   if (fs.existsSync(PREVIEW)) {
     slide.addImage({ path: PREVIEW, x: 8.0, y: 1.0, w: 4.7, h: 2.65 });

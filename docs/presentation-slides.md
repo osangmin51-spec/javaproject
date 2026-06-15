@@ -122,10 +122,35 @@ flowchart LR
 - `JDBC DriverManager`: MySQL 연결
 - `LocalDateTime`: 거래 시간과 시세 갱신 시각
 
-## 14. 시연 영상
+## 14. Java 클래스 활용
 
-- 웹사이트 접속과 상단 요약
-- 시장 시세와 검색
-- 종목 상세와 가격 그래프
-- 매수 후 보유 탭에서 손익 확인
+- `HttpServer`: 웹 서버
+- `HttpClient`: KIS API 호출
+- `Thread`: 백그라운드 시세 갱신
+- `ConcurrentHashMap`: 회원/종목 상태 관리
+- `ArrayList`, `LinkedHashMap`, `List`: 거래 기록, 가격 히스토리, 조회 순서 관리
+- `JDBC DriverManager`: MySQL 연결
+- `LocalDateTime`: 거래 시간과 시세 갱신 시각
+
+## 15. 주요 코드 흐름
+
+- 브라우저 요청: `GET /api/state`, `POST /api/stock/buy`, `POST /api/stock/sell`
+- `MiniHandler`: URL을 확인하고 `MiniProject` 메서드 호출
+- `MiniProject`: 잔액 확인, 수량 확인, 보유 주식 갱신, 거래 기록 추가
+- 저장소: MySQL 저장 시도, 실패 시 로컬 파일 저장소 사용
+- 발표에서는 긴 코드보다 요청, 처리, 저장이 연결되는 흐름을 중심으로 설명
+
+## 16. 보완 상태와 남은 과제
+
+- 구현 완료: 로그인 제거, 단일 모의 계좌, 패키지 물리 분리, README/PPT/보고서 용어 정합성 정리
+- 보완 완료: KIS WebSocket 오류 시 REST 폴링 전환
+- 남은 검증: 실제 KIS 테스트베드에서 WebSocket 구독 성공 여부와 메시지 필드 순서 확인
+- 향후 개선: 업종별 위험 등급 UI, 개인화 관심종목 추천, 테스트 코드 보강
+
+## 17. 시연 영상
+
+- `0~4초`: 웹사이트 접속과 상단 요약
+- `4~8초`: 시장 시세와 검색
+- `8~12초`: 종목 상세와 가격 그래프
+- `12~16초`: 매수 후 보유 탭에서 손익 확인
 - 영상 파일: `deliverables/mock-stock-website-demo.webm`
