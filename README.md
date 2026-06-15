@@ -19,9 +19,9 @@ Java 표준 라이브러리 중심으로 만든 모의주식투자 웹앱입니�
 Java 21 이상을 권장합니다.
 
 ```powershell
-$sources = Get-ChildItem -Filter *.java | ForEach-Object { $_.FullName }
+$sources = Get-ChildItem -Path src\main\java -Recurse -Filter *.java | ForEach-Object { $_.FullName }
 javac -encoding UTF-8 -d out $sources
-java -cp "out;lib/*" MiniProjectApp 8080
+java -cp "out;lib/*" app.MiniProjectApp 8080
 ```
 
 브라우저 접속 주소:
@@ -42,7 +42,7 @@ $env:KIS_APP_SECRET="발급받은_APP_SECRET"
 $env:KIS_BASE_URL="https://openapi.koreainvestment.com:9443"
 $env:KIS_MARKET_LIMIT="200"
 $env:KIS_POLL_LIMIT="100"
-java -cp "out;lib/*" MiniProjectApp 8080
+java -cp "out;lib/*" app.MiniProjectApp 8080
 ```
 
 사용하는 REST API:
@@ -75,13 +75,13 @@ REST 방식은 일정 주기마다 서버가 API를 다시 호출하는 구조�
 $env:KIS_USE_WEBSOCKET="true"
 $env:KIS_WS_URL="ws://ops.koreainvestment.com:21000"
 $env:KIS_WS_MAX_SUBSCRIPTIONS="100"
-java -cp "out;lib/*" MiniProjectApp 8080
+java -cp "out;lib/*" app.MiniProjectApp 8080
 ```
 
 동작 흐름:
 
 ```text
-MiniProjectApp
+app.MiniProjectApp
   -> KisWebSocketQuoteClient
   -> KIS WebSocket 승인키 발급
   -> 국내주식 체결 구독 요청
@@ -106,7 +106,7 @@ WebSocket 모드에서도 시작 직전에 거래량 상위 종목을 조회해 
 $env:MYSQL_URL="jdbc:mysql://localhost:3306/mock_stock?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul"
 $env:MYSQL_USER="root"
 $env:MYSQL_PASSWORD="비밀번호"
-java -cp "out;lib/*" MiniProjectApp 8080
+java -cp "out;lib/*" app.MiniProjectApp 8080
 ```
 
 MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니다. MySQL 연결이 성공하면 MySQL 테이블을 사용하고, 실패하면 로컬 파일 저장소를 사용합니다.
@@ -121,20 +121,30 @@ MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니
 
 ## 코드 구조
 
-| 파일 | 역할 |
-| --- | --- |
-| `MiniProjectApp.java` | 서버 시작, KIS REST/WebSocket 시세 스레드 시작 |
-| `MiniHandler.java` | HTTP 라우팅, API 요청 처리 |
-| `MiniProject.java` | 모의 계좌, 매매, 포트폴리오, 저장 흐름 관리 |
-| `DomainModels.java` | 회원, 종목, 보유 주식, 거래 기록 모델 |
-| `KisIntegration.java` | KIS 토큰, 현재가 REST, 거래량 순위, WebSocket 구독 |
-| `DatabaseIntegration.java` | MySQL 저장소, 스키마 생성, 데이터 로드/저장 |
-| `BrokerIntegration.java` | 모의 증권사 소켓 서버와 시세 Tick 구독 |
-| `CompanyProfile.java` | 회사 프로필 추상 클래스 |
-| `CompanyProfiles.java` | 종목별 회사 설명 클래스와 설명 조회 레지스트리 |
-| `StockCategoryProfiles.java` | 업종·테마별 종목 분류 클래스와 위험 설명 조회 레지스트리 |
-| `WebPages.java` | HTML, CSS, JavaScript 화면 렌더링 |
-| `Json.java` | JSON 응답 생성과 요청 body 파싱 |
+| 패키지 | 주요 파일 | 역할 |
+| --- | --- | --- |
+| `app` | `MiniProjectApp.java` | 서버 시작, KIS REST/WebSocket 시세 스레드 시작 |
+| `controller` | `MiniHandler.java` | HTTP 라우팅, API 요청 처리 |
+| `service` | `MiniProject.java` | 모의 계좌, 매매, 포트폴리오, 저장 흐름 관리 |
+| `domain` | `Member.java`, `Stock.java`, `Share.java`, `TradeLog.java` | 회원, 종목, 보유 주식, 거래 기록 모델 |
+| `repository` | `ProjectDatabase.java`, `MySqlDatabase.java`, `LocalFileDatabase.java` | MySQL 저장소, 로컬 파일 저장소, 데이터 로드/저장 |
+| `external` | `KisQuotePoller.java`, `KisWebSocketQuoteClient.java`, `MockBrokerServer.java` | KIS API, WebSocket 시도, 모의 증권사 소켓 |
+| `view` | `MiniDashboardPage.java` | HTML, CSS, JavaScript 화면 렌더링 |
+| `util` | `Json.java` | JSON 응답 생성과 요청 body 파싱 |
+
+현재 소스는 `src/main/java` 아래에 실제 Java 패키지로 분리되어 있습니다.
+
+```text
+src/main/java
+├─ app
+├─ controller
+├─ service
+├─ domain
+├─ repository
+├─ external
+├─ view
+└─ util
+```
 
 ## API 목록
 
@@ -148,7 +158,7 @@ MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니
 ## 남은 보완점
 
 - KIS WebSocket은 승인키 발급, 구독 메시지 전송, 체결 메시지 파싱, REST fallback까지 구현했지만 실제 테스트베드 구독 성공 여부는 별도 환경에서 확인해야 합니다.
-- 현재 소스는 과제 제출과 컴파일 검증을 쉽게 하기 위해 루트 디렉터리 중심으로 유지했습니다. 이후에는 `controller`, `service`, `repository`, `model` 패키지로 분리하는 것이 좋습니다.
+- `MiniProject`가 아직 매매, 포트폴리오, 시장 상태를 함께 관리하므로 더 큰 프로젝트라면 `TradingService`, `PortfolioService`, `MarketService`로 한 번 더 나눌 수 있습니다.
 - 테스트 코드, 업종별 위험 등급 UI 표시, 개인화 관심종목 추천은 향후 개선 항목입니다.
 
 ## 발표/보고서 자료

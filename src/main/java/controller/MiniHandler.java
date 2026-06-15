@@ -1,16 +1,20 @@
+package controller;
+
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-
-import java.io.IOException;
 import java.io.InputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import service.MiniProject;
+import util.Json;
+import view.MiniDashboardPage;
 
-class MiniHandler implements HttpHandler {
+public class MiniHandler implements HttpHandler {
     private final MiniProject project;
 
-    MiniHandler(MiniProject project) {
+    public MiniHandler(MiniProject project) {
         this.project = project;
     }
 

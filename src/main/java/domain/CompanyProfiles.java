@@ -1,3 +1,5 @@
+package domain;
+
 import java.util.List;
 
 class SamsungElectronicsProfile extends CompanyProfile { SamsungElectronicsProfile() { super("삼성전자", "반도체"); } }
@@ -41,7 +43,7 @@ class DoosanEnerbilityProfile extends CompanyProfile { DoosanEnerbilityProfile()
 class EcoproProfile extends CompanyProfile { EcoproProfile() { super("에코프로", "2차전지소재"); } }
 class EcoproBmProfile extends CompanyProfile { EcoproBmProfile() { super("에코프로비엠", "2차전지소재"); } }
 
-class CompanyProfiles {
+public class CompanyProfiles {
     private static final List<CompanyProfile> PROFILES = List.of(
             new SamsungElectronicsProfile(), new SkHynixProfile(), new LgEnergySolutionProfile(),
             new SamsungBiologicsProfile(), new HyundaiMotorProfile(), new KiaProfile(),
@@ -58,7 +60,7 @@ class CompanyProfiles {
             new EcoproProfile(), new EcoproBmProfile()
     );
 
-    static String summaryFor(String companyName) {
+    public static String summaryFor(String companyName) {
         return PROFILES.stream()
                 .filter(profile -> profile.companyName.equals(companyName))
                 .findFirst()

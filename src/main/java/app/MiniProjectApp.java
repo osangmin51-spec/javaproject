@@ -1,9 +1,17 @@
-import com.sun.net.httpserver.HttpServer;
+package app;
 
+import com.sun.net.httpserver.HttpServer;
+import controller.MiniHandler;
+import external.BrokerFeedClient;
+import external.KisConfig;
+import external.KisQuotePoller;
+import external.KisWebSocketQuoteClient;
+import external.MockBrokerServer;
 import java.net.InetSocketAddress;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
+import service.MiniProject;
 
 public class MiniProjectApp {
     public static void main(String[] args) throws Exception {

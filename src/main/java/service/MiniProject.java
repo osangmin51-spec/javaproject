@@ -1,16 +1,32 @@
-import java.time.LocalDateTime;
+package service;
+
+import domain.CompanyProfiles;
+import domain.Member;
+import domain.Share;
+import domain.Stock;
+import domain.StockCategories;
+import domain.TradeLog;
+import external.BrokerTick;
+import external.KisQuoteTarget;
+import external.KisVolumeRankItem;
+import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.nio.file.Path;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
+import repository.DatabaseSnapshot;
+import repository.LocalFileDatabase;
+import repository.MySqlDatabase;
+import repository.ProjectDatabase;
+import util.Json;
 
-class MiniProject {
+public class MiniProject {
     private final Map<Long, Member> members = new ConcurrentHashMap<>();
     private final Map<String, Stock> marketStocks = new ConcurrentHashMap<>();
     private final List<TradeLog> logs = new ArrayList<>();
@@ -20,7 +36,7 @@ class MiniProject {
     private volatile String brokerSource = "내장 모의 증권사 소켓 서버";
     private volatile LocalDateTime lastBrokerTick;
 
-    MiniProject() {
+    public MiniProject() {
         seedStocks();
         loadDatabase();
         if (members.isEmpty()) {
@@ -34,7 +50,7 @@ class MiniProject {
         saveDatabase();
     }
 
-    String stateJson() {
+    public String stateJson() {
         Member member = defaultMember();
         return Json.obj(
                 "ok", true,
@@ -43,11 +59,11 @@ class MiniProject {
                 "portfolio", portfolioJson(member),
                 "stocks", Json.array(stocks(member).stream().map(Stock::toJson).toList()),
                 "shares", Json.array(member.shares.values().stream().map(share -> shareJson(member, share)).toList()),
-                "logs", Json.array(logs.stream().filter(log -> log.memberUid == member.uid).sorted(Comparator.comparing(TradeLog::time).reversed()).map(TradeLog::toJson).toList())
+                "logs", Json.array(logs.stream().filter(log -> log.memberUid == member.uid).sorted(Comparator.comparing((TradeLog log) -> log.time).reversed()).map(TradeLog::toJson).toList())
         );
     }
 
-    String buyStock(Map<String, String> body) {
+    public String buyStock(Map<String, String> body) {
         Member member = defaultMember();
         String stockName = text(body, "stockName");
         int quantity = number(body, "quantity");
@@ -69,7 +85,7 @@ class MiniProject {
         return Json.obj("ok", true, "message", stockName + " " + quantity + "주를 구매했습니다.");
     }
 
-    String sellStock(Map<String, String> body) {
+    public String sellStock(Map<String, String> body) {
         Member member = defaultMember();
         String stockName = text(body, "stockName");
         int quantity = number(body, "quantity");
@@ -88,13 +104,13 @@ class MiniProject {
         return Json.obj("ok", true, "message", stockName + " " + quantity + "주를 판매했습니다.");
     }
 
-    Map<String, Integer> quoteSeeds() {
+    public Map<String, Integer> quoteSeeds() {
         Map<String, Integer> seeds = new LinkedHashMap<>();
         stocks(null).forEach(stock -> seeds.put(stock.name, stock.price));
         return seeds;
     }
 
-    Map<String, KisQuoteTarget> kisQuoteTargets() {
+    public Map<String, KisQuoteTarget> kisQuoteTargets() {
         Map<String, KisQuoteTarget> targets = new LinkedHashMap<>();
         List<String> priority = List.of("삼성전자", "SK하이닉스", "현대차", "NAVER", "카카오", "LG에너지솔루션", "삼성바이오로직스");
         priority.forEach(name -> {
@@ -105,7 +121,7 @@ class MiniProject {
         return targets;
     }
 
-    synchronized void applyKisVolumeRank(List<KisVolumeRankItem> ranked) {
+    public synchronized void applyKisVolumeRank(List<KisVolumeRankItem> ranked) {
         for (KisVolumeRankItem item : ranked) {
             if (item.name.isBlank() || item.code.isBlank()) continue;
             Stock stock = marketStocks.get(item.name);
@@ -142,7 +158,7 @@ class MiniProject {
         }
     }
 
-    void applyBrokerTick(BrokerTick tick) {
+    public void applyBrokerTick(BrokerTick tick) {
         brokerSource = "내장 모의 증권사 소켓 서버";
         lastBrokerTick = LocalDateTime.now();
         brokerTicks.incrementAndGet();
@@ -150,7 +166,7 @@ class MiniProject {
         members.values().forEach(member -> updateStock(member.stocks.get(tick.symbol), tick));
     }
 
-    void applyKisQuote(BrokerTick tick) {
+    public void applyKisQuote(BrokerTick tick) {
         brokerSource = "한국투자증권 KIS REST API";
         lastBrokerTick = LocalDateTime.now();
         brokerTicks.incrementAndGet();
@@ -158,7 +174,7 @@ class MiniProject {
         members.values().forEach(member -> updateExternalStock(member.stocks.get(tick.symbol), tick));
     }
 
-    void applyKisWebSocketQuote(BrokerTick tick) {
+    public void applyKisWebSocketQuote(BrokerTick tick) {
         brokerSource = "한국투자증권 KIS WebSocket";
         lastBrokerTick = LocalDateTime.now();
         brokerTicks.incrementAndGet();

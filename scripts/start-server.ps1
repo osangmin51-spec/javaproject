@@ -21,8 +21,7 @@ if (-not (Test-Path out)) {
     New-Item -ItemType Directory -Force out | Out-Null
 }
 
-$sources = Get-ChildItem -Path . -Filter *.java |
-    Where-Object { $_.Name -ne "MockStockApp.java" } |
+$sources = Get-ChildItem -Path "src\main\java" -Recurse -Filter *.java |
     ForEach-Object { $_.FullName }
 
 javac -encoding UTF-8 -d out $sources

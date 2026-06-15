@@ -1,6 +1,8 @@
+package external;
+
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
@@ -8,34 +10,13 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.function.Consumer;
-
-class BrokerTick {
-    final String symbol;
-    final int price;
-    final int change;
-    final double percent;
-    final long volume;
-
-    BrokerTick(String symbol, int price, int change, double percent) {
-        this(symbol, price, change, percent, 0);
-    }
-
-    BrokerTick(String symbol, int price, int change, double percent, long volume) {
-        this.symbol = symbol;
-        this.price = price;
-        this.change = change;
-        this.percent = percent;
-        this.volume = volume;
-    }
-}
 
 class BrokerQuote {
     final String symbol;
@@ -61,7 +42,7 @@ class BrokerQuote {
     }
 }
 
-class MockBrokerServer {
+public class MockBrokerServer {
     private final int port;
     private final Map<String, BrokerQuote> quotes = new ConcurrentHashMap<>();
     private final CopyOnWriteArraySet<BrokerClientSession> clients = new CopyOnWriteArraySet<>();
@@ -69,12 +50,12 @@ class MockBrokerServer {
     private final Random random = new Random();
     private volatile boolean running;
 
-    MockBrokerServer(int port, Map<String, Integer> seeds) {
+    public MockBrokerServer(int port, Map<String, Integer> seeds) {
         this.port = port;
         seeds.forEach((symbol, price) -> quotes.put(symbol, new BrokerQuote(symbol, price)));
     }
 
-    void start() {
+    public void start() {
         running = true;
         Thread acceptThread = new Thread(this::acceptLoop, "mock-broker-accept");
         acceptThread.setDaemon(true);
@@ -177,61 +158,5 @@ class BrokerClientSession implements Runnable {
             return;
         }
         out.println("ERROR|UNKNOWN_COMMAND");
-    }
-}
-
-class BrokerFeedClient {
-    private final String host;
-    private final int port;
-    private final Consumer<BrokerTick> consumer;
-    private volatile boolean running = true;
-
-    BrokerFeedClient(String host, int port, Consumer<BrokerTick> consumer) {
-        this.host = host;
-        this.port = port;
-        this.consumer = consumer;
-    }
-
-    void start() {
-        Thread thread = new Thread(this::connectLoop, "broker-feed-client");
-        thread.setDaemon(true);
-        thread.start();
-    }
-
-    private void connectLoop() {
-        while (running) {
-            try (Socket socket = new Socket(host, port);
-                 BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-                 PrintWriter writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true)) {
-                writer.println("SUB ALL");
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (line.startsWith("TICK|")) {
-                        parseTick(line);
-                    }
-                }
-            } catch (IOException ex) {
-                sleep(1000);
-            }
-        }
-    }
-
-    private void parseTick(String line) {
-        String[] cols = line.split("\\|");
-        if (cols.length < 5) return;
-        try {
-            long volume = cols.length > 5 ? Long.parseLong(cols[5]) : 0;
-            consumer.accept(new BrokerTick(cols[1], Integer.parseInt(cols[2]), Integer.parseInt(cols[3]), Double.parseDouble(cols[4]), volume));
-        } catch (NumberFormatException ignored) {
-        }
-    }
-
-    private void sleep(long millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            running = false;
-        }
     }
 }

@@ -1,4 +1,4 @@
-const fs = require("fs");
+﻿const fs = require("fs");
 const path = require("path");
 const PptxGenJS = require("pptxgenjs");
 
@@ -247,21 +247,21 @@ titleSlide();
   const slide = pptx.addSlide(); addHeader(slide, 5, "코드 구조"); addFooter(slide);
   table(slide, [
     ["파일", "역할"],
-    ["MiniProjectApp.java", "서버 시작점, KIS/DB/소켓 초기화"],
+    ["app/MiniProjectApp.java", "서버 시작점, KIS/DB/소켓 초기화"],
     ["MiniHandler.java", "HTTP 요청 라우팅과 API 응답 처리"],
     ["MiniProject.java", "모의 계좌, 매매, 포트폴리오, 시세 상태 핵심 로직"],
-    ["DatabaseIntegration.java", "MySQL 우선 연결, 로컬 파일 저장 전환"],
-    ["KisIntegration.java", "KIS 토큰 발급, 거래량 순위, 현재가 조회"],
+    ["repository/MySqlDatabase.java", "MySQL 우선 연결, 로컬 파일 저장 전환"],
+    ["external/KisQuotePoller.java", "KIS 토큰 발급, 거래량 순위, 현재가 조회"],
     ["StockCategoryProfiles.java", "업종·테마별 위험 설명 타입"],
-    ["WebPages.java", "HTML/CSS/JavaScript 화면 렌더링"],
+    ["view/MiniDashboardPage.java", "HTML/CSS/JavaScript 화면 렌더링"],
   ], 0.7, 0.95, 12.0, 5.6, [0.34, 0.66]);
 }
 
 {
   const slide = pptx.addSlide(); addHeader(slide, 6, "클래스/인터페이스 설계"); addFooter(slide);
-  card(slide, 0.8, 1.0, 3.4, 1.2, "서버 계층", "MiniProjectApp → MiniHandler → MiniProject\n요청을 받고 핵심 로직으로 전달", C.lightBlue);
+  card(slide, 0.8, 1.0, 3.4, 1.2, "서버 계층", "app.MiniProjectApp → controller.MiniHandler → service.MiniProject\n요청을 받고 핵심 로직으로 전달", C.lightBlue);
   card(slide, 4.95, 1.0, 3.4, 1.2, "도메인 계층", "Member, Stock, Share, TradeLog\n회원/종목/거래 상태 관리", C.white);
-  card(slide, 9.05, 1.0, 3.4, 1.2, "외부 연동", "KisQuoteClient, BrokerIntegration\nREST API와 소켓 흐름 처리", C.white);
+  card(slide, 9.05, 1.0, 3.4, 1.2, "외부 연동", "KisQuoteClient, MockBrokerServer\nREST API와 소켓 흐름 처리", C.white);
   card(slide, 0.8, 3.1, 5.5, 1.45, "상속", "CompanyProfile 추상 클래스를 두고 종목별 회사 프로필 클래스가 공통 구조를 상속", C.white);
   card(slide, 6.9, 3.1, 5.5, 1.45, "인터페이스", "StockCategoryProfile 인터페이스로 업종별 분류와 위험 설명 규칙을 통일", C.white);
   slide.addText("설계 이유: 100개 이상 타입 조건을 맞추면서도 회사 설명과 업종 위험 설명이 실제 종목 상세에 쓰이도록 분리했다.", {
@@ -274,14 +274,14 @@ titleSlide();
   const slide = pptx.addSlide(); addHeader(slide, 7, "클래스/라이브러리 구조 상세"); addFooter(slide);
   table(slide, [
     ["계층", "주요 클래스", "사용 라이브러리 / 문법", "역할"],
-    ["실행/서버", "MiniProjectApp, MiniHandler", "HttpServer, HttpExchange, Executors", "서버 시작, URL 라우팅, JSON 응답"],
+    ["실행/서버", "app.MiniProjectApp, controller.MiniHandler", "HttpServer, HttpExchange, Executors", "서버 시작, URL 라우팅, JSON 응답"],
     ["핵심 서비스", "MiniProject", "ConcurrentHashMap, ArrayList, Comparator", "매매 처리, 포트폴리오 계산, 시세 상태 관리"],
     ["도메인 모델", "Member, Stock, Share, TradeLog", "class, record 성격의 데이터 객체", "회원, 종목, 보유 수량, 거래 내역 표현"],
     ["외부 시세", "KisQuoteClient, KisQuotePoller, KisWebSocketQuoteClient", "HttpClient, HttpRequest, WebSocket", "KIS REST/WebSocket 시세 연동과 실패 시 전환"],
     ["저장소", "MySqlDatabase, LocalFileDatabase", "JDBC, DriverManager, Files, Path", "MySQL 우선 저장, 실패 시 로컬 파일 저장"],
-    ["화면/분류", "WebPages, Json, CompanyProfile, StockCategoryProfile", "HTML/CSS/JS, abstract class, interface", "웹 화면 생성, JSON 처리, 회사/업종 설명 구조화"],
+    ["화면/분류", "view.MiniDashboardPage, util.Json, CompanyProfile, StockCategoryProfile", "HTML/CSS/JS, abstract class, interface", "웹 화면 생성, JSON 처리, 회사/업종 설명 구조화"],
   ], 0.45, 0.9, 12.45, 5.35, [0.15, 0.27, 0.29, 0.29]);
-  slide.addText("정리해서 말하면 서버, 서비스, 외부 API, DB, 보안, 화면 역할을 나눴고, 제출용 컴파일을 쉽게 하기 위해 현재는 루트 파일 중심으로 유지했다.", {
+  slide.addText("정리해서 말하면 서버, 서비스, 외부 API, DB, 화면 역할을 실제 패키지로 나눴고, 제출용 컴파일도 src/main/java 전체를 기준으로 검증한다.", {
     x: 0.8, y: 6.35, w: 11.8, h: 0.35,
     fontSize: 12.5, bold: true, color: C.blue, margin: 0,
   });
@@ -406,7 +406,7 @@ String json = switch (path) {
     case "/api/stock/sell" -> project.sellStock(body);
     default -> Json.obj("ok", false, "error", "없는 API");
 };`, 0.65, 0.95, 5.8, 2.2);
-  codeBox(slide, "KIS 현재가 조회 - KisIntegration.java", `HttpRequest request = HttpRequest.newBuilder(uri)
+  codeBox(slide, "KIS 현재가 조회 - external/KisQuotePoller.java", `HttpRequest request = HttpRequest.newBuilder(uri)
     .header("authorization", "Bearer " + token)
     .header("appkey", config.appKey)
     .header("tr_id", "FHKST01010100")
@@ -421,7 +421,7 @@ member.balance -= total;
 member.shares.put(stockName, share.buy(quantity, total));
 logs.add(new TradeLog(member.uid, stockName, quantity, total, "구매"));
 saveDatabase();`, 0.65, 3.55, 5.8, 2.45);
-  codeBox(slide, "MySQL 저장 - DatabaseIntegration.java", `try (Connection con = DriverManager.getConnection(url, user, password)) {
+  codeBox(slide, "MySQL 저장 - repository/MySqlDatabase.java", `try (Connection con = DriverManager.getConnection(url, user, password)) {
     con.setAutoCommit(false);
     insertMembers(con, members);
     insertShares(con, members);
@@ -439,7 +439,7 @@ saveDatabase();`, 0.65, 3.55, 5.8, 2.45);
   card(slide, 0.7, 1.0, 5.75, 1.2, "로그인 제거", "과제용 프로젝트라 회원 인증보다 종목 조회와 매매 흐름에 집중하도록 단일 모의 계좌 구조로 단순화", C.lightBlue);
   card(slide, 6.85, 1.0, 5.75, 1.2, "WebSocket 보완", "KIS WebSocket 시작/오류 시 REST 폴링으로 자동 전환되도록 코드 보강", C.white);
   card(slide, 0.7, 2.75, 5.75, 1.2, "남은 검증", "실제 KIS 테스트베드에서 구독 성공 여부와 메시지 필드 순서 확인 필요", C.white);
-  card(slide, 6.85, 2.75, 5.75, 1.2, "구조 개선 계획", "현재는 루트 파일 중심, 이후 controller/service/repository/model 패키지 분리 예정", C.white);
+  card(slide, 6.85, 2.75, 5.75, 1.2, "구조 개선", "src/main/java 아래 app/controller/service/domain/repository/external/view/util 패키지로 분리", C.white);
   card(slide, 0.7, 4.5, 5.75, 1.2, "추가 아이디어", "업종별 위험 등급 표시, 개인화 관심종목 추천, 테스트 코드 보강", C.white);
   card(slide, 6.85, 4.5, 5.75, 1.2, "문서 정합성", "PPT, 보고서, README가 실제 코드 구조와 같은 용어를 쓰도록 정리", C.lightBlue);
 }
@@ -472,3 +472,4 @@ pptx.writeFile({ fileName: path.join(OUT, process.env.PRESENTATION_OUTPUT || "Ja
     console.error(error);
     process.exit(1);
   });
+

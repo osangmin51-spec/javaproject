@@ -1,5 +1,7 @@
-class MiniDashboardPage {
-    static String render() {
+package view;
+
+public class MiniDashboardPage {
+    public static String render() {
         return """
                 <!doctype html>
                 <html lang="ko">
@@ -8,63 +10,73 @@ class MiniDashboardPage {
                   <meta name="viewport" content="width=device-width, initial-scale=1">
                   <title>Java 프로젝트 모의주식</title>
                   <style>
-                    :root { --ink:#182230; --muted:#667085; --line:#d7deea; --panel:#fff; --blue:#1f5fbf; --green:#0b7f55; --red:#bd3d3a; }
+                    :root { --ink:#1f252d; --muted:#6b7280; --line:#ccd3dd; --panel:#fff; --soft:#f5f7fa; --blue:#2457a7; --green:#047857; --red:#c2413d; --amber:#b7791f; }
                     * { box-sizing:border-box; }
-                    body { margin:0; font-family:Segoe UI, Arial, sans-serif; color:var(--ink); background:#eef2f7; }
-                    header { background:#111d2f; color:#fff; padding:18px 24px; display:flex; justify-content:space-between; align-items:center; gap:16px; position:sticky; top:0; z-index:2; }
-                    h1 { margin:0; font-size:22px; letter-spacing:0; }
-                    h2 { margin:0; padding:14px 16px; border-bottom:1px solid var(--line); font-size:16px; background:#fbfcfe; }
-                    button { border:0; border-radius:6px; padding:10px 13px; background:var(--blue); color:white; font-weight:800; cursor:pointer; }
+                    body { margin:0; font-family:Segoe UI, Arial, sans-serif; color:var(--ink); background:#e9edf2; }
+                    header { background:#ffffff; color:var(--ink); border-bottom:1px solid #c9d1dc; padding:14px 22px; display:flex; justify-content:space-between; align-items:center; gap:16px; position:sticky; top:0; z-index:2; box-shadow:0 1px 0 rgba(20,30,44,.04); }
+                    h1 { margin:0; font-size:21px; letter-spacing:0; font-weight:850; }
+                    h2 { margin:0; padding:12px 14px; border-bottom:1px solid var(--line); font-size:14px; background:#f7f9fc; display:flex; align-items:center; gap:9px; }
+                    h2::before { content:""; width:4px; height:16px; background:var(--blue); display:inline-block; }
+                    button { border:1px solid transparent; border-radius:4px; padding:9px 12px; background:var(--blue); color:white; font-weight:800; cursor:pointer; }
                     button.secondary { background:#405164; }
                     button.buy { background:var(--green); }
                     button.sell { background:var(--red); }
-                    button.ghost { background:#e7edf6; color:#1f2937; }
-                    input, select { width:100%; border:1px solid var(--line); border-radius:6px; padding:10px; font-size:14px; background:white; }
+                    button.ghost { background:#eef2f7; color:#1f2937; border-color:#d3dae5; }
+                    input, select { width:100%; border:1px solid var(--line); border-radius:4px; padding:10px; font-size:14px; background:white; }
                     label { display:grid; gap:6px; color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
                     table { width:100%; border-collapse:collapse; font-size:14px; }
-                    th, td { padding:11px 12px; border-bottom:1px solid #edf1f7; text-align:left; vertical-align:middle; }
-                    th { color:var(--muted); font-size:12px; }
-                    main { max-width:1440px; margin:0 auto; padding:20px; display:grid; gap:16px; }
-                    section { background:var(--panel); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+                    th, td { padding:10px 12px; border-bottom:1px solid #e5eaf0; text-align:left; vertical-align:middle; }
+                    th { color:var(--muted); font-size:11px; background:#f7f9fc; position:sticky; top:0; z-index:1; }
+                    main { max-width:1500px; margin:0 auto; padding:16px; display:grid; gap:14px; }
+                    section { background:var(--panel); border:1px solid var(--line); border-radius:6px; overflow:hidden; box-shadow:0 1px 2px rgba(16,24,40,.04); }
+                    .brandBlock { display:grid; gap:3px; }
                     .topbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-                    .pill { border:1px solid rgba(255,255,255,.22); border-radius:999px; padding:7px 10px; color:#dbe4ef; font-size:13px; }
-                    .summary { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; }
-                    .metric { background:#fff; border:1px solid var(--line); border-radius:8px; padding:14px; min-height:86px; }
-                    .labelText { color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
-                    .value { margin-top:8px; font-size:24px; font-weight:850; overflow-wrap:anywhere; }
+                    .pill { border:1px solid #d0d7e2; border-radius:999px; padding:7px 11px; color:#344054; background:#f7f9fc; font-size:13px; }
+                    .summary { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; border:1px solid var(--line); background:#fff; border-radius:6px; overflow:hidden; }
+                    .metric { background:#fff; border-right:1px solid #e4e9f0; padding:12px 14px; min-height:78px; }
+                    .metric:last-child { border-right:0; }
+                    .labelText { color:var(--muted); font-size:11px; font-weight:850; text-transform:uppercase; }
+                    .value { margin-top:7px; font-size:22px; font-weight:850; overflow-wrap:anywhere; }
                     .value.time { font-size:17px; line-height:1.35; }
                     .layout { display:grid; grid-template-columns:1fr; gap:16px; align-items:start; }
-                    .workspace { display:grid; gap:16px; }
+                    .workspace { display:grid; grid-template-columns:minmax(420px,.95fr) minmax(0,1.35fr); grid-template-areas:"market detail" "lower lower"; gap:14px; align-items:start; }
+                    .marketPanel { grid-area:market; }
+                    .detailPanel { grid-area:detail; }
+                    .lowerPanel { grid-area:lower; }
                     .actions { display:flex; gap:8px; flex-wrap:wrap; }
                     .message { color:var(--muted); padding:0 16px 14px; min-height:22px; }
                     .up { color:var(--green); } .down { color:var(--red); }
                     .marketRow { cursor:pointer; }
-                    .marketRow:hover { background:#f6f9fd; }
-                    .marketRow.selected { background:#eaf2ff; }
-                    .tabs { display:flex; gap:8px; padding:12px 12px 0; flex-wrap:wrap; }
-                    .tab { background:#e7edf6; color:#1f2937; }
-                    .tab.active { background:var(--blue); color:#fff; }
+                    .marketRow:hover { background:#f8fafc; }
+                    .marketRow.selected { background:#eef5ff; box-shadow:inset 4px 0 0 var(--blue); }
+                    .tabs { display:flex; gap:6px; padding:10px 10px 0; flex-wrap:wrap; background:#fff; }
+                    .tab { background:#eef2f7; color:#1f2937; border-color:#d3dae5; }
+                    .tab.active { background:#1f252d; color:#fff; }
                     .marketTools { display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap; padding:12px 16px; border-top:1px solid var(--line); }
                     .marketFilters { display:grid; grid-template-columns:minmax(220px,1fr) auto; gap:10px; padding:12px 16px; border-bottom:1px solid var(--line); align-items:center; }
                     .marketFilters input { min-width:0; }
                     .pageButtons { display:flex; gap:6px; flex-wrap:wrap; }
-                    .pageButtons button { min-width:38px; padding:8px 10px; background:#e7edf6; color:#1f2937; }
-                    .pageButtons button.active { background:var(--blue); color:#fff; }
-                    .favoriteToggle.active { background:#26384d; color:white; }
-                    .favoriteButton { width:34px; height:34px; padding:0; display:inline-grid; place-items:center; background:#e7edf6; color:#667085; border:1px solid #d7deea; }
-                    .favoriteButton.active { background:#fff7d6; color:#a15c00; border-color:#f1c453; }
+                    .pageButtons button { min-width:34px; padding:7px 9px; background:#eef2f7; color:#1f2937; border-color:#d3dae5; }
+                    .pageButtons button.active { background:#1f252d; color:#fff; }
+                    .favoriteToggle.active { background:#1f252d; color:white; }
+                    .favoriteButton { width:30px; height:30px; padding:0; display:inline-grid; place-items:center; background:#fff; color:#667085; border:1px solid #d7deea; }
+                    .favoriteButton.active { background:#fff8e8; color:var(--amber); border-color:#e4b763; }
                     .stockNameCell { display:flex; align-items:center; gap:8px; min-width:210px; }
+                    .stockTitle { display:grid; gap:2px; }
+                    .stockTitle strong { font-size:14px; }
+                    .stockTitle span { color:var(--muted); font-size:11px; }
+                    .quoteButton { padding:6px 9px; font-size:12px; }
                     .tabPanel { display:none; }
                     .tabPanel.active { display:block; }
                     .cards { display:grid; gap:10px; padding:16px; }
-                    .card { border:1px solid var(--line); border-radius:8px; padding:12px; background:#fbfcfe; display:grid; gap:8px; }
+                    .card { border:1px solid var(--line); border-radius:6px; padding:12px; background:#fbfcfe; display:grid; gap:8px; }
                     .empty { color:var(--muted); padding:16px; }
-                    .detailGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:16px; }
+                    .detailGrid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; padding:14px; }
                     .companyInfo { padding:0 16px 16px; color:#344054; line-height:1.55; }
                     .orderPanel { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding:0 16px 16px; }
-                    .orderCard { border:1px solid var(--line); border-radius:8px; background:#fbfcfe; padding:12px; display:grid; gap:10px; }
+                    .orderCard { border:1px solid var(--line); border-radius:6px; background:#fbfcfe; padding:12px; display:grid; gap:10px; }
                     .inlineOrder { display:grid; grid-template-columns:minmax(72px,1fr) auto; gap:8px; align-items:center; min-width:190px; }
-                    .chartWrap { margin:0 16px 16px; border:1px solid var(--line); border-radius:8px; background:#fbfcfe; padding:12px; }
+                    .chartWrap { margin:0 16px 16px; border:1px solid var(--line); border-radius:6px; background:#fbfcfe; padding:12px; }
                     .priceChart { width:100%; height:210px; display:block; }
                     .chartLine { fill:none; stroke:var(--blue); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
                     .chartArea { fill:rgba(31,95,191,.08); }
@@ -72,15 +84,15 @@ class MiniDashboardPage {
                     .chartPoint { fill:#fff; stroke:var(--blue); stroke-width:2; }
                     .chartMeta { display:flex; justify-content:space-between; gap:10px; color:var(--muted); font-size:12px; flex-wrap:wrap; }
                     .subMeta { color:var(--muted); font-size:12px; }
-                    @media (max-width: 1100px) { .layout { grid-template-columns:1fr; } .summary { grid-template-columns:repeat(2,1fr); } }
+                    @media (max-width: 1100px) { .workspace { grid-template-columns:1fr; grid-template-areas:"market" "detail" "lower"; } .summary { grid-template-columns:repeat(2,1fr); } .metric { border-right:0; border-bottom:1px solid #e4e9f0; } }
                     @media (max-width: 720px) { header { align-items:flex-start; flex-direction:column; } .summary, .detailGrid, .orderPanel { grid-template-columns:1fr; } main { padding:12px; } }
                   </style>
                 </head>
                 <body>
                   <header>
-                    <div>
+                    <div class="brandBlock">
                       <h1>Java 프로젝트 모의주식</h1>
-                      <div class="labelText">실시간 가격 구독과 포트폴리오 손익을 확인하는 Java 웹앱</div>
+                      <div class="labelText">시장 목록에서 종목을 고르고 바로 매수·매도하는 모의투자 터미널</div>
                     </div>
                     <div class="topbar">
                       <span class="pill" id="statusPill">시세 갱신 대기</span>
@@ -93,7 +105,7 @@ class MiniDashboardPage {
 
                     <div class="layout">
                       <div class="workspace">
-                        <section>
+                        <section class="marketPanel">
                           <h2>시장 시세</h2>
                           <div class="marketFilters">
                             <input id="stockSearch" type="search" placeholder="종목명, 코드, 업종 검색" oninput="setMarketSearch(this.value)">
@@ -109,7 +121,7 @@ class MiniDashboardPage {
                           </div>
                         </section>
 
-                        <section>
+                        <section class="detailPanel">
                           <h2>종목 상세</h2>
                           <div class="detailGrid" id="stockDetail"></div>
                           <div class="companyInfo" id="companyInfo"></div>
@@ -121,7 +133,7 @@ class MiniDashboardPage {
                           </div>
                         </section>
 
-                        <section>
+                        <section class="lowerPanel">
                           <div class="tabs">
                             <button class="tab active" onclick="showTab('portfolio')">보유</button>
                             <button class="tab" onclick="showTab('favorites')">즐겨찾기</button>
@@ -205,7 +217,7 @@ class MiniDashboardPage {
                       document.getElementById('stockSearch').value = marketSearch;
                       document.getElementById('favoriteOnlyButton').classList.toggle('active', favoriteOnly);
                       document.getElementById('stocks').innerHTML = pageStocks.length ? pageStocks.map(stock => `<tr class="marketRow ${stock.name === selectedStockName ? 'selected' : ''}" data-stock="${html(stock.name)}" onclick="selectStock(this.dataset.stock)">
-                        <td><div class="stockNameCell"><button type="button" class="favoriteButton ${favoriteStocks.has(stock.name) ? 'active' : ''}" title="즐겨찾기" aria-label="즐겨찾기" data-stock="${html(stock.name)}" onclick="event.stopPropagation(); toggleFavorite(this.dataset.stock)">${favoriteStocks.has(stock.name) ? '★' : '☆'}</button><button type="button" class="ghost" data-stock="${html(stock.name)}" onclick="event.stopPropagation(); selectStock(this.dataset.stock)">상세/매수</button><span>${html(stock.name)}</span></div></td>
+                        <td><div class="stockNameCell"><button type="button" class="favoriteButton ${favoriteStocks.has(stock.name) ? 'active' : ''}" title="즐겨찾기" aria-label="즐겨찾기" data-stock="${html(stock.name)}" onclick="event.stopPropagation(); toggleFavorite(this.dataset.stock)">${favoriteStocks.has(stock.name) ? '★' : '☆'}</button><div class="stockTitle"><strong>${html(stock.name)}</strong><span>${html(stock.code)} · ${html(stock.sector)}</span></div><button type="button" class="ghost quoteButton" data-stock="${html(stock.name)}" onclick="event.stopPropagation(); selectStock(this.dataset.stock)">보기</button></div></td>
                         <td>${won(stock.price)}</td>
                         <td>${count(stock.tradingVolume || stock.quantity)}</td>
                         <td class="${stock.priceFluct>=0?'up':'down'}">${won(stock.priceFluct)}</td>

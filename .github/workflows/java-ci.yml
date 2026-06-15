@@ -19,11 +19,11 @@ jobs:
           java-version: "21"
 
       - name: Compile
-        run: javac -encoding UTF-8 -d out $(find . -maxdepth 1 -name "*.java" ! -name "MockStockApp.java" -print)
+        run: javac -encoding UTF-8 -d out $(find src/main/java -name "*.java" -print)
 
       - name: Count Java types
         shell: bash
         run: |
-          count=$(grep -hE '^(public class|abstract class|class|interface) ' $(find . -maxdepth 1 -name "*.java" ! -name "MockStockApp.java" -print) | wc -l)
+          count=$(grep -hE '^(public class|abstract class|class|interface) ' $(find src/main/java -name "*.java" -print) | wc -l)
           echo "Java type count: $count"
           test "$count" -ge 100

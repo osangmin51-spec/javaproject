@@ -1,3 +1,5 @@
+package domain;
+
 abstract class CompanyProfile {
     final String companyName;
     final String sector;

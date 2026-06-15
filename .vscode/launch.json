@@ -5,7 +5,7 @@
       "type": "java",
       "name": "Run MiniProjectApp",
       "request": "launch",
-      "mainClass": "MiniProjectApp",
+      "mainClass": "app.MiniProjectApp",
       "args": "8080",
       "cwd": "${workspaceFolder}",
       "classPaths": [

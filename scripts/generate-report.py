@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 import os
 
 from docx import Document
@@ -173,38 +173,40 @@ add_table(["구분", "제안발표 단계", "최종 구현"], [
 doc.add_heading("3. 자바 기반 프로그램 설계", level=1)
 paragraph("프로젝트는 Spring이나 React 없이 Java 표준 기능을 중심으로 구성했다. HttpServer로 웹 서버를 열고, HttpClient로 외부 API를 호출하며, HTML/CSS/JavaScript는 Java 문자열 템플릿에서 렌더링한다. 저장은 MySQL JDBC 구조를 우선 사용하고, 로컬 과제 실행 환경에서 MySQL 인증이 실패하면 data/local-database.tsv 파일 저장소로 자동 전환한다.")
 add_table(["파일", "역할"], [
-    ["MiniProjectApp.java", "서버 시작, 포트 설정, KIS/API/DB 초기화"],
+    ["app/MiniProjectApp.java", "서버 시작, 포트 설정, KIS/API/DB 초기화"],
     ["MiniHandler.java", "URL별 HTTP 요청 라우팅과 JSON 응답 처리"],
     ["MiniProject.java", "모의 계좌, 매매, 포트폴리오, 시세 상태 관리"],
-    ["DomainModels.java", "Member, Stock, Share, TradeLog 등 도메인 모델"],
-    ["DatabaseIntegration.java", "MySQL 연결, 테이블 생성, 로컬 파일 저장 전환"],
-    ["KisIntegration.java", "KIS 토큰 발급, 거래량 순위, 현재가 조회, 시세 갱신"],
+    ["domain/Member.java, Stock.java", "Member, Stock, Share, TradeLog 등 도메인 모델"],
+    ["repository/MySqlDatabase.java", "MySQL 연결, 테이블 생성, 로컬 파일 저장 전환"],
+    ["external/KisQuotePoller.java", "KIS 토큰 발급, 거래량 순위, 현재가 조회, 시세 갱신"],
     ["StockCategoryProfiles.java", "업종·테마별 위험 설명 타입"],
-    ["BrokerIntegration.java", "소켓 기반 시세 구독 흐름 실험"],
-    ["WebPages.java", "HTML/CSS/JavaScript 화면 생성"],
-    ["Json.java", "JSON 문자열 생성과 요청 body 파싱"],
+    ["external/MockBrokerServer.java", "소켓 기반 시세 구독 흐름 실험"],
+    ["view/MiniDashboardPage.java", "HTML/CSS/JavaScript 화면 생성"],
+    ["util/Json.java", "JSON 문자열 생성과 요청 body 파싱"],
 ], widths=[2.1, 5.2])
 
 doc.add_heading("3.1 패키지/클래스 다이어그램 요약", level=2)
-add_code("""MiniProjectApp
- ├─ MiniHandler ── MiniProject ── Member / Stock / Share / TradeLog
- │                 ├─ MySqlDatabase
- │                 ├─ KisQuoteClient / KisQuotePoller ── KIS Open API
- │                 └─ BrokerClient / BrokerServer ── TCP Socket
- └─ WebPages""")
+add_code("""src/main/java
+ ├─ app/MiniProjectApp
+ ├─ controller/MiniHandler ── service/MiniProject
+ │                            ├─ domain/Member, Stock, Share, TradeLog
+ │                            ├─ repository/MySqlDatabase, LocalFileDatabase
+ │                            └─ external/KisQuotePoller, MockBrokerServer
+ ├─ view/MiniDashboardPage
+ └─ util/Json""")
 
 doc.add_heading("3.2 클래스/라이브러리 구조 상세", level=2)
-paragraph("프로젝트는 현재 과제 제출과 단일 javac 컴파일을 쉽게 하기 위해 루트 디렉터리 중심으로 구성했다. 다만 내부 역할은 서버, 핵심 서비스, 도메인 모델, 외부 시세, 저장소, 화면 생성으로 나누어 볼 수 있다. 발표에서는 아래 표를 기준으로 어떤 클래스가 어떤 Java 라이브러리를 사용했는지 설명하면 된다.")
+paragraph("프로젝트는 src/main/java 아래에 app, controller, service, domain, repository, external, view, util 패키지로 분리했다. 발표에서는 아래 표를 기준으로 요청이 어떤 계층을 거쳐 처리되는지 설명하면 된다.")
 add_table(["계층", "주요 클래스", "사용 라이브러리/문법", "역할"], [
-    ["실행/서버 계층", "MiniProjectApp, MiniHandler", "HttpServer, HttpExchange, Executors", "웹 서버 시작, URL 라우팅, 요청/응답 처리"],
+    ["실행/서버 계층", "app.MiniProjectApp, controller.MiniHandler", "HttpServer, HttpExchange, Executors", "웹 서버 시작, URL 라우팅, 요청/응답 처리"],
     ["핵심 서비스 계층", "MiniProject", "ConcurrentHashMap, ArrayList, Comparator, LocalDateTime", "매수/매도 처리, 포트폴리오 계산, 시세 상태 관리"],
     ["도메인 모델 계층", "Member, Stock, Share, TradeLog, PricePoint", "Java class, 컬렉션 객체", "모의 계좌, 종목, 보유 수량, 거래 기록, 가격 이력 표현"],
     ["외부 시세 계층", "KisQuoteClient, KisQuotePoller, KisWebSocketQuoteClient", "HttpClient, HttpRequest, WebSocket", "KIS REST 현재가 조회, 거래량 상위 종목 갱신, WebSocket 연동 시도"],
     ["저장소 계층", "MySqlDatabase, LocalFileDatabase, DatabaseSnapshot", "JDBC, DriverManager, Files, Path", "MySQL 우선 저장, 실패 시 로컬 파일 저장"],
-    ["화면/직렬화 계층", "WebPages, Json", "HTML/CSS/JavaScript 문자열, JSON 생성/파싱", "브라우저 화면 렌더링과 API 응답 데이터 구성"],
+    ["화면/직렬화 계층", "view.MiniDashboardPage, util.Json", "HTML/CSS/JavaScript 문자열, JSON 생성/파싱", "브라우저 화면 렌더링과 API 응답 데이터 구성"],
     ["분류/상속 계층", "CompanyProfile, CompanyProfiles, StockCategoryProfile", "abstract class, interface, 구현 클래스", "회사 설명과 업종 위험 설명을 종목 상세 설명에 반영"],
 ], widths=[1.35, 2.1, 2.2, 2.3])
-paragraph("나중에 유지보수를 더 쉽게 하려면 controller, service, domain, repository, security, ui 패키지로 물리적인 파일 위치까지 분리할 수 있다. 현재 보고서에서는 실제 코드가 루트 중심이라는 점과, 논리적으로는 위 계층으로 나뉜다는 점을 구분해서 설명한다.")
+paragraph("src/main/java 패키지 구조로 옮겼기 때문에, 발표에서는 실제 파일 위치와 역할을 같이 설명할 수 있다. 다만 MiniProject가 아직 매매, 포트폴리오, 시장 상태를 함께 관리하므로 더 큰 프로젝트라면 service 계층을 더 세분화할 수 있다.")
 
 doc.add_heading("3.3 주요 코드 일부", level=2)
 paragraph("아래 코드는 발표 때 보여주기 위한 핵심 부분만 줄인 것이다. 전체 코드를 모두 설명하기보다 HTTP 요청이 들어오고, 외부 시세를 조회하고, 매수 결과를 저장하는 흐름을 중심으로 정리했다.")
@@ -217,7 +219,7 @@ String json = switch (path) {
     case "/api/stock/sell" -> project.sellStock(body);
     default -> Json.obj("ok", false, "error", "없는 API");
 };""")
-add_code("""// KisIntegration.java - KIS 현재가 REST API 호출
+add_code("""// external/KisQuotePoller.java - KIS 현재가 REST API 호출
 HttpRequest request = HttpRequest.newBuilder(uri)
     .header("authorization", "Bearer " + token)
     .header("appkey", config.appKey)
@@ -234,7 +236,7 @@ member.balance -= total;
 member.shares.put(stockName, share.buy(quantity, total));
 logs.add(new TradeLog(member.uid, stockName, quantity, total, "구매"));
 saveDatabase();""")
-add_code("""// DatabaseIntegration.java - MySQL 트랜잭션 저장
+add_code("""// repository/MySqlDatabase.java - MySQL 트랜잭션 저장
 try (Connection con = DriverManager.getConnection(url, user, password)) {
     con.setAutoCommit(false);
     insertMembers(con, members);
@@ -358,7 +360,7 @@ add_table(["환경변수", "기본값", "역할"], [
 
 
 doc.add_heading("9. 소켓 서버 구조", level=1)
-paragraph("프로젝트에는 REST API만 사용하는 구조에서 한 단계 더 나아가기 위해 모의 증권사 소켓 서버 구조와 KIS WebSocket 구독 시도 구조를 추가했다. BrokerIntegration은 ServerSocket과 클라이언트 구독 명령을 이용해 특정 종목의 가격 Tick을 전달하는 구조다. KisWebSocketQuoteClient는 승인키 발급, 국내주식 체결 구독 메시지 전송, 체결 메시지 파싱, BrokerTick 변환 흐름을 갖는다.")
+paragraph("프로젝트에는 REST API만 사용하는 구조에서 한 단계 더 나아가기 위해 모의 증권사 소켓 서버 구조와 KIS WebSocket 구독 시도 구조를 추가했다. external 패키지의 MockBrokerServer와 BrokerFeedClient는 ServerSocket과 클라이언트 구독 명령을 이용해 특정 종목의 가격 Tick을 전달한다. KisWebSocketQuoteClient는 승인키 발급, 국내주식 체결 구독 메시지 전송, 체결 메시지 파싱, BrokerTick 변환 흐름을 갖는다.")
 add_bullets([
     "서버는 지정 포트에서 소켓 연결을 받고 클라이언트별 요청을 처리한다.",
     "클라이언트는 구독 명령을 보내고 서버는 가격 Tick을 전송한다.",
@@ -415,7 +417,8 @@ add_bullets([
 
 doc.add_heading("13. 마무리와 향후 개선", level=1)
 paragraph("최종 결과물은 Java로 직접 만든 모의주식투자 웹앱이다. 한국투자증권 KIS API로 시세와 거래량을 가져오고, 모의 계좌의 보유주식과 거래기록은 MySQL 또는 로컬 파일 저장소에 저장한다. 사용자는 종목을 검색하거나 즐겨찾기하고, 상세 화면에서 가격 그래프를 확인한 뒤 매수/매도를 진행할 수 있다.")
-paragraph("향후 개선한다면 실제 KIS 테스트베드에서 WebSocket 구독 성공 여부를 확인하고, controller, service, repository, model 패키지로 소스 구조를 분리하는 작업이 우선이다. 현재는 과제 제출과 컴파일 검증을 쉽게 하기 위해 루트 디렉터리 중심 구조를 유지했다. 이후에는 테스트 코드 추가, 회원 인증이 필요한 배포 버전, 업종별 위험 등급 UI 표시, 개인화 관심종목 추천 같은 기능을 확장할 수 있다.")
+paragraph("향후 개선한다면 실제 KIS 테스트베드에서 WebSocket 구독 성공 여부를 확인하고, service 패키지 안의 MiniProject를 TradingService, PortfolioService, MarketService로 더 세분화할 수 있다. 이후에는 테스트 코드 추가, 회원 인증이 필요한 배포 버전, 업종별 위험 등급 UI 표시, 개인화 관심종목 추천 같은 기능을 확장할 수 있다.")
 
 
 doc.save(OUT / os.environ.get("REPORT_OUTPUT", "Java_모의주식투자_개인프로젝트_보고서.docx"))
+

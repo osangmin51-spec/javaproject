@@ -1,3 +1,5 @@
+package domain;
+
 import java.util.List;
 
 interface StockCategoryProfile {
@@ -47,7 +49,7 @@ class ThemeSpaceCategory implements StockCategoryProfile { public String label()
 class ThemeGreenCategory implements StockCategoryProfile { public String label() { return "친환경 테마"; } public String riskNote() { return "정책 지원과 원가 경쟁력이 중요합니다."; } }
 class ThemeDividendCategory implements StockCategoryProfile { public String label() { return "배당 테마"; } public String riskNote() { return "배당 지속성과 이익 안정성을 확인해야 합니다."; } }
 
-class StockCategories {
+public class StockCategories {
     private static final List<StockCategoryProfile> CATEGORIES = List.of(
             new SemiconductorCategory(), new BatteryCategory(), new BioCategory(), new AutoCategory(),
             new FinanceCategory(), new InternetCategory(), new GameCategory(), new EntertainmentCategory(),
@@ -61,7 +63,7 @@ class StockCategories {
             new ThemeRobotCategory(), new ThemeSpaceCategory(), new ThemeGreenCategory(), new ThemeDividendCategory()
     );
 
-    static String riskNoteFor(String sector) {
+    public static String riskNoteFor(String sector) {
         return CATEGORIES.stream()
                 .filter(category -> sector.contains(category.label()) || category.label().contains(sector))
                 .findFirst()
