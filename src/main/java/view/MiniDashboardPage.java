@@ -30,7 +30,7 @@ public class MiniDashboardPage {
                     * { box-sizing:border-box; }
                     body {
                       margin:0;
-                      font-family:Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Segoe UI", Arial, sans-serif;
+                      font-family:"IBM Plex Sans KR", "NanumSquare", "Nanum Gothic", "Malgun Gothic", "Apple SD Gothic Neo", Arial, sans-serif;
                       color:var(--ink);
                       background:
                         linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px) 0 0/48px 48px,
@@ -220,7 +220,9 @@ public class MiniDashboardPage {
                     let marketSearch = '';
                     let favoriteOnly = false;
                     let favoriteStocks = new Set(JSON.parse(localStorage.getItem('favoriteStocks') || '[]'));
+                    let marketOrder = [];
                     const stocksPerPage = 10;
+                    const stockKey = stock => `${stock.code || ''}|${stock.name || ''}`;
                     const won = n => Number(n || 0).toLocaleString('ko-KR') + '원';
                     const count = n => Number(n || 0).toLocaleString('ko-KR');
                     const html = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -248,6 +250,7 @@ public class MiniDashboardPage {
                     function render() {
                       const portfolio = state.portfolio || {};
                       const broker = state.broker || {};
+                      rememberMarketOrder(state.stocks || []);
                       document.getElementById('statusPill').textContent = broker.lastTick || '시세 갱신 대기';
                       document.getElementById('summary').innerHTML = [
                         ['보유 현금', won(portfolio.cash), ''],
@@ -288,11 +291,26 @@ public class MiniDashboardPage {
                     }
                     function filteredMarketStocks() {
                       const query = marketSearch.trim().toLowerCase();
+                      const orderIndex = new Map(marketOrder.map((key, index) => [key, index]));
                       return (state.stocks || []).filter(stock => {
                         if (favoriteOnly && !favoriteStocks.has(stock.name)) return false;
                         if (!query) return true;
                         return [stock.name, stock.code, stock.market, stock.sector]
                           .some(value => String(value || '').toLowerCase().includes(query));
+                      }).sort((left, right) => {
+                        const leftIndex = orderIndex.get(stockKey(left)) ?? Number.MAX_SAFE_INTEGER;
+                        const rightIndex = orderIndex.get(stockKey(right)) ?? Number.MAX_SAFE_INTEGER;
+                        return leftIndex - rightIndex;
+                      });
+                    }
+                    function rememberMarketOrder(stocks) {
+                      const known = new Set(marketOrder);
+                      stocks.forEach(stock => {
+                        const key = stockKey(stock);
+                        if (key && !known.has(key)) {
+                          known.add(key);
+                          marketOrder.push(key);
+                        }
                       });
                     }
                     function setMarketSearch(value) {
