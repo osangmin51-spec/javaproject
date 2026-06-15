@@ -295,6 +295,7 @@ public class MiniProject {
 
     private void updateStock(Stock stock, BrokerTick tick) {
         if (stock == null) return;
+        if (stock.hasExternalQuote()) return;
         stock.updatePrice(Math.max(100, tick.price), tick.change, tick.percent, tick.volume);
     }
 
@@ -360,11 +361,17 @@ public class MiniProject {
             memberIds.set(Math.max(memberIds.get(), snapshot.maxMemberUid));
             System.out.println(database.name() + " 로드 완료: members=" + members.size() + ", trades=" + logs.size());
         } catch (Exception ex) {
-            throw new IllegalStateException("MySQL DB 초기화에 실패했습니다. MYSQL_URL, MYSQL_USER, MYSQL_PASSWORD와 MySQL 서버 상태를 확인하세요: " + ex.getMessage(), ex);
+            if (Boolean.getBoolean("mockstock.demoMemory")) {
+                database = null;
+                System.out.println("demoMemory=true: MySQL 없이 촬영용 메모리 계좌로 실행합니다.");
+                return;
+            }
+            throw new IllegalStateException("MySQL DB 초기화에 실패했습니다. MYSQL_URL, MYSQL_USER, MYSQL_PASSWORD 설정과 MySQL 서버 상태를 확인하세요: " + ex.getMessage(), ex);
         }
     }
 
     private synchronized void saveDatabase() {
+        if (database == null) return;
         try {
             database.save(members, logs);
         } catch (Exception ex) {

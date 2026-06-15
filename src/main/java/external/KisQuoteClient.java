@@ -196,9 +196,9 @@ class KisQuoteClient {
             if (name.isBlank() || code.isBlank()) continue;
             int rank = intValue(body, "data_rank");
             if (rank <= 0) rank = items.size() + 1;
-            int price = firstInt(body, "stck_prpr", "avrg_prpr", "stck_prdy_clpr");
-            int change = firstInt(body, "prdy_vrss", "prdy_vrss_sign");
-            double rate = firstDouble(body, "prdy_ctrt", "stck_prdy_ctrt");
+            int price = 0;
+            int change = 0;
+            double rate = 0.0;
             items.add(new KisVolumeRankItem(rank, name, code, price, change, rate, longValue(body, "acml_vol")));
         }
         return items;

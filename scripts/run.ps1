@@ -4,7 +4,7 @@ param(
 
 Set-Location (Split-Path -Parent $PSScriptRoot)
 
-$requiredMysqlEnv = @("MYSQL_URL", "MYSQL_USER", "MYSQL_PASSWORD")
+$requiredMysqlEnv = @("MYSQL_URL", "MYSQL_USER")
 $missingMysqlEnv = $requiredMysqlEnv | Where-Object {
     [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($_))
 }

@@ -30,8 +30,9 @@ class MySqlConfig {
         String url = System.getenv("MYSQL_URL");
         String user = System.getenv("MYSQL_USER");
         String password = System.getenv("MYSQL_PASSWORD");
-        if (blank(url) || blank(user) || blank(password)) {
-            throw new IllegalStateException("MYSQL_URL, MYSQL_USER, MYSQL_PASSWORD 환경변수는 필수입니다. MySQL 설정 후 다시 실행하세요.");
+        if (password == null) password = "";
+        if (blank(url) || blank(user)) {
+            throw new IllegalStateException("MYSQL_URL, MYSQL_USER 환경변수는 필수입니다. MYSQL_PASSWORD는 로컬 계정 설정에 따라 빈 값일 수 있습니다.");
         }
         return new MySqlConfig(url, user, password);
     }

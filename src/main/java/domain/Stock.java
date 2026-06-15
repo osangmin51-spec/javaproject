@@ -81,6 +81,10 @@ public class Stock {
         updateExternalPrice(nextPrice, change, changeRate, 0);
     }
 
+    public boolean hasExternalQuote() {
+        return quoteSource != null && quoteSource.contains("KIS");
+    }
+
     private void recordPrice(int value) {
         synchronized (history) {
             history.add(new PricePoint(LocalDateTime.now(), value));

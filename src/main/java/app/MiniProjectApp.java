@@ -27,7 +27,7 @@ public class MiniProjectApp {
         } else {
             Runnable restFallback = () -> {
                 if (restPollerStarted.compareAndSet(false, true)) {
-                    startRestPoller(kisConfig, project, mockFallback);
+                    startRestPoller(kisConfig, project, () -> {});
                 }
             };
             if (kisConfig.webSocketEnabled) {
