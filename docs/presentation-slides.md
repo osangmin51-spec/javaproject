@@ -137,7 +137,7 @@ flowchart LR
 - 브라우저 요청: `GET /api/state`, `POST /api/stock/buy`, `POST /api/stock/sell`
 - `MiniHandler`: URL을 확인하고 `MiniProject` 메서드 호출
 - `MiniProject`: 잔액 확인, 수량 확인, 보유 주식 갱신, 거래 기록 추가
-- 저장소: MySQL 저장 시도, 실패 시 로컬 파일 저장소 사용
+- 저장소: MySQL 테이블에 계좌, 보유 종목, 거래 기록 저장
 - 발표에서는 긴 코드보다 요청, 처리, 저장이 연결되는 흐름을 중심으로 설명
 
 ## 16. 보완 상태와 남은 과제

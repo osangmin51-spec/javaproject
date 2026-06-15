@@ -101,7 +101,7 @@ WebSocket 모드에서도 시작 직전에 거래량 상위 종목을 조회해 
 
 ## 저장소
 
-회원, 보유 종목, 거래 기록은 먼저 MySQL 저장을 시도합니다. 로컬 과제 실행 환경에서 MySQL 비밀번호나 계정 설정이 맞지 않으면 서버가 멈추지 않고 `data/local-database.tsv` 로컬 파일 저장소로 자동 전환됩니다.
+회원, 보유 종목, 거래 기록은 MySQL에만 저장합니다. `MYSQL_URL`, `MYSQL_USER`, `MYSQL_PASSWORD` 설정이 없거나 MySQL 서버에 연결할 수 없으면 서버 실행이 중단됩니다. 따라서 실행 전에 MySQL 서버와 `mock_stock` 데이터베이스를 준비해야 합니다.
 
 ```powershell
 $env:MYSQL_URL="jdbc:mysql://localhost:3306/mock_stock?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul"
@@ -110,7 +110,7 @@ $env:MYSQL_PASSWORD="비밀번호"
 java -cp "out;lib/*" app.MiniProjectApp 8080
 ```
 
-MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니다. MySQL 연결이 성공하면 MySQL 테이블을 사용하고, 실패하면 로컬 파일 저장소를 사용합니다.
+MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니다. 프로젝트는 로컬 TSV 저장소로 전환하지 않고, 항상 MySQL 테이블을 사용합니다.
 
 저장 테이블:
 
@@ -128,7 +128,7 @@ MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니
 | `controller` | `MiniHandler.java` | HTTP 라우팅, API 요청 처리 |
 | `service` | `MiniProject.java` | 모의 계좌, 매매, 포트폴리오, 저장 흐름 관리 |
 | `domain` | `Member.java`, `Stock.java`, `Share.java`, `TradeLog.java` | 회원, 종목, 보유 주식, 거래 기록 모델 |
-| `repository` | `ProjectDatabase.java`, `MySqlDatabase.java`, `LocalFileDatabase.java` | MySQL 저장소, 로컬 파일 저장소, 데이터 로드/저장 |
+| `repository` | `ProjectDatabase.java`, `MySqlDatabase.java` | MySQL 저장소, 데이터 로드/저장 |
 | `external` | `KisQuotePoller.java`, `KisWebSocketQuoteClient.java`, `MockBrokerServer.java` | KIS API, WebSocket 시도, 모의 증권사 소켓 |
 | `view` | `MiniDashboardPage.java` | HTML, CSS, JavaScript 화면 렌더링 |
 | `util` | `Json.java` | JSON 응답 생성과 요청 body 파싱 |

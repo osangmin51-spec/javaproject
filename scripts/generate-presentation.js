@@ -250,7 +250,7 @@ titleSlide();
     ["app/MiniProjectApp.java", "서버 시작점, KIS/DB/소켓 초기화"],
     ["MiniHandler.java", "HTTP 요청 라우팅과 API 응답 처리"],
     ["MiniProject.java", "모의 계좌, 매매, 포트폴리오, 시세 상태 핵심 로직"],
-    ["repository/MySqlDatabase.java", "MySQL 우선 연결, 로컬 파일 저장 전환"],
+    ["repository/MySqlDatabase.java", "MySQL 연결, 테이블 생성, 데이터 저장/로드"],
     ["external/KisQuotePoller.java", "KIS 토큰 발급, 거래량 순위, 현재가 조회"],
     ["domain/StockCategories.java", "업종·테마별 위험 설명 타입"],
     ["view/MiniDashboardPage.java", "HTML/CSS/JavaScript 화면 렌더링"],
@@ -278,7 +278,7 @@ titleSlide();
     ["핵심 서비스", "MiniProject", "ConcurrentHashMap, ArrayList, Comparator", "매매 처리, 포트폴리오 계산, 시세 상태 관리"],
     ["도메인 모델", "Member, Stock, Share, TradeLog", "class, record 성격의 데이터 객체", "회원, 종목, 보유 수량, 거래 내역 표현"],
     ["외부 시세", "KisQuoteClient, KisQuotePoller, KisWebSocketQuoteClient", "HttpClient, HttpRequest, WebSocket", "KIS REST/WebSocket 시세 연동과 실패 시 전환"],
-    ["저장소", "MySqlDatabase, LocalFileDatabase", "JDBC, DriverManager, Files, Path", "MySQL 우선 저장, 실패 시 로컬 파일 저장"],
+    ["저장소", "MySqlDatabase, DatabaseSnapshot", "JDBC, DriverManager", "MySQL 테이블 생성, 데이터 로드/저장"],
     ["화면/분류", "view.MiniDashboardPage, util.Json, CompanyProfile, StockCategoryProfile", "HTML/CSS/JS, abstract class, interface", "웹 화면 생성, JSON 처리, 회사/업종 설명 구조화"],
   ], 0.45, 0.9, 12.45, 5.35, [0.15, 0.27, 0.29, 0.29]);
   slide.addText("정리해서 말하면 서버, 서비스, 외부 API, DB, 화면 역할을 실제 패키지로 나눴고, 제출용 컴파일도 src/main/java 전체를 기준으로 검증한다.", {
@@ -365,7 +365,7 @@ titleSlide();
     ["갱신 범위", "KIS_MARKET_LIMIT 기본 200, 100~300개 제한 / KIS_POLL_LIMIT 기본 100"],
     ["실시간성", "전체 종목 매초 조회 대신 상위 목록 중심 갱신 + 소켓 구독 구조 실험"],
     ["소켓", "모의 증권사 서버의 가격 Tick 구독 구조"],
-    ["사용자 데이터", "MySQL 우선 저장, 실패 시 data/local-database.tsv 저장"],
+    ["사용자 데이터", "MySQL 테이블에 상시 저장"],
     ["가격 그래프", "서버가 보관한 최근 가격 히스토리 표시"],
   ], 0.85, 1.0, 11.7, 5.05, [0.25, 0.75]);
 }
@@ -377,7 +377,7 @@ titleSlide();
     ["전체 종목 처리 범위", "약 2700개 전체 종목을 계속 갱신하는 대신 거래량 상위 종목 중심으로 현실적인 범위를 선택"],
     ["UI 흐름 개선", "드롭다운 주문 방식 대신 종목 클릭 → 상세 확인 → 매수, 보유 종목 → 매도 흐름으로 변경"],
     ["뉴스 기능 제거", "기사 품질 편차와 API 키 관리 부담 때문에 모의투자 목적에 맞지 않는 기능은 최종 제외"],
-    ["DB 저장 전환", "서버를 껐다 켜면 기록이 사라지는 문제를 MySQL/로컬 파일 저장 구조로 바꿔 거래 기록을 유지"],
+    ["DB 저장 전환", "서버를 껐다 켜면 기록이 사라지는 문제를 MySQL 필수 저장 구조로 바꿔 거래 기록을 유지"],
   ];
   items.forEach((item, i) => {
     const x = i < 3 ? 0.75 + i * 4.1 : 2.8 + (i - 3) * 4.1;
@@ -394,8 +394,7 @@ titleSlide();
     "Thread: 백그라운드 시세 갱신",
     "ConcurrentHashMap: 회원/종목 상태 동시 접근 처리",
     "ArrayList, LinkedHashMap, List: 거래 기록, 가격 히스토리, 조회 순서 관리",
-    "JDBC DriverManager: MySQL 저장소 연결",
-    "Files, Path: MySQL 연결 실패 시 로컬 파일 저장소 사용",
+    "JDBC DriverManager: MySQL 저장소 연결과 SQL 실행",
     "LocalDateTime, DateTimeFormatter: 거래 시간과 시세 갱신 시각 표시",
   ], 0.95, 1.05, 11.6, 5.4, 14);
 }
@@ -406,7 +405,7 @@ titleSlide();
     ["1. 브라우저 요청", "GET /api/state\nPOST /api/stock/buy\nPOST /api/stock/sell"],
     ["2. MiniHandler", "URL을 확인하고\nMiniProject 메서드 호출"],
     ["3. MiniProject", "잔액 확인 → 수량 확인\n보유 주식 갱신 → 거래 기록 추가"],
-    ["4. 저장소", "MySQL 저장 시도\n실패 시 로컬 파일 저장소 사용"],
+    ["4. 저장소", "MySQL 테이블에\n계좌/보유/거래 기록 저장"],
   ];
   steps.forEach((step, i) => {
     const x = 0.65 + i * 3.08;

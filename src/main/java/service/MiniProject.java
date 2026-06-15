@@ -9,7 +9,6 @@ import domain.TradeLog;
 import external.BrokerTick;
 import external.KisQuoteTarget;
 import external.KisVolumeRankItem;
-import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -21,7 +20,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import repository.DatabaseSnapshot;
-import repository.LocalFileDatabase;
 import repository.MySqlDatabase;
 import repository.ProjectDatabase;
 import util.Json;
@@ -362,17 +360,7 @@ public class MiniProject {
             memberIds.set(Math.max(memberIds.get(), snapshot.maxMemberUid));
             System.out.println(database.name() + " 로드 완료: members=" + members.size() + ", trades=" + logs.size());
         } catch (Exception ex) {
-            System.err.println("MySQL DB 초기화 실패, 로컬 파일 저장소로 전환합니다: " + ex.getMessage());
-            try {
-                database = new LocalFileDatabase(Path.of("data", "local-database.tsv"));
-                DatabaseSnapshot snapshot = database.load(marketStocks);
-                members.putAll(snapshot.members);
-                logs.addAll(snapshot.logs);
-                memberIds.set(Math.max(memberIds.get(), snapshot.maxMemberUid));
-                System.out.println(database.name() + " 로드 완료: members=" + members.size() + ", trades=" + logs.size());
-            } catch (Exception fallbackEx) {
-                throw new IllegalStateException("로컬 파일 저장소 초기화에 실패했습니다: " + fallbackEx.getMessage(), fallbackEx);
-            }
+            throw new IllegalStateException("MySQL DB 초기화에 실패했습니다. MYSQL_URL, MYSQL_USER, MYSQL_PASSWORD와 MySQL 서버 상태를 확인하세요: " + ex.getMessage(), ex);
         }
     }
 

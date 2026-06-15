@@ -139,7 +139,7 @@ add_table(["항목", "내용"], [
     ["프로젝트명", "Java 프로젝트 모의주식"],
     ["주요 기술", "Java HttpServer, HttpClient, Thread, Collection, JDBC, MySQL"],
     ["외부 데이터", "한국투자증권 KIS Open API"],
-    ["저장 방식", "MySQL 우선 저장, 실패 시 로컬 파일 저장"],
+    ["저장 방식", "MySQL 필수 저장"],
     ["실행 주소", "http://localhost:8080/"],
     ["시연 영상", "deliverables/mock-stock-website-demo.webm"],
 ], widths=[1.7, 5.7])
@@ -151,7 +151,7 @@ paragraph("핵심 목표는 단순한 주문 연습이 아니라 실제 시세, 
 add_bullets([
     "실제 외부 증권 API를 활용한 Java 웹 프로젝트 구현",
     "사용자 매수/매도 흐름과 포트폴리오 손익 계산 구현",
-    "MySQL 또는 로컬 파일 저장소를 통한 모의 계좌/보유/거래 기록 유지",
+    "MySQL을 통한 모의 계좌/보유/거래 기록 유지",
     "쓰레드 기반 시세 갱신과 소켓 구독 구조 실험",
     "검색, 즐겨찾기, 종목 상세, 가격 그래프 UI 구현",
     "다수 클래스/인터페이스 구조와 실제 실행 가능한 웹 UI 구현",
@@ -165,19 +165,19 @@ add_table(["구분", "제안발표 단계", "최종 구현"], [
     ["가격 데이터", "내부 샘플/모의 가격", "한국투자증권 KIS 현재가"],
     ["종목 수", "소수 종목", "거래량 상위 종목 중심"],
     ["화면", "기본 입력/출력 중심", "검색, 즐겨찾기, 상세 그래프, 포트폴리오"],
-    ["저장", "메모리 중심", "MySQL 우선 저장, 실패 시 로컬 파일 저장"],
+    ["저장", "메모리 중심", "MySQL 필수 저장"],
     ["목적", "기능 구현 연습", "실제 데이터 기반 투자 흐름 구현"],
 ], widths=[1.3, 2.6, 3.3])
 
 
 doc.add_heading("3. 자바 기반 프로그램 설계", level=1)
-paragraph("프로젝트는 Spring이나 React 없이 Java 표준 기능을 중심으로 구성했다. HttpServer로 웹 서버를 열고, HttpClient로 외부 API를 호출하며, HTML/CSS/JavaScript는 Java 문자열 템플릿에서 렌더링한다. 저장은 MySQL JDBC 구조를 우선 사용하고, 로컬 과제 실행 환경에서 MySQL 인증이 실패하면 data/local-database.tsv 파일 저장소로 자동 전환한다.")
+paragraph("프로젝트는 Spring이나 React 없이 Java 표준 기능을 중심으로 구성했다. HttpServer로 웹 서버를 열고, HttpClient로 외부 API를 호출하며, HTML/CSS/JavaScript는 Java 문자열 템플릿에서 렌더링한다. 저장은 MySQL JDBC 구조를 필수로 사용한다. MYSQL_URL, MYSQL_USER, MYSQL_PASSWORD 설정이 없거나 MySQL 연결에 실패하면 서버 실행을 중단해 저장 방식이 조건부로 바뀌지 않게 했다.")
 add_table(["파일", "역할"], [
     ["app/MiniProjectApp.java", "서버 시작, 포트 설정, KIS/API/DB 초기화"],
     ["MiniHandler.java", "URL별 HTTP 요청 라우팅과 JSON 응답 처리"],
     ["MiniProject.java", "모의 계좌, 매매, 포트폴리오, 시세 상태 관리"],
     ["domain/Member.java, Stock.java", "Member, Stock, Share, TradeLog 등 도메인 모델"],
-    ["repository/MySqlDatabase.java, LocalFileDatabase.java", "MySQL 연결, 테이블 생성, 로컬 파일 저장 전환"],
+    ["repository/MySqlDatabase.java", "MySQL 연결, 테이블 생성, 데이터 저장/로드"],
     ["external/KisQuotePoller.java", "KIS 토큰 발급, 거래량 순위, 현재가 조회, 시세 갱신"],
     ["domain/StockCategories.java", "업종·테마별 위험 설명 타입"],
     ["external/MockBrokerServer.java", "소켓 기반 시세 구독 흐름 실험"],
@@ -190,7 +190,7 @@ add_code("""src/main/java
  ├─ app/MiniProjectApp
  ├─ controller/MiniHandler ── service/MiniProject
  │                            ├─ domain/Member, Stock, Share, TradeLog
- │                            ├─ repository/MySqlDatabase, LocalFileDatabase
+ │                            ├─ repository/MySqlDatabase
  │                            └─ external/KisQuotePoller, MockBrokerServer
  ├─ view/MiniDashboardPage
  └─ util/Json""")
@@ -202,7 +202,7 @@ add_table(["계층", "주요 클래스", "사용 라이브러리/문법", "역�
     ["핵심 서비스 계층", "MiniProject", "ConcurrentHashMap, ArrayList, Comparator, LocalDateTime", "매수/매도 처리, 포트폴리오 계산, 시세 상태 관리"],
     ["도메인 모델 계층", "Member, Stock, Share, TradeLog, PricePoint", "Java class, 컬렉션 객체", "모의 계좌, 종목, 보유 수량, 거래 기록, 가격 이력 표현"],
     ["외부 시세 계층", "KisQuoteClient, KisQuotePoller, KisWebSocketQuoteClient", "HttpClient, HttpRequest, WebSocket", "KIS REST 현재가 조회, 거래량 상위 종목 갱신, WebSocket 연동 시도"],
-    ["저장소 계층", "MySqlDatabase, LocalFileDatabase, DatabaseSnapshot", "JDBC, DriverManager, Files, Path", "MySQL 우선 저장, 실패 시 로컬 파일 저장"],
+    ["저장소 계층", "MySqlDatabase, DatabaseSnapshot", "JDBC, DriverManager", "MySQL 테이블 생성, 데이터 로드/저장"],
     ["화면/직렬화 계층", "view.MiniDashboardPage, util.Json", "HTML/CSS/JavaScript 문자열, JSON 생성/파싱", "브라우저 화면 렌더링과 API 응답 데이터 구성"],
     ["분류/상속 계층", "CompanyProfile, CompanyProfiles, StockCategoryProfile", "abstract class, interface, 구현 클래스", "회사 설명과 업종 위험 설명을 종목 상세 설명에 반영"],
 ], widths=[1.35, 2.1, 2.2, 2.3])
@@ -278,7 +278,7 @@ add_table(["단계", "내용"], [
     ["입력", "종목 선택, 즐겨찾기, 매수/매도 수량"],
     ["외부 입력", "KIS 현재가, 전일대비, 등락률, 누적 거래량"],
     ["처리", "잔액 확인, 보유 수량 확인, 매매 체결, 손익 계산"],
-    ["저장", "모의 계좌, 보유 주식, 거래 기록을 MySQL 또는 로컬 파일 저장소에 저장"],
+    ["저장", "모의 계좌, 보유 주식, 거래 기록을 MySQL에 저장"],
     ["출력", "시장 시세, 종목 상세, 그래프, 포트폴리오, 거래 기록"],
 ], widths=[1.4, 5.8])
 
@@ -337,7 +337,7 @@ add_table(["데이터", "처리 방식"], [
     ["종목 선별", "거래량 기준 상위 종목 중심으로 자동 갱신"],
     ["실시간성", "전체 종목 매초 조회 대신 상위 목록 중심 갱신과 소켓 구독 구조 실험"],
     ["소켓", "모의 증권사 서버의 가격 Tick 구독 구조"],
-    ["사용자 데이터", "MySQL 우선 저장, 실패 시 data/local-database.tsv 저장"],
+    ["사용자 데이터", "MySQL 테이블에 상시 저장"],
     ["가격 그래프", "서버가 보관한 최근 가격 히스토리 표시"],
 ], widths=[2.0, 5.2])
 
@@ -356,7 +356,7 @@ add_table(["환경변수", "기본값", "역할"], [
     ["KIS_USE_WEBSOCKET", "false", "true이면 KIS WebSocket 구독을 먼저 시도"],
     ["KIS_WS_URL", "ws://ops.koreainvestment.com:21000", "KIS WebSocket 주소"],
     ["KIS_WS_MAX_SUBSCRIPTIONS", "100", "WebSocket 구독 대상 최대 수"],
-    ["MYSQL_URL / MYSQL_USER / MYSQL_PASSWORD", "선택", "MySQL 연결 정보, 실패 시 로컬 파일 저장소로 전환"],
+    ["MYSQL_URL / MYSQL_USER / MYSQL_PASSWORD", "필수", "MySQL 연결 정보, 없거나 연결 실패 시 서버 실행 중단"],
 ], widths=[2.2, 2.2, 3.0])
 
 
@@ -417,7 +417,7 @@ add_bullets([
 
 
 doc.add_heading("13. 마무리와 향후 개선", level=1)
-paragraph("최종 결과물은 Java로 직접 만든 모의주식투자 웹앱이다. 한국투자증권 KIS API로 시세와 거래량을 가져오고, 모의 계좌의 보유주식과 거래기록은 MySQL 또는 로컬 파일 저장소에 저장한다. 사용자는 종목을 검색하거나 즐겨찾기하고, 상세 화면에서 가격 그래프를 확인한 뒤 매수/매도를 진행할 수 있다.")
+paragraph("최종 결과물은 Java로 직접 만든 모의주식투자 웹앱이다. 한국투자증권 KIS API로 시세와 거래량을 가져오고, 모의 계좌의 보유주식과 거래기록은 MySQL에 저장한다. 사용자는 종목을 검색하거나 즐겨찾기하고, 상세 화면에서 가격 그래프를 확인한 뒤 매수/매도를 진행할 수 있다.")
 paragraph("향후 개선한다면 실제 KIS 테스트베드에서 WebSocket 구독 성공 여부를 확인하고, service 패키지 안의 MiniProject를 TradingService, PortfolioService, MarketService로 더 세분화할 수 있다. 이후에는 테스트 코드 추가, 회원 인증이 필요한 배포 버전, 업종별 위험 등급 UI 표시, 개인화 관심종목 추천 같은 기능을 확장할 수 있다.")
 
 
