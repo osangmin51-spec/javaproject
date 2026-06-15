@@ -8,6 +8,16 @@
 
 뉴스 API 기능은 최종 버전에서 제외했다. 외부 뉴스 API 키를 별도로 관리해야 하고, 종목별 기사 품질 차이가 커서 발표와 실행 안정성 측면에서 프로젝트 목적과 맞지 않는다고 판단했다.
 
+### 1.1 한눈에 보는 핵심 구현
+
+| 구분 | 구현 내용 | 발표에서 강조할 점 |
+| --- | --- | --- |
+| 사용자 화면 | 시장 시세, 검색, 즐겨찾기, 종목 상세, 매수/매도, 보유 탭 | 사용자가 실제 투자 앱처럼 종목을 보고 판단한 뒤 주문한다 |
+| 외부 시세 | KIS Open API 현재가와 거래량 조회 | 더미 데이터가 아니라 외부 시세 연동을 시도한 프로젝트다 |
+| 서버 로직 | `MiniHandler`가 요청을 받고 `MiniProject`가 매매와 손익을 계산 | Java 표준 `HttpServer` 기반으로 직접 요청 흐름을 구현했다 |
+| 저장 구조 | MySQL `members`, `shares`, `trade_logs` | 서버를 껐다 켜도 계좌와 거래 기록을 유지한다 |
+| 실시간성 | Thread 기반 갱신과 WebSocket 구독 구조 실험 | 개인 PC에서 가능한 범위 안에서 실시간성을 설계했다 |
+
 ## 2. 제안발표 이후 주제 변화
 
 | 구분 | 제안발표 단계 | 최종 구현 |
@@ -68,6 +78,18 @@ classDiagram
 | 데이터 선택 | 한국투자증권 KIS Open API 사용 결정 | API 호출 구조와 Java 코드 작성 보조 |
 | UI 요구 | 종목 클릭 중심, 검색/즐겨찾기, 상세 매매 흐름 요구 | HTML/CSS/JS 구현 보조 |
 | 문제 발견 | 가격 이상, 불필요 기능, 저장 방식, 서버 실행 문제 지적 | 원인 분석, 코드 수정, 문서 정리 |
+
+### 3.4 매수 요청 처리 흐름
+
+사용자가 종목 상세 화면에서 매수 버튼을 누르면 브라우저는 `/api/stock/buy`로 종목명과 수량을 보낸다. `MiniHandler`는 요청 body를 읽고 `MiniProject.buyStock()`으로 전달한다. `MiniProject`는 현재가와 수량을 곱해 주문 금액을 계산하고, 잔액이 충분한지 확인한 뒤 보유 종목과 거래 기록을 갱신한다. 마지막으로 `MySqlDatabase`가 `members`, `shares`, `trade_logs` 테이블을 저장하고, 브라우저는 `/api/state`를 다시 받아 평가금액과 손익률을 갱신한다.
+
+| 순서 | 처리 위치 | 설명 |
+| --- | --- | --- |
+| 1 | 브라우저 | 종목 상세 화면에서 수량 입력 후 매수 버튼 클릭 |
+| 2 | `MiniHandler` | `POST /api/stock/buy` 요청 body를 읽고 서비스로 전달 |
+| 3 | `MiniProject` | 현재가 × 수량 계산, 잔액 확인, 보유 종목 갱신 |
+| 4 | `MySqlDatabase` | 계좌, 보유 종목, 거래 기록을 MySQL에 저장 |
+| 5 | 브라우저 | `/api/state`로 최신 현금, 평가금액, 손익률 표시 |
 
 ## 4. 데이터 흐름과 사용자 시나리오
 
@@ -142,6 +164,8 @@ members(uid, name, balance)
 shares(member_uid, stock_name, quantity, purchase_price)
 trade_logs(id, member_uid, stock_name, quantity, price, trade_type, traded_at)
 ```
+
+`members`는 모의 계좌의 현금 잔액을 보관한다. `shares`는 종목별 보유 수량과 총 매입금액을 저장한다. 평균단가를 별도 컬럼으로 저장하지 않은 이유는 `quantity`와 `purchase_price`가 있으면 평균단가를 `purchase_price / quantity`로 계산할 수 있기 때문이다. `trade_logs`는 매수와 매도 기록을 시간순으로 남겨 나중에 거래 내역과 수익률 분석을 확장할 수 있게 한다.
 
 ## 9. 소켓 서버 구조
 

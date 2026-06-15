@@ -162,6 +162,16 @@ add_bullets([
     "다수 클래스/인터페이스 구조와 실제 실행 가능한 웹 UI 구현",
 ])
 
+doc.add_heading("1.1 한눈에 보는 핵심 구현", level=2)
+paragraph("교수님이 프로젝트를 처음 볼 때 가장 먼저 이해해야 하는 부분은 사용자의 화면 조작이 Java 서버, 외부 시세 API, MySQL 저장소로 어떻게 이어지는지이다. 이 프로젝트는 프론트엔드 프레임워크 없이 Java 서버가 HTML/CSS/JavaScript 화면을 직접 내려주고, 브라우저는 필요한 순간 API를 호출해 상태를 다시 받아오는 구조다.")
+add_table(["구분", "구현 내용", "발표에서 강조할 점"], [
+    ["사용자 화면", "시장 시세, 검색, 즐겨찾기, 종목 상세, 매수/매도, 보유 탭", "사용자가 실제 투자 앱처럼 종목을 보고 판단한 뒤 주문한다."],
+    ["외부 시세", "KIS Open API 현재가와 거래량 조회", "더미 데이터가 아니라 외부 시세 연동을 시도한 프로젝트다."],
+    ["서버 로직", "MiniHandler가 요청을 받고 MiniProject가 매매와 손익을 계산", "Java 표준 HttpServer 기반으로 직접 요청 흐름을 구현했다."],
+    ["저장 구조", "MySQL members, shares, trade_logs", "서버를 껐다 켜도 계좌와 거래 기록을 유지한다."],
+    ["실시간성", "Thread 기반 갱신과 WebSocket 구독 구조 실험", "개인 PC에서 가능한 범위 안에서 실시간성을 설계했다."],
+], widths=[1.4, 3.1, 2.9])
+
 
 doc.add_heading("2. 제안발표 이후 주제 변화", level=1)
 paragraph("초기 제안 단계에서는 기본 Java 기능을 웹 화면으로 옮기고 계좌, 매매 기능을 구현하는 방향이었다. 진행 중 모의주식투자라는 주제에는 내부 샘플 가격보다 실제 주식 시세와 거래량이 더 적합하다고 판단했다.")
@@ -215,6 +225,14 @@ paragraph("src/main/java 패키지 구조로 옮겼기 때문에, 발표에서�
 
 doc.add_heading("3.3 주요 코드 흐름", level=2)
 paragraph("아래 코드는 발표 때 보여주기 위한 핵심 부분만 줄인 것이다. 전체 코드를 모두 설명하기보다 HTTP 요청이 들어오고, 외부 시세를 조회하고, 매수 결과를 저장하는 흐름을 중심으로 정리했다.")
+paragraph("예를 들어 사용자가 삼성전기 상세 화면에서 매수 버튼을 누르면 브라우저는 /api/stock/buy로 종목명과 수량을 보낸다. MiniHandler는 이 요청을 MiniProject.buyStock()으로 넘기고, MiniProject는 잔액과 수량을 확인한 뒤 보유 종목과 거래 기록을 갱신한다. 마지막으로 MySqlDatabase가 변경된 계좌, 보유 주식, 거래 기록을 MySQL에 저장한다.")
+add_table(["순서", "처리 위치", "설명"], [
+    ["1", "브라우저", "종목 상세 화면에서 수량 입력 후 매수 버튼 클릭"],
+    ["2", "MiniHandler", "POST /api/stock/buy 요청 body를 읽고 MiniProject로 전달"],
+    ["3", "MiniProject", "현재가 × 수량 계산, 잔액 부족 여부 확인, 보유 종목 갱신"],
+    ["4", "MySqlDatabase", "members, shares, trade_logs 테이블에 저장"],
+    ["5", "브라우저", "GET /api/state로 최신 현금, 평가금액, 손익률 다시 표시"],
+], widths=[0.7, 1.8, 4.7])
 add_code("""// MiniHandler.java - HTTP 요청을 기능별 메서드로 연결
 if ("GET".equals(method) && "/api/state".equals(path)) {
     send(exchange, 200, "application/json", project.stateJson());
@@ -351,6 +369,12 @@ doc.add_heading("8.1 MySQL 테이블 구상", level=2)
 add_code("""members(uid, name, balance)
 shares(member_uid, stock_name, quantity, purchase_price)
 trade_logs(id, member_uid, stock_name, quantity, price, trade_type, traded_at)""")
+paragraph("members는 모의 계좌의 현금 잔액을 보관한다. shares는 종목별 보유 수량과 총 매입금액을 저장한다. 평균단가를 별도 컬럼으로 저장하지 않은 이유는 quantity와 purchase_price가 있으면 평균단가를 purchase_price / quantity로 계산할 수 있기 때문이다. trade_logs는 매수와 매도 기록을 시간순으로 남겨 나중에 거래 내역과 수익률 분석을 확장할 수 있게 한다.")
+add_table(["테이블", "핵심 컬럼", "설계 이유"], [
+    ["members", "uid, name, balance", "단일 모의 계좌의 식별값과 현금 잔액을 유지"],
+    ["shares", "member_uid, stock_name, quantity, purchase_price", "보유 수량과 총 매입금액을 저장해 평가금액과 평균단가 계산"],
+    ["trade_logs", "id, member_uid, stock_name, quantity, price, trade_type, traded_at", "매수/매도 기록을 남겨 거래 이력과 통계 확장에 활용"],
+], widths=[1.3, 3.0, 3.0])
 
 doc.add_heading("8.2 주요 환경변수", level=2)
 add_table(["환경변수", "기본값", "역할"], [
