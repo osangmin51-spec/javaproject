@@ -177,9 +177,9 @@ add_table(["파일", "역할"], [
     ["MiniHandler.java", "URL별 HTTP 요청 라우팅과 JSON 응답 처리"],
     ["MiniProject.java", "모의 계좌, 매매, 포트폴리오, 시세 상태 관리"],
     ["domain/Member.java, Stock.java", "Member, Stock, Share, TradeLog 등 도메인 모델"],
-    ["repository/MySqlDatabase.java", "MySQL 연결, 테이블 생성, 로컬 파일 저장 전환"],
+    ["repository/MySqlDatabase.java, LocalFileDatabase.java", "MySQL 연결, 테이블 생성, 로컬 파일 저장 전환"],
     ["external/KisQuotePoller.java", "KIS 토큰 발급, 거래량 순위, 현재가 조회, 시세 갱신"],
-    ["StockCategoryProfiles.java", "업종·테마별 위험 설명 타입"],
+    ["domain/StockCategories.java", "업종·테마별 위험 설명 타입"],
     ["external/MockBrokerServer.java", "소켓 기반 시세 구독 흐름 실험"],
     ["view/MiniDashboardPage.java", "HTML/CSS/JavaScript 화면 생성"],
     ["util/Json.java", "JSON 문자열 생성과 요청 body 파싱"],
@@ -292,6 +292,7 @@ add_bullets([
     "종목 상세: 현재가, 등락률, 거래량, 회사 설명, 가격 그래프, 매수 입력",
     "보유 탭: 보유 종목별 평가금액, 손익, 수익률, 매도 수량 입력",
     "기록 탭: 매수/매도 시간, 종목, 수량, 금액 확인",
+    "최종 UI: 실제 증권 웹앱을 참고한 흰 배경, 표 중심, 상승 빨강/하락 파랑 색상 체계",
 ])
 if PREVIEW.exists():
     p = doc.add_paragraph()

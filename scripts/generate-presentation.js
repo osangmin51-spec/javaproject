@@ -252,7 +252,7 @@ titleSlide();
     ["MiniProject.java", "모의 계좌, 매매, 포트폴리오, 시세 상태 핵심 로직"],
     ["repository/MySqlDatabase.java", "MySQL 우선 연결, 로컬 파일 저장 전환"],
     ["external/KisQuotePoller.java", "KIS 토큰 발급, 거래량 순위, 현재가 조회"],
-    ["StockCategoryProfiles.java", "업종·테마별 위험 설명 타입"],
+    ["domain/StockCategories.java", "업종·테마별 위험 설명 타입"],
     ["view/MiniDashboardPage.java", "HTML/CSS/JavaScript 화면 렌더링"],
   ], 0.7, 0.95, 12.0, 5.6, [0.34, 0.66]);
 }
@@ -337,6 +337,10 @@ titleSlide();
   slide.addText("검색창 · 즐겨찾기 · 10개 단위 페이지 · 상세/매수 버튼", { x: 1.0, y: 3.45, w: 5.4, h: 0.25, fontSize: 11, color: C.gray, margin: 0 });
   slide.addText("종목 상세", { x: 7.0, y: 2.95, w: 2.4, h: 0.3, fontSize: 13, bold: true, color: C.ink, margin: 0 });
   slide.addText("현재가 · 등락률 · 가격 변화 그래프\n매수 수량 입력 → 매수", { x: 7.0, y: 3.45, w: 4.3, h: 0.65, fontSize: 11, color: C.gray, margin: 0 });
+  slide.addText("최종 화면은 실제 증권 웹앱처럼 흰 배경, 표 중심 구성, 상승 빨강/하락 파랑 색상 체계를 적용했다.", {
+    x: 1.0, y: 5.55, w: 11.0, h: 0.35,
+    fontSize: 12.5, bold: true, color: C.blue, margin: 0,
+  });
 }
 
 {

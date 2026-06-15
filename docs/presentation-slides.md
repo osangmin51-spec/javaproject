@@ -32,7 +32,7 @@ flowchart LR
     Project --> DB["MySqlDatabase"]
     Project --> KIS["KisQuoteClient"]
     KIS --> API["KIS Open API"]
-    Project --> Broker["BrokerIntegration"]
+    Project --> Broker["MockBrokerServer / KisWebSocketQuoteClient"]
     Broker --> Tick["가격 Tick"]
 ```
 
@@ -43,10 +43,10 @@ flowchart LR
 | `MiniProjectApp.java` | 서버 시작, KIS/DB/소켓 초기화 |
 | `MiniHandler.java` | HTTP 요청 라우팅과 JSON 응답 |
 | `MiniProject.java` | 회원, 매매, 포트폴리오, 시세 상태 관리 |
-| `DatabaseIntegration.java` | MySQL 연결과 저장/로드 |
-| `KisIntegration.java` | KIS 토큰, 거래량 순위, 현재가 조회 |
-| `BrokerIntegration.java` | 소켓 기반 가격 Tick 구독 구조 |
-| `WebPages.java` | HTML/CSS/JavaScript 화면 렌더링 |
+| `repository/MySqlDatabase.java` | MySQL 연결과 저장/로드 |
+| `external/KisQuotePoller.java` | KIS 토큰, 거래량 순위, 현재가 조회 |
+| `external/MockBrokerServer.java` | 소켓 기반 가격 Tick 구독 구조 |
+| `view/MiniDashboardPage.java` | HTML/CSS/JavaScript 화면 렌더링 |
 
 ## 6. 클래스/인터페이스 설계
 
@@ -68,7 +68,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A["접속/로그인"] --> B["거래량 인기 종목 확인"]
+    A["웹사이트 접속"] --> B["거래량 인기 종목 확인"]
     B --> C["검색/즐겨찾기"]
     C --> D["종목 클릭"]
     D --> E["가격 그래프 확인"]
@@ -87,7 +87,7 @@ flowchart LR
 
 ## 10. 데이터 흐름
 
-- 입력: 로그인 정보, 종목 선택, 즐겨찾기, 매수/매도 수량
+- 입력: 종목 선택, 즐겨찾기, 매수/매도 수량
 - 외부 입력: KIS 현재가, 등락률, 누적 거래량
 - 처리: 잔액 확인, 보유 수량 확인, 매매 체결, 손익 계산
 - 저장: MySQL `members`, `shares`, `trade_logs`
@@ -124,7 +124,7 @@ flowchart LR
 
 ## 14. 시연 영상
 
-- 로그인과 상단 요약
+- 웹사이트 접속과 상단 요약
 - 시장 시세와 검색
 - 종목 상세와 가격 그래프
 - 매수 후 보유 탭에서 손익 확인

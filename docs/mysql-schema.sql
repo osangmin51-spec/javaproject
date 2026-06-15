@@ -7,8 +7,6 @@ use mock_stock;
 create table if not exists members (
     uid bigint primary key,
     name varchar(100) not null,
-    login_id varchar(100) not null unique,
-    pwd varchar(255) not null,
     balance int not null
 );
 

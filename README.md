@@ -10,8 +10,9 @@ Java 표준 라이브러리 중심으로 만든 모의주식투자 웹앱입니�
 - 종목 검색, 즐겨찾기, 종목 상세 화면
 - 가격 변화 그래프, 회사 설명, 매수/매도 입력
 - 보유 종목 평가금액, 손익, 수익률 계산
-- MySQL 기반 회원/보유/거래 기록 저장
+- MySQL 기반 모의 계좌/보유/거래 기록 저장
 - KIS WebSocket 국내주식 체결 구독 시도 및 REST fallback
+- 실제 증권 웹앱을 참고한 흰 배경, 표 중심, 상승 빨강/하락 파랑 UI
 - VS Code, IntelliJ IDEA, Windows 실행 스크립트 제공
 
 ## 실행 방법
@@ -116,8 +117,8 @@ MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니
 | 테이블 | 내용 |
 | --- | --- |
 | `members(uid, name, balance)` | 모의 계좌 번호, 이름, 현금 |
-| `shares(member_uid, stock_name, quantity, purchase_price)` | 회원별 보유 종목, 수량, 총 매입금액 |
-| `trade_logs(id, member_uid, stock_name, quantity, price, trade_type, traded_at)` | 회원별 매수/매도 기록 |
+| `shares(member_uid, stock_name, quantity, purchase_price)` | 모의 계좌별 보유 종목, 수량, 총 매입금액 |
+| `trade_logs(id, member_uid, stock_name, quantity, price, trade_type, traded_at)` | 모의 계좌별 매수/매도 기록 |
 
 ## 코드 구조
 
