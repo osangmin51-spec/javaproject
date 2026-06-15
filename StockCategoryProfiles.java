@@ -1,3 +1,5 @@
+import java.util.List;
+
 interface StockCategoryProfile {
     String label();
 
@@ -44,3 +46,26 @@ class ThemeRobotCategory implements StockCategoryProfile { public String label()
 class ThemeSpaceCategory implements StockCategoryProfile { public String label() { return "우주항공 테마"; } public String riskNote() { return "정책과 장기 투자 사이클을 확인해야 합니다."; } }
 class ThemeGreenCategory implements StockCategoryProfile { public String label() { return "친환경 테마"; } public String riskNote() { return "정책 지원과 원가 경쟁력이 중요합니다."; } }
 class ThemeDividendCategory implements StockCategoryProfile { public String label() { return "배당 테마"; } public String riskNote() { return "배당 지속성과 이익 안정성을 확인해야 합니다."; } }
+
+class StockCategories {
+    private static final List<StockCategoryProfile> CATEGORIES = List.of(
+            new SemiconductorCategory(), new BatteryCategory(), new BioCategory(), new AutoCategory(),
+            new FinanceCategory(), new InternetCategory(), new GameCategory(), new EntertainmentCategory(),
+            new SteelCategory(), new ShipbuildingCategory(), new DefenseCategory(), new ChemicalCategory(),
+            new EnergyCategory(), new TelecomCategory(), new RetailCategory(), new CosmeticsCategory(),
+            new AviationCategory(), new InsuranceCategory(), new SecuritiesCategory(), new UtilityCategory(),
+            new HoldingCompanyCategory(), new FoodCategory(), new ConstructionCategory(), new MachineryCategory(),
+            new DisplayCategory(), new ElectronicsCategory(), new MaterialsCategory(), new MedicalCategory(),
+            new LogisticsCategory(), new MediaCategory(), new LeisureCategory(), new ReitsCategory(),
+            new EtfCategory(), new EtfLeveragedCategory(), new EtfInverseCategory(), new ThemeAiCategory(),
+            new ThemeRobotCategory(), new ThemeSpaceCategory(), new ThemeGreenCategory(), new ThemeDividendCategory()
+    );
+
+    static String riskNoteFor(String sector) {
+        return CATEGORIES.stream()
+                .filter(category -> sector.contains(category.label()) || category.label().contains(sector))
+                .findFirst()
+                .map(category -> "업종 체크: " + category.riskNote())
+                .orElse("");
+    }
+}

@@ -1,3 +1,5 @@
+import java.util.List;
+
 class SamsungElectronicsProfile extends CompanyProfile { SamsungElectronicsProfile() { super("삼성전자", "반도체"); } }
 class SkHynixProfile extends CompanyProfile { SkHynixProfile() { super("SK하이닉스", "반도체"); } }
 class LgEnergySolutionProfile extends CompanyProfile { LgEnergySolutionProfile() { super("LG에너지솔루션", "2차전지"); } }
@@ -38,3 +40,29 @@ class MiraeAssetProfile extends CompanyProfile { MiraeAssetProfile() { super("�
 class DoosanEnerbilityProfile extends CompanyProfile { DoosanEnerbilityProfile() { super("두산에너빌리티", "에너지설비"); } }
 class EcoproProfile extends CompanyProfile { EcoproProfile() { super("에코프로", "2차전지소재"); } }
 class EcoproBmProfile extends CompanyProfile { EcoproBmProfile() { super("에코프로비엠", "2차전지소재"); } }
+
+class CompanyProfiles {
+    private static final List<CompanyProfile> PROFILES = List.of(
+            new SamsungElectronicsProfile(), new SkHynixProfile(), new LgEnergySolutionProfile(),
+            new SamsungBiologicsProfile(), new HyundaiMotorProfile(), new KiaProfile(),
+            new CelltrionProfile(), new PoscoHoldingsProfile(), new NaverProfile(),
+            new KakaoProfile(), new HyundaiMobisProfile(), new SamsungSdiProfile(),
+            new LgChemProfile(), new KbFinancialProfile(), new ShinhanFinancialProfile(),
+            new HanaFinancialProfile(), new SamsungCAndTProfile(), new LgElectronicsProfile(),
+            new SkInnovationProfile(), new PoscoFutureMProfile(), new HanwhaAerospaceProfile(),
+            new HyundaiHeavyProfile(), new HdKsoeProfile(), new SamsungElectroMechanicsProfile(),
+            new KakaoBankProfile(), new KraftonProfile(), new HybeProfile(), new NcsoftProfile(),
+            new AmorePacificProfile(), new KoreanAirProfile(), new LgHouseholdProfile(),
+            new LotteChemicalProfile(), new SOilProfile(), new KepcoProfile(), new KtngProfile(),
+            new SamsungFireProfile(), new MiraeAssetProfile(), new DoosanEnerbilityProfile(),
+            new EcoproProfile(), new EcoproBmProfile()
+    );
+
+    static String summaryFor(String companyName) {
+        return PROFILES.stream()
+                .filter(profile -> profile.companyName.equals(companyName))
+                .findFirst()
+                .map(CompanyProfile::summary)
+                .orElse("");
+    }
+}

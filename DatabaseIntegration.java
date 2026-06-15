@@ -25,7 +25,9 @@ class MySqlConfig {
         String url = System.getenv("MYSQL_URL");
         String user = System.getenv("MYSQL_USER");
         String password = System.getenv("MYSQL_PASSWORD");
-        if (blank(url) || blank(user)) return null;
+        if (blank(url) || blank(user)) {
+            throw new IllegalStateException("MYSQL_URL과 MYSQL_USER 환경변수는 필수입니다. MySQL 설정 후 다시 실행하세요.");
+        }
         return new MySqlConfig(url, user, password == null ? "" : password);
     }
 
@@ -54,8 +56,7 @@ class MySqlDatabase {
     }
 
     static MySqlDatabase fromEnv() {
-        MySqlConfig config = MySqlConfig.fromEnv();
-        return config == null ? null : new MySqlDatabase(config);
+        return new MySqlDatabase(MySqlConfig.fromEnv());
     }
 
     DatabaseSnapshot load(Map<String, Stock> marketStocks) throws Exception {

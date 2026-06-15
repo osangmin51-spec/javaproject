@@ -193,7 +193,7 @@ titleSlide();
     ["구분", "제안발표 단계", "최종 구현"],
     ["주제", "기본 Java 기능 구현", "실제 증권 API 기반 모의주식투자"],
     ["데이터", "초기 샘플/내부 데이터", "KIS 현재가, 등락률, 누적 거래량"],
-    ["저장", "메모리 중심 구상", "MySQL 설정 시 테이블 저장"],
+    ["저장", "메모리 중심 구상", "MySQL 필수 테이블 저장"],
     ["화면", "기본 목록과 입력 화면", "종목 상세, 그래프, 포트폴리오"],
     ["흐름", "드롭다운 선택 후 주문", "종목 클릭 → 상세 확인 → 매수/매도"],
   ], 0.65, 1.05, 12.0, 4.55, [0.18, 0.36, 0.46]);
@@ -253,7 +253,7 @@ titleSlide();
     ["DatabaseIntegration.java", "MySQL 연결, 테이블 생성, 저장/로드"],
     ["KisIntegration.java", "KIS 토큰 발급, 거래량 순위, 현재가 조회"],
     ["PasswordHasher.java", "Salt 기반 SHA-256 비밀번호 해시와 검증"],
-    ["StockCategoryProfiles.java", "업종·테마별 종목 분류 타입"],
+    ["StockCategoryProfiles.java", "업종·테마별 위험 설명 타입"],
     ["WebPages.java", "HTML/CSS/JavaScript 화면 렌더링"],
   ], 0.7, 0.95, 12.0, 5.6, [0.34, 0.66]);
 }
@@ -265,7 +265,7 @@ titleSlide();
   card(slide, 9.05, 1.0, 3.4, 1.2, "외부 연동", "KisQuoteClient, BrokerIntegration\nREST API와 소켓 흐름 처리", C.white);
   card(slide, 0.8, 3.1, 5.5, 1.45, "상속", "CompanyProfile 추상 클래스를 두고 종목별 회사 프로필 클래스가 공통 구조를 상속", C.white);
   card(slide, 6.9, 3.1, 5.5, 1.45, "인터페이스", "StockCategoryProfile 인터페이스로 업종별 분류와 위험 설명 규칙을 통일", C.white);
-  slide.addText("설계 이유: 100개 이상 타입 조건을 맞추면서도 회사 설명과 업종 분류를 의미 있는 구조로 분리했다.", {
+  slide.addText("설계 이유: 100개 이상 타입 조건을 맞추면서도 회사 설명과 업종 위험 설명이 실제 종목 상세에 쓰이도록 분리했다.", {
     x: 0.95, y: 5.55, w: 11.1, h: 0.45,
     fontSize: 14, bold: true, color: C.ink, margin: 0,
   });
@@ -279,7 +279,7 @@ titleSlide();
     ["핵심 서비스", "MiniProject", "ConcurrentHashMap, ArrayList, Comparator", "매매 처리, 포트폴리오 계산, 시세 상태 관리"],
     ["도메인 모델", "Member, Stock, Share, TradeLog", "class, record 성격의 데이터 객체", "회원, 종목, 보유 수량, 거래 내역 표현"],
     ["외부 시세", "KisQuoteClient, KisQuotePoller, KisWebSocketQuoteClient", "HttpClient, HttpRequest, WebSocket", "KIS REST/WebSocket 시세 연동과 실패 시 전환"],
-    ["저장소/보안", "MySqlDatabase, PasswordHasher", "JDBC, DriverManager, SecureRandom, MessageDigest", "MySQL 설정 시 저장, 비밀번호 해시, 세션 기반 로그인"],
+    ["저장소/보안", "MySqlDatabase, PasswordHasher", "JDBC, DriverManager, SecureRandom, MessageDigest", "MySQL 필수 저장, 비밀번호 해시, 세션 기반 로그인"],
     ["화면/분류", "WebPages, Json, CompanyProfile, StockCategoryProfile", "HTML/CSS/JS, abstract class, interface", "웹 화면 생성, JSON 처리, 회사/업종 설명 구조화"],
   ], 0.45, 0.9, 12.45, 5.35, [0.15, 0.27, 0.29, 0.29]);
   slide.addText("정리해서 말하면 서버, 서비스, 외부 API, DB, 보안, 화면 역할을 나눴고, 제출용 컴파일을 쉽게 하기 위해 현재는 루트 파일 중심으로 유지했다.", {
@@ -347,7 +347,8 @@ titleSlide();
     ["입력", "로그인 정보, 종목 선택, 즐겨찾기, 매수/매도 수량"],
     ["외부 입력", "KIS 현재가/등락률/거래량"],
     ["처리", "잔액 확인, 보유 수량 확인, 매매 체결, 손익 계산"],
-    ["저장", "MySQL 설정 시 members, shares, trade_logs 테이블"],
+    ["저장", "members, shares, trade_logs MySQL 필수 테이블"],
+    ["주요 컬럼", "login_id, pwd, purchase_price, trade_type, traded_at"],
     ["출력", "시장 시세, 종목 상세, 그래프, 포트폴리오, 거래 기록"],
   ], 1.0, 1.1, 11.3, 4.7, [0.22, 0.78]);
 }
@@ -358,9 +359,10 @@ titleSlide();
     ["데이터", "처리 방식"],
     ["주식 시세", "KIS 현재가 REST API 조회"],
     ["종목 선별", "거래량 기준 상위 종목을 선별해 자동 갱신"],
+    ["갱신 범위", "KIS_MARKET_LIMIT 기본 200, 100~300개 제한 / KIS_POLL_LIMIT 기본 100"],
     ["실시간성", "전체 종목 매초 조회 대신 상위 목록 중심 갱신 + 소켓 구독 구조 실험"],
     ["소켓", "모의 증권사 서버의 가격 Tick 구독 구조"],
-    ["사용자 데이터", "MySQL 설정 시 테이블 저장, 미설정 시 메모리 모드"],
+    ["사용자 데이터", "MySQL members, shares, trade_logs 테이블 저장"],
     ["가격 그래프", "서버가 보관한 최근 가격 히스토리 표시"],
   ], 0.85, 1.0, 11.7, 5.05, [0.25, 0.75]);
 }

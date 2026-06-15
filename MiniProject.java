@@ -304,7 +304,13 @@ class MiniProject {
     }
 
     private void addStock(String code, String name, String market, String sector, String description, int price, int quantity, int priceFluct, double nextFluct) {
-        marketStocks.put(name, new Stock(code, name, market, sector, description, price, quantity, priceFluct, nextFluct));
+        List<String> details = new ArrayList<>();
+        details.add(description);
+        String profileSummary = CompanyProfiles.summaryFor(name);
+        if (!profileSummary.isBlank()) details.add(profileSummary);
+        String riskNote = StockCategories.riskNoteFor(sector);
+        if (!riskNote.isBlank()) details.add(riskNote);
+        marketStocks.put(name, new Stock(code, name, market, sector, String.join(" ", details), price, quantity, priceFluct, nextFluct));
     }
 
     private void updateStock(Stock stock, BrokerTick tick) {
@@ -366,32 +372,23 @@ class MiniProject {
     }
 
     private synchronized void loadDatabase() {
-        mySqlDatabase = MySqlDatabase.fromEnv();
-        if (mySqlDatabase == null) {
-            System.err.println("MYSQL_URL/MYSQL_USER 환경변수가 없어 메모리 모드로 실행합니다. 서버를 종료하면 거래 데이터는 저장되지 않습니다.");
-            return;
-        }
         try {
+            mySqlDatabase = MySqlDatabase.fromEnv();
             DatabaseSnapshot snapshot = mySqlDatabase.load(marketStocks);
             members.putAll(snapshot.members);
             logs.addAll(snapshot.logs);
             memberIds.set(Math.max(memberIds.get(), snapshot.maxMemberUid));
             System.out.println("MySQL DB 로드 완료: members=" + members.size() + ", trades=" + logs.size());
         } catch (Exception ex) {
-            System.err.println("MySQL DB 로드 실패: " + ex.getMessage());
-            mySqlDatabase = null;
+            throw new IllegalStateException("MySQL DB 초기화에 실패했습니다. MYSQL_URL, MYSQL_USER, MYSQL_PASSWORD와 MySQL 서버 상태를 확인하세요: " + ex.getMessage(), ex);
         }
     }
 
     private synchronized void saveDatabase() {
-        if (mySqlDatabase == null) {
-            return;
-        }
         try {
             mySqlDatabase.save(members, logs);
         } catch (Exception ex) {
-            System.err.println("MySQL DB 저장 실패: " + ex.getMessage());
-            mySqlDatabase = null;
+            throw new IllegalStateException("MySQL DB 저장에 실패했습니다: " + ex.getMessage(), ex);
         }
     }
 

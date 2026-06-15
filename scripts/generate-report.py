@@ -139,7 +139,7 @@ add_table(["항목", "내용"], [
     ["프로젝트명", "Java 프로젝트 모의주식"],
     ["주요 기술", "Java HttpServer, HttpClient, Thread, Collection, JDBC, MySQL, 쿠키 세션, SHA-256 비밀번호 해시"],
     ["외부 데이터", "한국투자증권 KIS Open API"],
-    ["저장 방식", "MySQL 설정 시 테이블 저장, 미설정 시 메모리 모드"],
+    ["저장 방식", "MySQL 필수 테이블 저장"],
     ["실행 주소", "http://localhost:8080/"],
     ["시연 영상", "deliverables/mock-stock-website-demo.webm"],
 ], widths=[1.7, 5.7])
@@ -151,7 +151,7 @@ paragraph("핵심 목표는 단순한 주문 연습이 아니라 실제 시세, 
 add_bullets([
     "실제 외부 증권 API를 활용한 Java 웹 프로젝트 구현",
     "사용자 매수/매도 흐름과 포트폴리오 손익 계산 구현",
-    "MySQL 설정 시 회원/보유/거래 기록 유지",
+    "MySQL을 통한 회원/보유/거래 기록 유지",
     "쓰레드 기반 시세 갱신과 소켓 구독 구조 실험",
     "검색, 즐겨찾기, 종목 상세, 가격 그래프 UI 구현",
     "다수 클래스/인터페이스 구조와 실제 실행 가능한 웹 UI 구현",
@@ -165,13 +165,13 @@ add_table(["구분", "제안발표 단계", "최종 구현"], [
     ["가격 데이터", "내부 샘플/모의 가격", "한국투자증권 KIS 현재가"],
     ["종목 수", "소수 종목", "거래량 상위 종목 중심"],
     ["화면", "기본 입력/출력 중심", "검색, 즐겨찾기, 상세 그래프, 포트폴리오"],
-    ["저장", "메모리 중심", "MySQL 설정 시 테이블 저장"],
+    ["저장", "메모리 중심", "MySQL 필수 테이블 저장"],
     ["목적", "기능 구현 연습", "실제 데이터 기반 투자 흐름 구현"],
 ], widths=[1.3, 2.6, 3.3])
 
 
 doc.add_heading("3. 자바 기반 프로그램 설계", level=1)
-paragraph("프로젝트는 Spring이나 React 없이 Java 표준 기능을 중심으로 구성했다. HttpServer로 웹 서버를 열고, HttpClient로 외부 API를 호출하며, HTML/CSS/JavaScript는 Java 문자열 템플릿에서 렌더링한다. 저장은 MySQL JDBC 구조를 사용하되, MySQL 환경변수가 없으면 테스트용 메모리 모드로 실행된다.")
+paragraph("프로젝트는 Spring이나 React 없이 Java 표준 기능을 중심으로 구성했다. HttpServer로 웹 서버를 열고, HttpClient로 외부 API를 호출하며, HTML/CSS/JavaScript는 Java 문자열 템플릿에서 렌더링한다. 저장은 MySQL JDBC 구조를 필수로 사용하며, MySQL 환경변수가 없거나 DB 연결에 실패하면 서버가 시작되지 않는다.")
 add_table(["파일", "역할"], [
     ["MiniProjectApp.java", "서버 시작, 포트 설정, KIS/API/DB 초기화"],
     ["MiniHandler.java", "URL별 HTTP 요청 라우팅과 JSON 응답 처리"],
@@ -179,7 +179,7 @@ add_table(["파일", "역할"], [
     ["DomainModels.java", "Member, Stock, Share, TradeLog 등 도메인 모델"],
     ["DatabaseIntegration.java", "MySQL 연결, 테이블 생성, 데이터 저장/로드"],
     ["KisIntegration.java", "KIS 토큰 발급, 거래량 순위, 현재가 조회, 시세 갱신"],
-    ["StockCategoryProfiles.java", "업종·테마별 종목 분류 타입"],
+    ["StockCategoryProfiles.java", "업종·테마별 위험 설명 타입"],
     ["BrokerIntegration.java", "소켓 기반 시세 구독 흐름 실험"],
     ["WebPages.java", "HTML/CSS/JavaScript 화면 생성"],
     ["Json.java", "JSON 문자열 생성과 요청 body 파싱"],
@@ -201,10 +201,10 @@ add_table(["계층", "주요 클래스", "사용 라이브러리/문법", "역�
     ["핵심 서비스 계층", "MiniProject", "ConcurrentHashMap, ArrayList, Comparator, LocalDateTime", "매수/매도 처리, 포트폴리오 계산, 시세 상태 관리"],
     ["도메인 모델 계층", "Member, Stock, Share, TradeLog, PricePoint", "Java class, 컬렉션 객체", "회원, 종목, 보유 수량, 거래 기록, 가격 이력 표현"],
     ["외부 시세 계층", "KisQuoteClient, KisQuotePoller, KisWebSocketQuoteClient", "HttpClient, HttpRequest, WebSocket", "KIS REST 현재가 조회, 거래량 상위 종목 갱신, WebSocket 연동 시도"],
-    ["저장소 계층", "MySqlDatabase, DatabaseSnapshot", "JDBC, DriverManager, PreparedStatement, ResultSet", "MySQL 설정 시 회원/보유 종목/거래 기록 저장, 미설정 시 메모리 모드"],
+    ["저장소 계층", "MySqlDatabase, DatabaseSnapshot", "JDBC, DriverManager, PreparedStatement, ResultSet", "회원/보유 종목/거래 기록을 MySQL에 필수 저장"],
     ["보안/세션 계층", "PasswordHasher, MiniHandler", "SecureRandom, MessageDigest, Base64, Cookie", "비밀번호 Salt 해시, 세션 쿠키 발급, 로그인 상태 관리"],
     ["화면/직렬화 계층", "WebPages, Json", "HTML/CSS/JavaScript 문자열, JSON 생성/파싱", "브라우저 화면 렌더링과 API 응답 데이터 구성"],
-    ["분류/상속 계층", "CompanyProfile, CompanyProfiles, StockCategoryProfile", "abstract class, interface, 구현 클래스", "회사 설명과 업종/위험 설명을 공통 규칙으로 정리"],
+    ["분류/상속 계층", "CompanyProfile, CompanyProfiles, StockCategoryProfile", "abstract class, interface, 구현 클래스", "회사 설명과 업종 위험 설명을 종목 상세 설명에 반영"],
 ], widths=[1.35, 2.1, 2.2, 2.3])
 paragraph("나중에 유지보수를 더 쉽게 하려면 controller, service, domain, repository, security, ui 패키지로 물리적인 파일 위치까지 분리할 수 있다. 현재 보고서에서는 실제 코드가 루트 중심이라는 점과, 논리적으로는 위 계층으로 나뉜다는 점을 구분해서 설명한다.")
 
@@ -247,7 +247,7 @@ try (Connection con = DriverManager.getConnection(url, user, password)) {
 }""")
 
 doc.add_heading("3.4 상속과 인터페이스 사용 이유", level=2)
-paragraph("과제 조건상 클래스와 인터페이스 수가 많아야 했기 때문에 단순히 빈 클래스를 늘리기보다 종목 회사 설명과 업종 분류 구조를 분리했다. CompanyProfile은 회사명과 업종처럼 공통 속성을 갖는 추상 클래스이고, StockCategoryProfile은 업종명과 위험 설명을 제공하는 인터페이스다.")
+paragraph("과제 조건상 클래스와 인터페이스 수가 많아야 했기 때문에 단순히 빈 클래스를 늘리기보다 종목 회사 설명과 업종 분류 구조를 분리했다. CompanyProfile은 회사명과 업종처럼 공통 속성을 갖는 추상 클래스이고, StockCategoryProfile은 업종명과 위험 설명을 제공하는 인터페이스다. 이 정보는 MiniProject.addStock()에서 종목 상세 설명을 보강할 때 실제로 사용된다.")
 add_table(["구분", "설계", "이유"], [
     ["추상 클래스", "CompanyProfile", "종목별 회사 설명 구조를 통일"],
     ["구현 클래스", "SamsungElectronicsProfile 등", "회사별 설명과 업종 정보를 분리 관리"],
@@ -279,7 +279,7 @@ add_table(["단계", "내용"], [
     ["입력", "로그인 정보, 종목 선택, 즐겨찾기, 매수/매도 수량"],
     ["외부 입력", "KIS 현재가, 전일대비, 등락률, 누적 거래량"],
     ["처리", "잔액 확인, 보유 수량 확인, 매매 체결, 손익 계산"],
-    ["저장", "MySQL 설정 시 회원 정보, 보유 주식, 거래 기록을 테이블에 저장"],
+    ["저장", "회원 정보, 보유 주식, 거래 기록을 MySQL 테이블에 저장"],
     ["출력", "시장 시세, 종목 상세, 그래프, 포트폴리오, 거래 기록"],
 ], widths=[1.4, 5.8])
 
@@ -338,7 +338,7 @@ add_table(["데이터", "처리 방식"], [
     ["종목 선별", "거래량 기준 상위 종목 중심으로 자동 갱신"],
     ["실시간성", "전체 종목 매초 조회 대신 상위 목록 중심 갱신과 소켓 구독 구조 실험"],
     ["소켓", "모의 증권사 서버의 가격 Tick 구독 구조"],
-    ["사용자 데이터", "MySQL 설정 시 members, shares, trade_logs 테이블 저장 / 미설정 시 메모리 모드"],
+    ["사용자 데이터", "MySQL members, shares, trade_logs 테이블 저장"],
     ["가격 그래프", "서버가 보관한 최근 가격 히스토리 표시"],
 ], widths=[2.0, 5.2])
 
@@ -357,7 +357,7 @@ add_table(["환경변수", "기본값", "역할"], [
     ["KIS_USE_WEBSOCKET", "false", "true이면 KIS WebSocket 구독을 먼저 시도"],
     ["KIS_WS_URL", "ws://ops.koreainvestment.com:21000", "KIS WebSocket 주소"],
     ["KIS_WS_MAX_SUBSCRIPTIONS", "100", "WebSocket 구독 대상 최대 수"],
-    ["MYSQL_URL / MYSQL_USER / MYSQL_PASSWORD", "없음", "설정 시 MySQL 저장, 미설정 시 메모리 모드"],
+    ["MYSQL_URL / MYSQL_USER / MYSQL_PASSWORD", "필수", "MySQL 연결 정보, 없거나 연결 실패 시 서버 시작 중단"],
 ], widths=[2.2, 2.2, 3.0])
 
 
@@ -391,7 +391,7 @@ add_table(["기능", "현재 구현 상태"], [
     ["매수", "선택 종목 상세 화면에서 수량 입력 후 매수"],
     ["매도", "보유 탭에서 보유 수량 기준으로 매도"],
     ["포트폴리오", "현금, 평가금액, 총자산, 손익, 수익률 계산"],
-    ["거래 기록", "매수/매도 기록을 MySQL 설정 시 저장"],
+    ["거래 기록", "매수/매도 기록을 MySQL에 저장"],
 ], widths=[1.9, 5.3])
 
 
@@ -418,7 +418,7 @@ add_bullets([
 
 
 doc.add_heading("13. 마무리와 향후 개선", level=1)
-paragraph("최종 결과물은 Java로 직접 만든 모의주식투자 웹앱이다. 한국투자증권 KIS API로 시세와 거래량을 가져오고, MySQL 환경이 설정된 경우 회원·보유주식·거래기록을 DB에 저장한다. 사용자는 종목을 검색하거나 즐겨찾기하고, 상세 화면에서 가격 그래프를 확인한 뒤 매수/매도를 진행할 수 있다.")
+paragraph("최종 결과물은 Java로 직접 만든 모의주식투자 웹앱이다. 한국투자증권 KIS API로 시세와 거래량을 가져오고, 회원·보유주식·거래기록은 MySQL DB에 저장한다. 사용자는 종목을 검색하거나 즐겨찾기하고, 상세 화면에서 가격 그래프를 확인한 뒤 매수/매도를 진행할 수 있다.")
 paragraph("향후 개선한다면 실제 KIS 테스트베드에서 WebSocket 구독 성공 여부를 확인하고, controller, service, repository, model 패키지로 소스 구조를 분리하는 작업이 우선이다. 현재는 과제 제출과 컴파일 검증을 쉽게 하기 위해 루트 디렉터리 중심 구조를 유지했다. 이후에는 테스트 코드 추가, HTTPS 배포 환경 적용, 세션 만료 시간과 CSRF 방어, 업종별 위험 등급 UI 표시, 개인화 관심종목 추천 같은 기능을 확장할 수 있다.")
 
 

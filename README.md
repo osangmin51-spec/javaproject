@@ -13,7 +13,7 @@ Java 표준 라이브러리 중심으로 만든 모의주식투자 웹앱입니�
 - 종목 검색, 즐겨찾기, 종목 상세 화면
 - 가격 변화 그래프, 회사 설명, 매수/매도 입력
 - 보유 종목 평가금액, 손익, 수익률 계산
-- MySQL 회원/보유/거래 기록 저장
+- MySQL 기반 회원/보유/거래 기록 저장
 - KIS WebSocket 국내주식 체결 구독 시도 및 REST fallback
 - VS Code, IntelliJ IDEA, Windows 실행 스크립트 제공
 
@@ -111,7 +111,7 @@ WebSocket 모드에서도 시작 직전에 거래량 상위 종목을 조회해 
 
 ## MySQL 저장소
 
-회원, 보유 종목, 거래 기록은 MySQL 테이블에 저장할 수 있습니다. `MYSQL_URL`, `MYSQL_USER` 환경변수가 없으면 테스트용 메모리 모드로 실행됩니다.
+회원, 보유 종목, 거래 기록은 MySQL 테이블에 저장합니다. 이 프로젝트는 DB 저장을 기본 전제로 하므로 `MYSQL_URL`, `MYSQL_USER` 환경변수가 없거나 MySQL 연결에 실패하면 서버가 시작되지 않습니다.
 
 ```powershell
 $env:MYSQL_URL="jdbc:mysql://localhost:3306/mock_stock?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul"
@@ -143,8 +143,8 @@ MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니
 | `PasswordHasher.java` | 비밀번호 Salt 생성, SHA-256 해시, 검증 |
 | `BrokerIntegration.java` | 모의 증권사 소켓 서버와 시세 Tick 구독 |
 | `CompanyProfile.java` | 회사 프로필 추상 클래스 |
-| `CompanyProfiles.java` | 종목별 회사 설명 클래스 |
-| `StockCategoryProfiles.java` | 업종·테마별 종목 분류 클래스 |
+| `CompanyProfiles.java` | 종목별 회사 설명 클래스와 설명 조회 레지스트리 |
+| `StockCategoryProfiles.java` | 업종·테마별 종목 분류 클래스와 위험 설명 조회 레지스트리 |
 | `WebPages.java` | HTML, CSS, JavaScript 화면 렌더링 |
 | `Json.java` | JSON 응답 생성과 요청 body 파싱 |
 
