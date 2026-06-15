@@ -45,7 +45,7 @@ flowchart LR
     Tick --> Client["BrokerFeedClient"]
 ```
 
-## 6. 코드 구조
+## 6. 코드 구조 + 주요 코드 흐름
 
 | 묶음 | 주요 파일 | 역할 |
 | --- | --- | --- |
@@ -55,29 +55,36 @@ flowchart LR
 | 외부 시세 | `KisQuoteClient`, `KisQuotePoller`, `KisWebSocketQuoteClient`, `MockBrokerServer` | KIS REST/WebSocket 시세와 모의 소켓 Tick |
 | 화면/도메인 | `MiniDashboardPage`, `Member`, `Stock`, `Share`, `TradeLog`, `StockCategories` | 웹 UI와 종목/거래 데이터 모델 |
 
+주요 코드 흐름:
+
+- `MiniHandler`: `/api/state`, `/api/stock/buy`, `/api/stock/sell` 요청을 라우팅
+- `MiniProject`: 잔액 확인, 보유 수량 확인, 거래 기록 추가, 포트폴리오 계산
+- `MySqlDatabase`: 계좌, 보유 주식, 거래 기록을 MySQL에 저장
+
 ## 7. 클래스/인터페이스 설계
 
 - `CompanyProfile`: 회사명과 업종을 가진 공통 추상 클래스
 - 종목별 `CompanyProfile` 구현 클래스: 회사 설명 구조 분리
 - `StockCategoryProfile`: 업종명과 위험 설명을 제공하는 인터페이스
 - 업종·테마별 Category 클래스: 100개 이상 타입 조건을 의미 있는 방식으로 충족
+- class / interface / enum 합계 111개
 
-## 8. 클래스/라이브러리 구조 상세
+## 8. Java 클래스/라이브러리 활용
 
-| 계층 | 주요 클래스 | 사용 라이브러리 / 문법 | 역할 |
-| --- | --- | --- | --- |
-| 실행/서버 | `MiniProjectApp`, `MiniHandler` | `HttpServer`, `HttpExchange` | 서버 시작, URL 라우팅 |
-| 서비스 | `MiniProject` | `ConcurrentHashMap`, `ArrayList` | 매매, 포트폴리오, 시세 상태 관리 |
-| 도메인 | `Member`, `Stock`, `Share`, `TradeLog` | class, interface | 모의 계좌, 종목, 거래 데이터 표현 |
-| 외부 API | `KisQuoteClient`, `KisQuotePoller`, `KisWebSocketQuoteClient` | `HttpClient`, `WebSocket` | KIS REST/WebSocket 시세 연동 |
-| 저장소/화면 | `MySqlDatabase`, `MiniDashboardPage`, `Json` | JDBC, HTML/CSS/JS | MySQL 저장과 웹 화면 렌더링 |
+| 구분 | 활용한 Java 클래스/라이브러리 | 프로젝트에서 맡은 역할 |
+| --- | --- | --- |
+| 웹 서버 | `HttpServer`, `HttpExchange`, `Executors` | 브라우저 요청 수신, API 응답, 서버 스레드 관리 |
+| 외부 API | `HttpClient`, `HttpRequest`, `WebSocket` | KIS 현재가 조회와 WebSocket 구독 시도 |
+| 상태 관리 | `ConcurrentHashMap`, `ArrayList`, `LinkedHashMap` | 종목 상태, 거래 기록, 가격 히스토리 저장 |
+| DB 저장 | `JDBC DriverManager`, `PreparedStatement`, `ResultSet` | MySQL 연결, 계좌/보유/거래 기록 저장 |
+| 시간/출력 | `LocalDateTime`, `DateTimeFormatter`, `StringBuilder` | 거래 시간 표시와 HTML/JSON 문자열 생성 |
 
 ## 9. AI vs 나의 역할
 
 | 구분 | 내가 주도한 부분 | AI 활용 |
 | --- | --- | --- |
 | 주제 | 모의주식투자 웹사이트 방향 결정 | 구현 방식 후보 정리 |
-| 요구사항 | KIS API, 거래량 상위, 그래프, 즐겨찾기 요구 | Java 코드 작성 보조 |
+| 요구사항 | KIS API, 거래량 상위, 그래프/즐겨찾기 요구 | Java 코드 작성 보조 |
 | UI | 종목 클릭 중심 흐름 요구 | HTML/CSS/JS 구현 보조 |
 | 문제해결 | 가격 이상, 저장 방식, 서버 실행 문제 지적 | 원인 분석과 수정 보조 |
 
@@ -114,7 +121,7 @@ flowchart LR
 
 | 데이터 | 처리 방식 |
 | --- | --- |
-| 주식 시세 | KIS 현재가 REST API |
+| 주식 시세 | KIS 현재가 REST API 조회 |
 | 종목 선별 | 거래량 기준 상위 종목 |
 | 실시간성 | 상위 목록 중심 갱신 + 소켓 구독 구조 실험 |
 | 사용자 데이터 | MySQL 테이블 저장 |
@@ -122,42 +129,23 @@ flowchart LR
 
 ## 14. 시행착오
 
-- 서버 재시작 시 데이터가 사라지는 문제를 MySQL 저장 구조로 변경
-- 한글 UI가 깨지지 않도록 UTF-8 기준 정리
-- KIS API 키를 환경변수로 분리
-- 전체 2700개 종목을 계속 갱신하는 대신 거래량 상위 종목으로 제한
-- 뉴스 기능은 외부 키 관리와 기사 품질 편차 때문에 최종 버전에서 제외
-- UI는 종목 클릭, 검색, 즐겨찾기, 상세 매매 흐름 중심으로 단순화
+- 실제 시세 연동 문제
+- 전체 종목 처리 범위 결정
+- UI 흐름 개선
+- 뉴스 기능 제거 판단
+- DB 저장 전환
 
-## 15. Java 클래스 활용
-
-- `HttpServer`: 웹 서버
-- `HttpClient`: KIS API 호출
-- `Thread`: 백그라운드 시세 갱신
-- `ConcurrentHashMap`: 모의 계좌/종목 상태 관리
-- `ArrayList`, `LinkedHashMap`, `List`: 거래 기록, 가격 히스토리, 조회 순서 관리
-- `JDBC DriverManager`: MySQL 연결
-- `LocalDateTime`: 거래 시간과 시세 갱신 시각
-
-## 16. 주요 코드 흐름
-
-- 브라우저 요청: `GET /api/state`, `POST /api/stock/buy`, `POST /api/stock/sell`
-- `MiniHandler`: URL을 확인하고 `MiniProject` 메서드 호출
-- `MiniProject`: 잔액 확인, 수량 확인, 보유 주식 갱신, 거래 기록 추가
-- 저장소: MySQL 테이블에 계좌, 보유 종목, 거래 기록 저장
-- 발표에서는 긴 코드보다 요청, 처리, 저장이 연결되는 흐름을 중심으로 설명
-
-## 17. 보완 상태와 남은 과제
+## 15. 보완 상태와 남은 과제
 
 - 구현 완료: 로그인 제거, 단일 모의 계좌, 패키지 물리 분리
 - 보완 완료: KIS WebSocket 오류 시 REST 폴링 전환
 - 남은 검증: 실제 KIS 테스트베드에서 WebSocket 구독 성공 여부와 메시지 필드 순서 확인
 - 향후 개선: 테스트 코드 보강, 서비스 세분화, WebSocket 실환경 검증 결과 문서화
 
-## 18. 시연 영상
+## 16. 시연 영상
 
-- `0~7초`: 웹사이트 접속과 상단 요약
-- `7~14초`: 시장 시세와 검색
-- `14~23초`: 종목 상세와 가격 그래프
-- `23~31초`: 매수 후 보유 탭에서 손익 확인
+- `0~8초`: 웹사이트 접속과 시장 시세
+- `8~17초`: 종목코드 `009150` 검색
+- `17~30초`: 삼성전기 종목 상세와 가격 그래프
+- `30~44초`: 매수 후 보유 탭에서 손익 확인
 - 영상 파일: `deliverables/mock-stock-website-demo.webm`

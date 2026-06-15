@@ -53,10 +53,7 @@ function addHeader(slide, no, title) {
 }
 
 function addFooter(slide) {
-  slide.addText("Java 프로젝트 모의주식 | KIS Open API · MySQL · 소켓 기반 모의투자 웹앱", {
-    x: 0.45, y: 7.16, w: 8.4, h: 0.16,
-    fontSize: 7.5, color: "7A8797", margin: 0,
-  });
+  // 발표 화면 아래쪽에 반복 문구가 보이지 않도록 비워 둔다.
 }
 
 function titleSlide() {
@@ -268,40 +265,40 @@ titleSlide();
     ["저장소", "ProjectDatabase, MySqlDatabase", "MySQL 필수 저장과 데이터 로드/저장"],
     ["외부 시세", "KisQuoteClient, KisQuotePoller, KisWebSocketQuoteClient, MockBrokerServer", "KIS REST/WebSocket 시세와 모의 소켓 Tick"],
     ["화면/도메인", "MiniDashboardPage, Member, Stock, Share, TradeLog, StockCategories", "웹 UI와 종목/거래 데이터 모델"],
-  ], 0.55, 1.0, 12.2, 4.85, [0.19, 0.42, 0.39]);
-  slide.addText("현재 최종본에서는 예비 저장소를 제거하고 MySQL 저장소만 사용한다.", {
-    x: 0.85, y: 6.05, w: 11.0, h: 0.3,
-    fontSize: 12.5, bold: true, color: C.blue, margin: 0,
-  });
+  ], 0.55, 0.92, 12.2, 3.35, [0.19, 0.42, 0.39]);
+  codeBox(slide, "요청 라우팅 - MiniHandler.java", `case "/api/stock/buy" -> project.buyStock(body);
+case "/api/stock/sell" -> project.sellStock(body);
+case "/api/state" -> project.stateJson();`, 0.85, 4.65, 5.7, 1.35);
+  codeBox(slide, "매매 저장 - MiniProject.java", `member.shares.compute(stockName, (key, share) -> ...);
+logs.add(new TradeLog(member.uid, stockName, quantity, total, "구매"));
+saveDatabase();`, 6.85, 4.65, 5.7, 1.35);
 }
 
 {
   const slide = pptx.addSlide(); addHeader(slide, 7, "클래스/인터페이스 설계"); addFooter(slide);
-  card(slide, 0.8, 1.0, 3.4, 1.2, "서버 계층", "app.MiniProjectApp → controller.MiniHandler → service.MiniProject\n요청을 받고 핵심 로직으로 전달", C.lightBlue);
-  card(slide, 4.95, 1.0, 3.4, 1.2, "도메인 계층", "Member, Stock, Share, TradeLog\n모의 계좌/종목/거래 상태 관리", C.white);
-  card(slide, 9.05, 1.0, 3.4, 1.2, "외부 연동", "KisQuoteClient, MockBrokerServer\nREST API와 소켓 흐름 처리", C.white);
-  card(slide, 0.8, 3.1, 5.5, 1.45, "상속", "CompanyProfile 추상 클래스를 두고 종목별 회사 프로필 클래스가 공통 구조를 상속", C.white);
-  card(slide, 6.9, 3.1, 5.5, 1.45, "인터페이스", "StockCategoryProfile 인터페이스로 업종별 분류와 위험 설명 규칙을 통일", C.white);
-  slide.addText("설계 이유: 100개 이상 타입 조건을 맞추면서도 회사 설명과 업종 위험 설명이 실제 종목 상세에 쓰이도록 분리했다.", {
-    x: 0.95, y: 5.55, w: 11.1, h: 0.45,
-    fontSize: 14, bold: true, color: C.ink, margin: 0,
-  });
+  card(slide, 0.65, 0.95, 3.55, 1.12, "서버 계층", "MiniProjectApp → MiniHandler → MiniProject\n요청을 받고 핵심 로직으로 전달", C.lightBlue);
+  card(slide, 4.85, 0.95, 3.55, 1.12, "도메인 계층", "Member, Stock, Share, TradeLog\n계좌, 종목, 보유, 거래 내역 표현", C.white);
+  card(slide, 9.05, 0.95, 3.55, 1.12, "외부 연동", "KisQuoteClient, MockBrokerServer\nREST API와 소켓 흐름 처리", C.white);
+  card(slide, 0.65, 2.55, 5.85, 1.22, "상속", "CompanyProfile 추상 클래스 → 종목별 회사 프로필 클래스\n회사명, 업종, 설명 형식을 공통화", C.white);
+  card(slide, 6.75, 2.55, 5.85, 1.22, "인터페이스", "StockCategoryProfile → 업종별 분류/위험 설명 규칙 통일\n상세 화면에서 업종 설명으로 사용", C.white);
+  table(slide, [
+    ["검증 항목", "결과"],
+    ["타입 수", "class / interface / enum 합계 111개"],
+    ["패키지", "app, controller, service, domain, repository, external, view, util"],
+    ["설계 목적", "조건 맞추기용 더미가 아니라 종목 상세와 설명에 쓰이는 구조"],
+  ], 1.05, 4.55, 11.15, 1.55, [0.25, 0.75]);
 }
 
 {
   const slide = pptx.addSlide(); addHeader(slide, 8, "클래스/라이브러리 구조 상세"); addFooter(slide);
   table(slide, [
-    ["계층", "주요 클래스", "사용 라이브러리 / 문법", "역할"],
-    ["실행/서버", "MiniProjectApp, MiniHandler", "HttpServer, HttpExchange", "서버 시작, URL 라우팅"],
-    ["서비스", "MiniProject", "ConcurrentHashMap, ArrayList", "매매, 포트폴리오, 시세 상태 관리"],
-    ["도메인", "Member, Stock, Share, TradeLog", "class, interface", "모의 계좌, 종목, 거래 데이터 표현"],
-    ["외부 API", "KisQuoteClient, KisQuotePoller, KisWebSocketQuoteClient", "HttpClient, WebSocket", "KIS REST/WebSocket 시세 연동"],
-    ["저장소/화면", "MySqlDatabase, MiniDashboardPage, Json", "JDBC, HTML/CSS/JS", "MySQL 저장과 웹 화면 렌더링"],
-  ], 0.5, 1.0, 12.3, 4.8, [0.17, 0.3, 0.27, 0.26]);
-  slide.addText("정리해서 말하면 서버, 서비스, 외부 API, DB, 화면 역할을 실제 패키지로 나눴고, 제출용 컴파일도 src/main/java 전체를 기준으로 검증한다.", {
-    x: 0.8, y: 6.35, w: 11.8, h: 0.35,
-    fontSize: 12.5, bold: true, color: C.blue, margin: 0,
-  });
+    ["구분", "활용한 Java 클래스/라이브러리", "프로젝트에서 맡은 역할"],
+    ["웹 서버", "HttpServer, HttpExchange, Executors", "브라우저 요청 수신, API 응답, 서버 스레드 관리"],
+    ["외부 API", "HttpClient, HttpRequest, WebSocket", "KIS 현재가 조회와 WebSocket 구독 시도"],
+    ["상태 관리", "ConcurrentHashMap, ArrayList, LinkedHashMap", "종목 상태, 거래 기록, 가격 히스토리 저장"],
+    ["DB 저장", "JDBC DriverManager, PreparedStatement, ResultSet", "MySQL 연결, 계좌/보유/거래 기록 저장"],
+    ["시간/출력", "LocalDateTime, DateTimeFormatter, StringBuilder", "거래 시간 표시와 HTML/JSON 문자열 생성"],
+  ], 0.55, 0.95, 12.2, 4.95, [0.18, 0.43, 0.39]);
 }
 
 {
@@ -404,48 +401,7 @@ titleSlide();
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 15, "Java 클래스 활용"); addFooter(slide);
-  bullets(slide, [
-    "HttpServer: 프레임워크 없이 웹 서버 구현",
-    "HttpClient: KIS API 호출",
-    "Thread: 백그라운드 시세 갱신",
-    "ConcurrentHashMap: 모의 계좌/종목 상태 동시 접근 처리",
-    "ArrayList, LinkedHashMap, List: 거래 기록, 가격 히스토리, 조회 순서 관리",
-    "JDBC DriverManager: MySQL 저장소 연결과 SQL 실행",
-    "LocalDateTime, DateTimeFormatter: 거래 시간과 시세 갱신 시각 표시",
-  ], 0.95, 1.05, 11.6, 5.4, 14);
-}
-
-{
-  const slide = pptx.addSlide(); addHeader(slide, 16, "주요 코드 흐름"); addFooter(slide);
-  const steps = [
-    ["1. 브라우저 요청", "GET /api/state\nPOST /api/stock/buy\nPOST /api/stock/sell"],
-    ["2. MiniHandler", "URL을 확인하고\nMiniProject 메서드 호출"],
-    ["3. MiniProject", "잔액 확인 → 수량 확인\n보유 주식 갱신 → 거래 기록 추가"],
-    ["4. 저장소", "MySQL 테이블에\n계좌/보유/거래 기록 저장"],
-  ];
-  steps.forEach((step, i) => {
-    const x = 0.65 + i * 3.08;
-    card(slide, x, 1.0, 2.75, 1.45, step[0], step[1], i === 2 ? C.lightBlue : C.white);
-    if (i < steps.length - 1) connector(slide, x + 2.75, 1.72, x + 3.04, 1.72);
-  });
-  codeBox(slide, "라우팅 핵심 - MiniHandler.java", `case "/api/stock/buy" -> project.buyStock(body);
-case "/api/stock/sell" -> project.sellStock(body);`, 0.9, 3.35, 5.65, 1.3);
-  codeBox(slide, "매수/저장 핵심 - MiniProject.java", `member.shares.compute(stockName, (key, share) -> ...);
-logs.add(new TradeLog(member.uid, stockName, quantity, total, "구매"));
-saveDatabase();`, 6.85, 3.35, 5.65, 1.3);
-  slide.addText("발표에서는 코드 전체를 읽기보다, 웹 요청이 서비스 로직을 거쳐 저장소까지 이어지는 흐름을 설명한다.", {
-    x: 0.9, y: 5.35, w: 11.5, h: 0.35,
-    fontSize: 13.5, bold: true, color: C.blue, margin: 0,
-  });
-  slide.addText("실제 상세 구현은 GitHub의 MiniHandler.java, MiniProject.java, repository/MySqlDatabase.java에서 확인할 수 있다.", {
-    x: 0.9, y: 5.9, w: 11.5, h: 0.3,
-    fontSize: 11.8, color: C.gray, margin: 0,
-  });
-}
-
-{
-  const slide = pptx.addSlide(); addHeader(slide, 17, "보완 상태와 남은 과제"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 15, "보완 상태와 남은 과제"); addFooter(slide);
   card(slide, 0.7, 1.0, 5.75, 1.2, "로그인 제거", "과제용 프로젝트라 회원 인증보다 종목 조회와 매매 흐름에 집중하도록 단일 모의 계좌 구조로 단순화", C.lightBlue);
   card(slide, 6.85, 1.0, 5.75, 1.2, "WebSocket 보완", "KIS WebSocket 시작/오류 시 REST 폴링으로 자동 전환되도록 코드 보강", C.white);
   card(slide, 0.7, 2.75, 5.75, 1.2, "남은 검증", "실제 KIS 테스트베드에서 구독 성공 여부와 메시지 필드 순서 확인 필요", C.white);
@@ -455,13 +411,13 @@ saveDatabase();`, 6.85, 3.35, 5.65, 1.3);
 }
 
 {
-  const slide = pptx.addSlide(); addHeader(slide, 18, "시연 영상 구성"); addFooter(slide);
+  const slide = pptx.addSlide(); addHeader(slide, 16, "시연 영상 구성"); addFooter(slide);
   table(slide, [
     ["구간", "보여줄 화면", "말할 내용"],
-    ["0~7초", "상단 요약", "로그인 없이 바로 모의투자 화면이 열리는 점 설명"],
-    ["7~14초", "시장 시세와 검색", "거래량 상위 종목과 검색/즐겨찾기"],
-    ["14~23초", "종목 상세/그래프", "현재가, 등락률, 그래프가 한 화면에 연결됨"],
-    ["23~31초", "매수 후 보유 탭", "종목을 클릭해 매수하고 손익을 확인"],
+    ["0~8초", "웹사이트 접속과 시장 시세", "상단 자산 요약과 거래량 상위 종목 확인"],
+    ["8~17초", "종목코드 검색", "검색창에 009150을 입력해 삼성전기 조회"],
+    ["17~30초", "종목 상세와 그래프", "현재가, 등락률, 가격 변화 그래프 확인"],
+    ["30~44초", "매수 후 보유 탭", "수량 입력 후 매수, 보유 종목 손익 확인"],
   ], 0.65, 0.95, 7.0, 3.2, [0.18, 0.36, 0.46]);
   if (fs.existsSync(PREVIEW)) {
     slide.addImage({ path: PREVIEW, x: 8.0, y: 1.0, w: 4.7, h: 2.65 });
@@ -470,10 +426,6 @@ saveDatabase();`, 6.85, 3.35, 5.65, 1.3);
   slide.addText(fs.existsSync(VIDEO) ? "deliverables/mock-stock-website-demo.webm" : "시연 영상 파일을 같은 폴더에 추가 예정", {
     x: 0.8, y: 5.15, w: 6.8, h: 0.3,
     fontSize: 13, bold: true, color: C.ink, margin: 0,
-  });
-  slide.addText("영상은 코드 설명보다 실제 실행 화면을 중심으로 짧게 보여주는 용도이다.", {
-    x: 0.8, y: 5.75, w: 7.1, h: 0.3,
-    fontSize: 12.5, color: C.gray, margin: 0,
   });
 }
 
