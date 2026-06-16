@@ -144,7 +144,7 @@ add_table(["항목", "내용"], [
     ["프로젝트명", "Java 프로젝트 모의주식"],
     ["주요 기술", "Java HttpServer, HttpClient, Thread, Collection, JDBC, MySQL"],
     ["외부 데이터", "한국투자증권 KIS Open API"],
-    ["저장 방식", "MySQL 필수 저장"],
+    ["저장 방식", "MySQL 우선 저장 + TSV fallback"],
     ["실행 주소", "http://localhost:8080/"],
     ["시연 영상", "deliverables/mock-stock-website-demo.webm"],
 ], widths=[1.7, 5.7])
@@ -156,7 +156,7 @@ paragraph("핵심 목표는 단순한 주문 연습이 아니라 실제 시세, 
 add_bullets([
     "실제 외부 증권 API를 활용한 Java 웹 프로젝트 구현",
     "사용자 매수/매도 흐름과 포트폴리오 손익 계산 구현",
-    "MySQL을 통한 모의 계좌/보유/거래 기록 유지",
+    "MySQL 우선 저장과 TSV fallback을 통한 모의 계좌/보유/거래 기록 유지",
     "쓰레드 기반 시세 갱신과 소켓 구독 구조 실험",
     "검색, 즐겨찾기, 종목 상세, 가격 그래프 UI 구현",
     "다수 클래스/인터페이스 구조와 실제 실행 가능한 웹 UI 구현",
@@ -168,7 +168,7 @@ add_table(["구분", "구현 내용", "발표에서 강조할 점"], [
     ["사용자 화면", "시장 시세, 검색, 즐겨찾기, 종목 상세, 매수/매도, 보유 탭", "사용자가 실제 투자 앱처럼 종목을 보고 판단한 뒤 주문한다."],
     ["외부 시세", "KIS Open API 현재가와 거래량 조회", "더미 데이터가 아니라 외부 시세 연동을 시도한 프로젝트다."],
     ["서버 로직", "MiniHandler가 요청을 받고 MiniProject가 매매와 손익을 계산", "Java 표준 HttpServer 기반으로 직접 요청 흐름을 구현했다."],
-    ["저장 구조", "MySQL members, shares, trade_logs", "서버를 껐다 켜도 계좌와 거래 기록을 유지한다."],
+    ["저장 구조", "MySQL members, shares, trade_logs + TSV fallback", "서버를 껐다 켜도 계좌와 거래 기록을 유지한다."],
     ["실시간성", "Thread 기반 갱신과 WebSocket 구독 구조 실험", "개인 PC에서 가능한 범위 안에서 실시간성을 설계했다."],
 ], widths=[1.4, 3.1, 2.9])
 
@@ -180,19 +180,20 @@ add_table(["구분", "제안발표 단계", "최종 구현"], [
     ["가격 데이터", "내부 샘플/모의 가격", "한국투자증권 KIS 현재가"],
     ["종목 수", "소수 종목", "거래량 상위 종목 중심"],
     ["화면", "기본 입력/출력 중심", "검색, 즐겨찾기, 상세 그래프, 포트폴리오"],
-    ["저장", "메모리 중심", "MySQL 필수 저장"],
+    ["저장", "메모리 중심", "MySQL 우선 저장 + TSV fallback"],
     ["목적", "기능 구현 연습", "실제 데이터 기반 투자 흐름 구현"],
 ], widths=[1.3, 2.6, 3.3])
 
 
 doc.add_heading("3. 자바 기반 프로그램 설계", level=1)
-paragraph("프로젝트는 Spring이나 React 없이 Java 표준 기능을 중심으로 구성했다. HttpServer로 웹 서버를 열고, HttpClient로 외부 API를 호출하며, HTML/CSS/JavaScript는 Java 문자열 템플릿에서 렌더링한다. 저장은 MySQL JDBC 구조를 필수로 사용한다. MYSQL_URL, MYSQL_USER, MYSQL_PASSWORD 설정이 없거나 MySQL 연결에 실패하면 서버 실행을 중단해 저장 방식이 조건부로 바뀌지 않게 했다.")
+paragraph("프로젝트는 Spring이나 React 없이 Java 표준 기능을 중심으로 구성했다. HttpServer로 웹 서버를 열고, HttpClient로 외부 API를 호출하며, HTML/CSS/JavaScript는 Java 문자열 템플릿에서 렌더링한다. 저장은 MySQL JDBC 구조를 우선 사용하고, MYSQL_URL과 MYSQL_USER가 없거나 MySQL 연결에 실패하면 LocalFileDatabase가 data/local-database.tsv에 저장하는 fallback 구조로 전환한다. MYSQL_PASSWORD는 로컬 계정 설정에 따라 빈 값일 수 있다.")
 add_table(["파일", "역할"], [
     ["app/MiniProjectApp.java", "서버 시작, 포트 설정, KIS/API/DB 초기화"],
     ["MiniHandler.java", "URL별 HTTP 요청 라우팅과 JSON 응답 처리"],
     ["MiniProject.java", "모의 계좌, 매매, 포트폴리오, 시세 상태 관리"],
     ["domain/Member.java, Stock.java", "Member, Stock, Share, TradeLog 등 도메인 모델"],
     ["repository/MySqlDatabase.java", "MySQL 연결, 테이블 생성, 데이터 저장/로드"],
+    ["repository/LocalFileDatabase.java", "MySQL 연결 실패 시 TSV 파일 저장/로드"],
     ["external/KisQuotePoller.java", "KIS 토큰 발급, 거래량 순위, 현재가 조회, 시세 갱신"],
     ["domain/StockCategories.java", "업종·테마별 위험 설명 타입"],
     ["external/MockBrokerServer.java", "소켓 기반 시세 구독 흐름 실험"],
@@ -225,12 +226,12 @@ paragraph("src/main/java 패키지 구조로 옮겼기 때문에, 발표에서�
 
 doc.add_heading("3.3 주요 코드 흐름", level=2)
 paragraph("아래 코드는 발표 때 보여주기 위한 핵심 부분만 줄인 것이다. 전체 코드를 모두 설명하기보다 HTTP 요청이 들어오고, 외부 시세를 조회하고, 매수 결과를 저장하는 흐름을 중심으로 정리했다.")
-paragraph("예를 들어 사용자가 삼성전기 상세 화면에서 매수 버튼을 누르면 브라우저는 /api/stock/buy로 종목명과 수량을 보낸다. MiniHandler는 이 요청을 MiniProject.buyStock()으로 넘기고, MiniProject는 잔액과 수량을 확인한 뒤 보유 종목과 거래 기록을 갱신한다. 마지막으로 MySqlDatabase가 변경된 계좌, 보유 주식, 거래 기록을 MySQL에 저장한다.")
+paragraph("예를 들어 사용자가 삼성전기 상세 화면에서 매수 버튼을 누르면 브라우저는 /api/stock/buy로 종목명과 수량을 보낸다. MiniHandler는 이 요청을 MiniProject.buyStock()으로 넘기고, MiniProject는 잔액과 수량을 확인한 뒤 보유 종목과 거래 기록을 갱신한다. 마지막으로 현재 선택된 저장소가 변경된 계좌, 보유 주식, 거래 기록을 저장한다. 기본은 MySQL이고, 연결 실패 시 LocalFileDatabase가 TSV 파일로 저장한다.")
 add_table(["순서", "처리 위치", "설명"], [
     ["1", "브라우저", "종목 상세 화면에서 수량 입력 후 매수 버튼 클릭"],
     ["2", "MiniHandler", "POST /api/stock/buy 요청 body를 읽고 MiniProject로 전달"],
     ["3", "MiniProject", "현재가 × 수량 계산, 잔액 부족 여부 확인, 보유 종목 갱신"],
-    ["4", "MySqlDatabase", "members, shares, trade_logs 테이블에 저장"],
+    ["4", "ProjectDatabase", "MySQL 또는 TSV 저장소에 members, shares, trade_logs 데이터 저장"],
     ["5", "브라우저", "GET /api/state로 최신 현금, 평가금액, 손익률 다시 표시"],
 ], widths=[0.7, 1.8, 4.7])
 add_code("""// MiniHandler.java - HTTP 요청을 기능별 메서드로 연결
@@ -301,7 +302,7 @@ add_table(["단계", "내용"], [
     ["입력", "종목 선택, 즐겨찾기, 매수/매도 수량"],
     ["외부 입력", "KIS 현재가, 전일대비, 등락률, 누적 거래량"],
     ["처리", "잔액 확인, 보유 수량 확인, 매매 체결, 손익 계산"],
-    ["저장", "모의 계좌 정보, 보유 주식, 거래 기록을 MySQL에 저장"],
+    ["저장", "모의 계좌 정보, 보유 주식, 거래 기록을 MySQL 우선 + TSV fallback으로 저장"],
     ["출력", "시장 시세, 종목 상세, 그래프, 포트폴리오, 거래 기록"],
 ], widths=[1.4, 5.8])
 
@@ -315,7 +316,7 @@ add_bullets([
     "종목 상세: 현재가, 등락률, 거래량, 회사 설명, 가격 그래프, 매수 입력",
     "보유 탭: 보유 종목별 평가금액, 손익, 수익률, 매도 수량 입력",
     "기록 탭: 매수/매도 시간, 종목, 수량, 금액 확인",
-    "최종 UI: 실제 증권 웹앱을 참고한 흰 배경, 표 중심, 상승 빨강/하락 파랑 색상 체계",
+    "최종 UI: 실제 증권 웹앱을 참고한 흰 배경, 표 중심, 상승 초록/하락 빨강 색상 체계",
 ])
 for image_path, caption_text in UI_SCREENSHOTS:
     if image_path.exists():
@@ -332,7 +333,7 @@ for image_path, caption_text in UI_SCREENSHOTS:
 
 doc.add_heading("6. 한 달간의 시행착오와 문제 해결", level=1)
 add_table(["문제", "해결"], [
-    ["실제 시세 연동 문제", "초기에는 내부 모의 가격과 KIS API 응답값이 섞이면서 삼성전자 같은 종목 가격이 이상해 보였다. 그래서 현재 표시되는 가격이 실제 API 값인지, 초기 더미 값인지 확인했고 시세 갱신 흐름을 정리했다."],
+    ["실제 시세 연동 문제", "초기에는 KIS REST API가 켜져 있어도 일부 호출 실패 뒤 내장 모의 시세가 같이 실행되어 가격을 덮는 문제가 있었다. 이후 KIS 설정이 있으면 모의 시세로 전환하지 않게 하고, KIS 출처가 찍힌 종목은 모의 Tick이 덮어쓰지 못하게 수정했다."],
     ["전체 종목 처리 범위 결정", "KIS에서 제공하는 전체 종목을 모두 계속 갱신하는 것은 개인 PC에서 실행하는 과제 프로젝트에는 부담이 컸다. 그래서 거래량 상위 종목 중심으로 자동 선별하고, 화면에서는 10개씩 페이지로 나누는 구조를 선택했다."],
     ["UI 흐름 개선", "처음에는 매매 칸에서 종목을 고르는 방식이라 사용자가 불편했다. 이후 시장 시세에서 종목을 클릭하고, 상세 화면에서 가격 그래프를 확인한 뒤 매수하며, 매도는 보유 종목 기준으로 진행하도록 바꿨다."],
     ["뉴스 기능 제거 판단", "네이버 뉴스 API를 붙이는 시도도 했지만 종목마다 기사 품질 편차가 컸고, ETF나 레버리지 상품은 관련 기사 연결이 애매했다. API 키 관리 부담도 있어 최종 버전에서는 모의투자 목적에 맞는 기능만 남기기로 했다."],
@@ -361,7 +362,7 @@ add_table(["데이터", "처리 방식"], [
     ["종목 선별", "거래량 기준 상위 종목 중심으로 자동 갱신"],
     ["실시간성", "전체 종목 매초 조회 대신 상위 목록 중심 갱신과 소켓 구독 구조 실험"],
     ["소켓", "모의 증권사 서버의 가격 Tick 구독 구조"],
-    ["사용자 데이터", "MySQL 테이블에 상시 저장"],
+    ["사용자 데이터", "MySQL 우선 저장, 연결 실패 시 TSV 파일 저장"],
     ["가격 그래프", "서버가 보관한 최근 가격 히스토리 표시"],
 ], widths=[2.0, 5.2])
 
@@ -386,8 +387,22 @@ add_table(["환경변수", "기본값", "역할"], [
     ["KIS_USE_WEBSOCKET", "false", "true이면 KIS WebSocket 구독을 먼저 시도"],
     ["KIS_WS_URL", "ws://ops.koreainvestment.com:21000", "KIS WebSocket 주소"],
     ["KIS_WS_MAX_SUBSCRIPTIONS", "100", "WebSocket 구독 대상 최대 수"],
-    ["MYSQL_URL / MYSQL_USER / MYSQL_PASSWORD", "필수", "MySQL 연결 정보, 없거나 연결 실패 시 서버 실행 중단"],
+    ["MYSQL_URL / MYSQL_USER", "선택", "있으면 MySQL 사용, 없거나 연결 실패 시 TSV fallback"],
+    ["MYSQL_PASSWORD", "계정별 설정", "로컬 MySQL 계정에 비밀번호가 있으면 입력, 없으면 생략 가능"],
 ], widths=[2.2, 2.2, 3.0])
+
+doc.add_heading("8.3 실제 시세 연동 여부 확인", level=2)
+paragraph("발표 중 현재 화면의 가격이 실제 API 값인지 질문이 나올 수 있다. 이때는 /api/state 응답의 broker.source와 종목별 quoteSource 값을 보면 된다. KIS 환경변수가 설정된 상태에서는 broker.source가 한국투자증권 KIS REST API로 표시되고, 종목별 quoteSource도 한국투자증권 KIS로 표시된다.")
+add_code('''"broker": {
+  "source": "한국투자증권 KIS REST API",
+  "protocol": "KIS REST API"
+},
+"quoteSource": "한국투자증권 KIS"''')
+add_table(["상황", "동작", "발표 때 설명"], [
+    ["KIS 환경변수 있음", "KIS REST API 현재가 사용", "표시 가격은 현재가 API의 stck_prpr 값"],
+    ["KIS 환경변수 없음", "내장 모의 증권사 소켓 사용", "API 키 없이도 화면 시연 가능"],
+    ["KIS 호출 일부 실패", "REST 폴링 유지", "KIS 출처 종목은 모의 Tick이 덮지 않음"],
+], widths=[2.0, 2.5, 2.7])
 
 
 doc.add_heading("9. 소켓 서버 구조", level=1)
@@ -404,7 +419,7 @@ doc.add_heading("9.1 로그인 기능 제거 판단", level=2)
 paragraph("초기에는 회원가입과 로그인 기능을 넣었지만, 이 프로젝트는 실제 사용자에게 배포하는 서비스가 아니라 과제 발표용 모의투자 프로그램이다. 그래서 인증 기능보다 시세 조회, 종목 선택, 매수/매도, 손익 계산 흐름을 설명하는 것이 더 중요하다고 판단했다. 최종 버전에서는 서버가 MySQL에 저장된 모의 계좌 한 명을 사용하고, 사용자는 로그인 없이 바로 모의투자를 진행한다.")
 add_bullets([
     "발표 시작 후 바로 시장 시세와 포트폴리오 화면을 보여줄 수 있다.",
-    "DB에는 모의 계좌의 현금, 보유 종목, 거래 기록만 저장한다.",
+    "DB에는 모의 계좌의 현금, 보유 종목, 거래 기록만 저장한다. MySQL을 우선 사용하고, 연결할 수 없으면 TSV 파일 저장소로 전환한다.",
     "회원 인증과 비밀번호 보안 설명보다 Java 서버, KIS API, MySQL 저장 흐름에 집중한다.",
     "실제 배포 서비스로 확장한다면 그때 회원 인증, 세션, HTTPS를 추가하는 것이 적절하다.",
 ])
@@ -420,17 +435,17 @@ add_table(["기능", "현재 구현 상태"], [
     ["매수", "선택 종목 상세 화면에서 수량 입력 후 매수"],
     ["매도", "보유 탭에서 보유 수량 기준으로 매도"],
     ["포트폴리오", "현금, 평가금액, 총자산, 손익, 수익률 계산"],
-    ["거래 기록", "매수/매도 기록을 MySQL에 저장"],
+    ["거래 기록", "매수/매도 기록을 MySQL 우선 + TSV fallback으로 저장"],
 ], widths=[1.9, 5.3])
 
 
 doc.add_heading("11. 1분 이내 시연 영상", level=1)
-paragraph("시연 영상은 실제 코드 설명보다 사용자가 보는 화면 흐름을 보여주는 용도이다. 이번 제출용 영상은 약 44초 길이로 접속, 종목코드 검색, 가격 그래프 확인, 매수, 보유 종목 손익 확인 장면이 들어 있다.")
+paragraph("시연 영상은 실제 코드 설명보다 사용자가 보는 화면 흐름을 보여주는 용도이다. 이번 제출용 영상은 약 35초 길이로 접속, KIS 현재가가 들어온 종목 검색, 가격 그래프 확인, 즐겨찾기, 매수, 보유 탭 확인, 매도, 페이지 이동 장면이 들어 있다.")
 add_table(["구간", "보여줄 화면", "설명"], [
-    ["0~8초", "웹사이트 접속과 상단 요약", "Java 서버에서 웹앱이 실행되는 점"],
-    ["8~17초", "종목코드 검색", "009150을 입력해 삼성전기 종목을 조회"],
-    ["17~30초", "가격 그래프와 매수", "선택 종목의 가격 변화와 주문"],
-    ["30~44초", "보유 탭과 손익", "매수 후 평가금액과 수익률 표시"],
+    ["0~8초", "웹사이트 접속과 시장 시세", "KIS 현재가와 거래량 기준 종목 목록 확인"],
+    ["8~16초", "종목코드 검색", "005930을 입력해 삼성전자 종목을 조회"],
+    ["16~25초", "상세 화면과 주문", "현재가, 그래프, 즐겨찾기, 1주 매수"],
+    ["25~35초", "보유/기록/매도와 페이지", "보유 탭, 기록 탭, 매도 후 시장 페이지 이동"],
 ], widths=[1.2, 2.4, 3.6])
 paragraph(f"영상 파일 위치: {VIDEO.as_posix() if VIDEO.exists() else 'deliverables/mock-stock-website-demo.webm'}")
 
@@ -447,7 +462,7 @@ add_bullets([
 
 
 doc.add_heading("13. 마무리와 향후 개선", level=1)
-paragraph("최종 결과물은 Java로 직접 만든 모의주식투자 웹앱이다. 한국투자증권 KIS API로 시세와 거래량을 가져오고, 모의 계좌의 보유주식과 거래기록은 MySQL에 저장한다. 사용자는 종목을 검색하거나 즐겨찾기하고, 상세 화면에서 가격 그래프를 확인한 뒤 매수/매도를 진행할 수 있다.")
+paragraph("최종 결과물은 Java로 직접 만든 모의주식투자 웹앱이다. 한국투자증권 KIS API로 시세와 거래량을 가져오고, 모의 계좌의 보유주식과 거래기록은 MySQL을 우선 사용해 저장한다. MySQL 연결이 불가능한 환경에서는 TSV 파일 저장소로 전환된다. 사용자는 종목을 검색하거나 즐겨찾기하고, 상세 화면에서 가격 그래프를 확인한 뒤 매수/매도를 진행할 수 있다.")
 paragraph("향후 개선한다면 실제 KIS 테스트베드에서 WebSocket 구독 성공 여부를 확인하고, service 패키지 안의 MiniProject를 TradingService, PortfolioService, MarketService로 더 세분화할 수 있다. 이후에는 테스트 코드 추가, 회원 인증이 필요한 배포 버전, 업종별 위험 등급 UI 표시, 개인화 관심종목 추천 같은 기능을 확장할 수 있다.")
 
 

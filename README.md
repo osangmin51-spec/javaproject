@@ -10,9 +10,9 @@ Java 표준 라이브러리 중심으로 만든 모의주식투자 웹앱입니�
 - 종목 검색, 즐겨찾기, 종목 상세 화면
 - 가격 변화 그래프, 회사 설명, 매수/매도 입력
 - 보유 종목 평가금액, 손익, 수익률 계산
-- MySQL 기반 모의 계좌/보유/거래 기록 저장
+- MySQL 우선 기반 모의 계좌/보유/거래 기록 저장 및 TSV fallback
 - KIS WebSocket 국내주식 체결 구독 시도 및 REST fallback
-- 실제 증권 웹앱을 참고한 흰 배경, 표 중심, 상승 빨강/하락 파랑 UI
+- 실제 증권 웹앱을 참고한 흰 배경, 표 중심, 상승 초록/하락 빨강 UI
 - VS Code, IntelliJ IDEA, Windows 실행 스크립트 제공
 
 ## 실행 방법
@@ -25,7 +25,7 @@ javac -encoding UTF-8 -d out $sources
 
 $env:MYSQL_URL="jdbc:mysql://localhost:3306/mock_stock?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul"
 $env:MYSQL_USER="root"
-$env:MYSQL_PASSWORD="비밀번호"
+$env:MYSQL_PASSWORD="비밀번호" # 비밀번호가 없는 로컬 계정이면 생략 가능
 java -cp "out;lib/*" app.MiniProjectApp 8080
 ```
 
@@ -40,7 +40,7 @@ http://localhost:8080/
 ## KIS Open API 설정
 
 프로젝트의 시세 데이터는 한국투자증권 KIS Open API 연동을 기준으로 설계했습니다. 실행 전에 발급받은 값을 환경변수로 넣습니다.
-MySQL 환경변수는 저장소 설정이므로 함께 유지해야 합니다.
+MySQL 환경변수는 저장소 설정입니다. 값이 있으면 MySQL을 먼저 사용하고, 없거나 연결할 수 없으면 TSV 파일 저장소로 전환됩니다.
 
 ```powershell
 $env:KIS_APP_KEY="발급받은_APP_KEY"
@@ -76,7 +76,7 @@ KIS 관련 환경변수:
 ## WebSocket 시세 구독
 
 REST 방식은 일정 주기마다 서버가 API를 다시 호출하는 구조라 완전한 실시간 체결 전송에는 한계가 있습니다. 그래서 `KIS_USE_WEBSOCKET=true`일 때는 KIS WebSocket 승인키를 발급받고 국내주식 체결 구독을 먼저 시도합니다.
-이 경우에도 MySQL 환경변수는 필수입니다.
+이 경우에도 저장 구조는 동일합니다. MySQL 환경변수가 있으면 MySQL을 우선 사용하고, 없거나 연결 실패 시 TSV 파일 저장소로 전환됩니다.
 
 ```powershell
 $env:KIS_USE_WEBSOCKET="true"
@@ -107,16 +107,16 @@ WebSocket 모드에서도 시작 직전에 거래량 상위 종목을 조회해 
 
 ## 저장소
 
-모의 계좌, 보유 종목, 거래 기록은 MySQL에만 저장합니다. `MYSQL_URL`, `MYSQL_USER`, `MYSQL_PASSWORD` 설정이 없거나 MySQL 서버에 연결할 수 없으면 서버 실행이 중단됩니다. 따라서 실행 전에 MySQL 서버와 `mock_stock` 데이터베이스를 준비해야 합니다.
+모의 계좌, 보유 종목, 거래 기록은 MySQL을 우선 사용해 저장합니다. `MYSQL_URL`, `MYSQL_USER` 설정이 없거나 MySQL 서버에 연결할 수 없으면 `data/local-database.tsv` 파일 저장소로 자동 전환됩니다. `MYSQL_PASSWORD`는 로컬 MySQL 계정에 비밀번호가 있을 때만 설정하면 됩니다.
 
 ```powershell
 $env:MYSQL_URL="jdbc:mysql://localhost:3306/mock_stock?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul"
 $env:MYSQL_USER="root"
-$env:MYSQL_PASSWORD="비밀번호"
+$env:MYSQL_PASSWORD="비밀번호" # 비밀번호가 없는 로컬 계정이면 생략 가능
 java -cp "out;lib/*" app.MiniProjectApp 8080
 ```
 
-MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니다. 프로젝트는 로컬 TSV 저장소로 전환하지 않고, 항상 MySQL 테이블을 사용합니다.
+MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니다. MySQL 연결이 가능하면 MySQL 테이블을 사용하고, 연결할 수 없으면 `LocalFileDatabase`가 `data/local-database.tsv`에 같은 계좌/보유/거래 데이터를 저장합니다.
 
 저장 테이블:
 
@@ -134,7 +134,7 @@ MySQL Connector/J는 `lib/mysql-connector-j-9.7.0.jar`에 포함되어 있습니
 | `controller` | `MiniHandler.java` | HTTP 라우팅, API 요청 처리 |
 | `service` | `MiniProject.java` | 모의 계좌, 매매, 포트폴리오, 저장 흐름 관리 |
 | `domain` | `Member.java`, `Stock.java`, `Share.java`, `TradeLog.java` | 모의 계좌, 종목, 보유 주식, 거래 기록 모델 |
-| `repository` | `ProjectDatabase.java`, `MySqlDatabase.java` | MySQL 저장소, 데이터 로드/저장 |
+| `repository` | `ProjectDatabase.java`, `MySqlDatabase.java`, `LocalFileDatabase.java` | MySQL 우선 저장, TSV fallback 로드/저장 |
 | `external` | `KisQuotePoller.java`, `KisWebSocketQuoteClient.java`, `MockBrokerServer.java` | KIS API, WebSocket 시도, 모의 증권사 소켓 |
 | `view` | `MiniDashboardPage.java` | HTML, CSS, JavaScript 화면 렌더링 |
 | `util` | `Json.java` | JSON 응답 생성과 요청 body 파싱 |

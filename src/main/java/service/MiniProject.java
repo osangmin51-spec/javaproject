@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import repository.DatabaseSnapshot;
+import repository.LocalFileDatabase;
 import repository.MySqlDatabase;
 import repository.ProjectDatabase;
 import util.Json;
@@ -361,12 +362,21 @@ public class MiniProject {
             memberIds.set(Math.max(memberIds.get(), snapshot.maxMemberUid));
             System.out.println(database.name() + " 로드 완료: members=" + members.size() + ", trades=" + logs.size());
         } catch (Exception ex) {
-            if (Boolean.getBoolean("mockstock.demoMemory")) {
-                database = null;
-                System.out.println("demoMemory=true: MySQL 없이 촬영용 메모리 계좌로 실행합니다.");
-                return;
+            try {
+                database = LocalFileDatabase.defaultPath();
+                DatabaseSnapshot snapshot = database.load(marketStocks);
+                members.putAll(snapshot.members);
+                logs.addAll(snapshot.logs);
+                memberIds.set(Math.max(memberIds.get(), snapshot.maxMemberUid));
+                System.out.println(database.name() + " fallback 로드 완료: members=" + members.size() + ", trades=" + logs.size() + " / reason=" + ex.getMessage());
+            } catch (Exception fileEx) {
+                if (Boolean.getBoolean("mockstock.demoMemory")) {
+                    database = null;
+                    System.out.println("demoMemory=true: MySQL/TSV 없이 촬영용 메모리 계좌로 실행합니다.");
+                    return;
+                }
+                throw new IllegalStateException("MySQL DB와 TSV fallback 초기화에 실패했습니다. MYSQL_URL, MYSQL_USER, MYSQL_PASSWORD 설정과 data 폴더 권한을 확인하세요: " + fileEx.getMessage(), fileEx);
             }
-            throw new IllegalStateException("MySQL DB 초기화에 실패했습니다. MYSQL_URL, MYSQL_USER, MYSQL_PASSWORD 설정과 MySQL 서버 상태를 확인하세요: " + ex.getMessage(), ex);
         }
     }
 

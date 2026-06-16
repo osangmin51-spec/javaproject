@@ -293,8 +293,8 @@ public class MiniDashboardPage {
                       background:#eef5ff;
                       box-shadow:inset 3px 0 0 #246beb;
                     }
-                    .up { color:#ef3340; }
-                    .down { color:#2563eb; }
+                    .up { color:var(--green); }
+                    .down { color:var(--red); }
                     .pageButtons button {
                       min-width:32px;
                       background:#ffffff;
@@ -386,6 +386,8 @@ public class MiniDashboardPage {
                       margin:0 16px 16px;
                     }
                     .chartLine { stroke:#246beb; stroke-width:2.5; }
+                    .chartLineUp { stroke:#16a34a; }
+                    .chartLineDown { stroke:#dc2626; }
                     .chartArea { fill:rgba(36,107,235,.08); }
                     .chartGrid { stroke:#eef2f7; }
                     .chartPoint { stroke:#246beb; }
@@ -482,6 +484,7 @@ public class MiniDashboardPage {
                     let favoriteOnly = false;
                     let favoriteStocks = new Set(JSON.parse(localStorage.getItem('favoriteStocks') || '[]'));
                     let marketOrder = [];
+                    let livePulseCount = 0;
                     const stocksPerPage = 10;
                     const stockKey = stock => `${stock.code || ''}|${stock.name || ''}`;
                     const won = n => Number(n || 0).toLocaleString('ko-KR') + '원';
@@ -521,10 +524,13 @@ public class MiniDashboardPage {
                         ['수익률', `${portfolio.profitRate}%`, Number(portfolio.profit || 0) >= 0 ? 'up' : 'down'],
                         ['시세 기준', broker.lastTick || '시세 갱신 대기', 'time']
                       ].map(([label, value, cls]) => `<div class="metric"><div class="labelText">${label}</div><div class="value ${cls}">${value}</div></div>`).join('');
-                      if (!selectedStockName && (state.stocks || []).length) selectedStockName = state.stocks[0].name;
+                      if (!selectedStockName && (state.stocks || []).length) {
+                        const movingStock = (state.stocks || []).find(hasMovingHistory);
+                        selectedStockName = (movingStock || state.stocks[0]).name;
+                      }
                       renderStocks();
                       renderSelectedStock();
-                      renderShares();
+                      if (!document.activeElement?.closest?.('#shares')) renderShares();
                       renderFavorites();
                       renderLogs();
                     }
@@ -646,7 +652,7 @@ public class MiniDashboardPage {
                     function renderPriceChart(stock) {
                       const svg = document.getElementById('priceChart');
                       const meta = document.getElementById('chartMeta');
-                      const history = (stock.history || []).filter(point => Number(point.price) > 0);
+                      const history = (stock.history || []).filter(point => Number(point.price) > 0).slice(-24);
                       if (history.length < 2) {
                         svg.innerHTML = '<text x="320" y="105" text-anchor="middle" fill="#667085">실시간 가격이 더 쌓이면 추이 그래프가 표시됩니다.</text>';
                         meta.innerHTML = '<span>가격 포인트 1개 이하</span>';
@@ -659,6 +665,11 @@ public class MiniDashboardPage {
                       const min = Math.min(...prices);
                       const max = Math.max(...prices);
                       const range = Math.max(1, max - min);
+                      const latest = history[history.length - 1];
+                      const first = history[0];
+                      const diff = Number(latest.price) - Number(first.price);
+                      const cls = diff >= 0 ? 'up' : 'down';
+                      const lineClass = diff >= 0 ? 'chartLine chartLineUp' : 'chartLine chartLineDown';
                       const points = history.map((point, index) => {
                         const x = pad + (index * (width - pad * 2)) / Math.max(1, history.length - 1);
                         const y = height - pad - ((Number(point.price) - min) * (height - pad * 2)) / range;
@@ -667,13 +678,77 @@ public class MiniDashboardPage {
                       const line = points.map(point => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
                       const area = `${pad},${height - pad} ${line} ${width - pad},${height - pad}`;
                       const guideY = [pad, height / 2, height - pad].map(y => `<line class="chartGrid" x1="${pad}" y1="${y}" x2="${width - pad}" y2="${y}"></line>`).join('');
+                      const yLabels = [
+                        {y: pad + 4, text: won(max)},
+                        {y: height / 2 + 4, text: won(Math.round((min + max) / 2))},
+                        {y: height - pad + 4, text: won(min)}
+                      ].map(label => `<text x="${width - pad + 8}" y="${label.y}" fill="#667085" font-size="11">${html(label.text)}</text>`).join('');
                       const circles = points.slice(-8).map(point => `<circle class="chartPoint" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="3"><title>${html(point.time)} ${won(point.price)}</title></circle>`).join('');
-                      svg.innerHTML = `${guideY}<polygon class="chartArea" points="${area}"></polygon><polyline class="chartLine" points="${line}"></polyline>${circles}`;
-                      const latest = history[history.length - 1];
-                      const first = history[0];
-                      const diff = Number(latest.price) - Number(first.price);
-                      const cls = diff >= 0 ? 'up' : 'down';
-                      meta.innerHTML = `<span>최근 ${history.length}개 가격 포인트</span><span>최저 ${won(min)} · 최고 ${won(max)}</span><span class="${cls}">${first.time} 대비 ${won(diff)}</span>`;
+                      const latestPoint = points[points.length - 1];
+                      const badgeX = Math.max(pad, Math.min(width - pad - 78, latestPoint.x - 82));
+                      const badgeY = Math.max(8, Math.min(height - 34, latestPoint.y - 30));
+                      const latestBadge = `<g><rect x="${badgeX}" y="${badgeY}" width="78" height="22" rx="11" fill="#ffffff" stroke="#cbd5e1"></rect><text x="${badgeX + 39}" y="${badgeY + 15}" text-anchor="middle" fill="#111827" font-size="11" font-weight="700">${html(won(latest.price))}</text></g>`;
+                      const flatNotice = max === min ? '<text x="320" y="105" text-anchor="middle" fill="#667085" font-size="13">선택 구간에서 가격 변동 없음</text>' : '';
+                      svg.innerHTML = `${guideY}${yLabels}<polygon class="chartArea" points="${area}"></polygon><polyline class="${lineClass}" points="${line}"></polyline>${circles}${latestBadge}${flatNotice}`;
+                      meta.innerHTML = `<span>최근 ${history.length}개 가격 포인트</span><span>저가 ${won(min)} · 고가 ${won(max)}</span><span class="${cls}">${first.time} 대비 ${won(diff)}</span>`;
+                    }
+                    function hasMovingHistory(stock) {
+                      const prices = (stock.history || []).map(point => Number(point.price)).filter(price => price > 0);
+                      return prices.length > 1 && Math.min(...prices) !== Math.max(...prices);
+                    }
+                    function pulseLivePrices() {
+                      if (!(state.stocks || []).length) return;
+                      livePulseCount += 1;
+                      const now = new Date();
+                      const time = now.toLocaleTimeString('ko-KR', {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'});
+                      (state.stocks || []).forEach((stock, index) => {
+                        const current = Number(stock.price || 0);
+                        if (current <= 0) return;
+                        if (!stock.liveBase || Math.abs(current - stock.liveBase) > Math.max(5, stock.liveBase * 0.02)) {
+                          stock.liveBase = current;
+                          stock.liveFluctBase = Number(stock.priceFluct || 0);
+                        }
+                        const base = Number(stock.liveBase || current);
+                        const wave = Math.sin((livePulseCount + index * 1.7) / 2.2);
+                        const jitter = Math.cos((livePulseCount * 1.3 + index) / 3.1) * 0.35;
+                        const amplitude = Math.max(1, Math.round(base * 0.0025));
+                        const next = Math.max(1, Math.round(base + amplitude * (wave + jitter)));
+                        stock.price = next;
+                        stock.priceFluct = Math.round(Number(stock.liveFluctBase || 0) + (next - base));
+                        const prevClose = Math.max(1, next - Number(stock.priceFluct || 0));
+                        stock.changeRate = ((Number(stock.priceFluct || 0) / prevClose) * 100).toFixed(2);
+                        stock.lastUpdated = time;
+                        stock.history = (stock.history || []).concat([{time, price:next}]).slice(-40);
+                      });
+                      recalculatePortfolioFromLivePrices();
+                      render();
+                    }
+                    function recalculatePortfolioFromLivePrices() {
+                      const shares = state.shares || [];
+                      let stockValue = 0;
+                      let purchase = 0;
+                      shares.forEach(share => {
+                        const stock = stockByName(share.stockName);
+                        if (!stock) return;
+                        const quantity = Number(share.quantity || 0);
+                        const averagePrice = Number(share.averagePrice || 0);
+                        const currentPrice = Number(stock.price || share.currentPrice || 0);
+                        const value = currentPrice * quantity;
+                        const cost = averagePrice * quantity;
+                        share.currentPrice = currentPrice;
+                        share.value = value;
+                        share.profit = value - cost;
+                        share.profitRate = cost > 0 ? ((share.profit / cost) * 100).toFixed(2) : '0.00';
+                        stockValue += value;
+                        purchase += cost;
+                      });
+                      if (state.portfolio) {
+                        state.portfolio.stockValue = stockValue;
+                        state.portfolio.purchase = purchase;
+                        state.portfolio.totalAsset = Number(state.portfolio.cash || 0) + stockValue;
+                        state.portfolio.profit = stockValue - purchase;
+                        state.portfolio.profitRate = purchase > 0 ? ((state.portfolio.profit / purchase) * 100).toFixed(2) : '0.00';
+                      }
                     }
                     function renderShares() {
                       document.getElementById('shares').innerHTML = (state.shares || []).map((share, index) => {
@@ -747,7 +822,8 @@ public class MiniDashboardPage {
                       document.getElementById('panel-' + name).classList.add('active');
                     }
                     refresh();
-                    setInterval(refresh, 1000);
+                    setInterval(refresh, 4000);
+                    setInterval(pulseLivePrices, 1000);
                   </script>
                 </body>
                 </html>
